@@ -19,10 +19,16 @@ synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlap
 
 ### About
 
-All scripts require Python 3.8+
+Requires: Python 3.8+
+
+Modules: scipy, numpy, matplotlib, sklearn, rtree, multiprocessing, pysimplegui
+
 Design and code: Tristan Wallis
+
 Debugging: Sophie Huiyi Hou
+
 Queensland Brain Institute, University of Queensland
+
 Fred Meunier: f.meunier@uq.edu.au
 
 
