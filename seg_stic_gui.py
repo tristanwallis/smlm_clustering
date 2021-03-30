@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210330"
+last_changed = "20210331"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
