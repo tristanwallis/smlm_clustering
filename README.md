@@ -15,6 +15,8 @@ dbscan_wrangler.py: meta analysis of output from dbscan_gui and voronoi_gui.py
 
 synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporasl trajectory clusters
 
+[hr]
+
 All scripts require Python 3.8+
 
 Design and code: Tristan Wallis
@@ -26,6 +28,8 @@ Queensland Brain Institute
 University of Queensland
 
 Fred Meunier: f.meunier@uq.edu.au
+
+[hr]
 
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
