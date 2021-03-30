@@ -13,7 +13,7 @@ voronoi_gui.py: cluster using Voronoi tesselation of trajectory centroids
 
 dbscan_wrangler.py: meta analysis of output from dbscan_gui and voronoi_gui.py
 
-synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporasl trajectory clusters
+synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 
 ---
 
