@@ -1,6 +1,7 @@
 # clustering
 Python GUI scripts for molecular trajectory clustering analysis.
 
+### Files
 stic_gui.py: cluster using R-tree based spatio-temporal indexing of trajectory bounding boxes
 
 seg_stic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
@@ -15,7 +16,8 @@ dbscan_wrangler.py: meta analysis of output from dbscan_gui and voronoi_gui.py
 
 synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 
----
+
+### About
 
 All scripts require Python 3.8+
 
@@ -27,7 +29,8 @@ Queensland Brain Institute, University of Queensland
 
 Fred Meunier: f.meunier@uq.edu.au
 
----
+
+### License
 
 [![CC BY 4.0][cc-by-shield]][cc-by]
 
