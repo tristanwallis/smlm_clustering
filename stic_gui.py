@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210330"
+last_changed = "20210528"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -77,11 +77,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	import random
 	from scipy.spatial import ConvexHull
+	from scipy.stats import gaussian_kde
 	from sklearn.cluster import DBSCAN
 	from sklearn import manifold, datasets, decomposition, ensemble, random_projection	
 	import numpy as np
 	from rtree import index
 	import matplotlib
+	matplotlib.use('TkAgg') # prevents Matplotlib related crashes --> self.tk.call('image', 'delete', self.name)
 	import matplotlib.pyplot as plt
 	from matplotlib.widgets import LassoSelector
 	from matplotlib import path
@@ -241,7 +243,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
 		traj_prob = 1
 		detection_alpha = 0.25
 		selection_density = 0
@@ -273,12 +275,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		autocluster=True
 		radius_thresh=0.15
 		auto_metric=False
+		plotxmin=""
+		plotxmax=""
+		plotymin=""
+		plotymax=""
 		return 
 
 	# SAVE SETTINGS
 	def save_defaults():
-		print ("Saving GUI settings to spatiotemporal_gui.defaults...")
-		with open("spatiotemporal_gui.defaults","w") as outfile:
+		print ("Saving GUI settings to stic_gui.defaults...")
+		with open("stic_gui.defaults","w") as outfile:
 			outfile.write("{}\t{}\n".format("Trajectory probability",traj_prob))
 			outfile.write("{}\t{}\n".format("Raw trajectory detection plot opacity",detection_alpha))
 			outfile.write("{}\t{}\n".format("Selection density",selection_density))
@@ -314,10 +320,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
 		try:
-			with open ("spatiotemporal_gui.defaults","r") as infile:
-				print ("Loading GUI settings from spatiotemporal_gui.defaults...")
+			with open ("stic_gui.defaults","r") as infile:
+				print ("Loading GUI settings from stic_gui.defaults...")
 				defaultdict = {}
 				for line in infile:
 					spl = line.split("\t")
@@ -388,7 +394,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if auto_metric == "True":
 				auto_metric = True
 			if auto_metric == "False":
-				auto_metric = False				
+				auto_metric = False	
+			plotxmin=""
+			plotxmax=""
+			plotymin=""
+			plotymax=""				
 		except:
 			print ("Settings could not be loaded")
 		return
@@ -422,7 +432,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=False)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)		
 			window.Element("-SAVEANALYSES-").update(button_color=("white","#111111"),disabled=False)
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-"]:
 				window.Element(buttonkey).update(disabled=False)
 		else:  
 			window.Element("-DISPLAYBUTTON-").update(button_color=("white","gray"),disabled=True)
@@ -431,7 +441,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=True)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=True)
 			window.Element("-SAVEANALYSES-").update(button_color=("white","gray"),disabled=True)		
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-"]:
 				window.Element(buttonkey).update(disabled=True)	
 		window.Element("-TRAJPROB-").update(traj_prob)
 		window.Element("-DETECTIONALPHA-").update(detection_alpha)	
@@ -466,11 +476,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-SAVEFOLDER-").update(savefolder)
 		window.Element("-RADIUSTHRESH-").update(radius_thresh)
 		window.Element("-AUTOMETRIC-").update(auto_metric)
+		window.Element("-PLOTXMIN-").update(plotxmin)
+		window.Element("-PLOTXMAX-").update(plotxmax)
+		window.Element("-PLOTYMIN-").update(plotymin)
+		window.Element("-PLOTYMAX-").update(plotymax)		
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -560,7 +574,25 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			try:
 				centroid_color = defaultdict["Centroid color"]
 			except:	
-				centroid_color = "white"		
+				centroid_color = "white"
+		try:
+			plotxmin = float(plotxmin)
+		except:
+			plotxmin = ""	
+		try:
+			plotxmax = float(plotxmax)
+		except:
+			plotxmax = ""	
+		try:
+			plotymin = float(plotymin)
+		except:
+			plotymin = ""	
+		try:
+			plotymax = float(plotymax)
+		except:
+			plotymax = ""				
+
+				
 		return
 
 	# GET DIMENSIONS OF ZOOM
@@ -635,15 +667,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			
 		# Get the hull of the points inside the hull
 		int_points = np.array([x for x in all_points if x not in ext_points])
-		if len(int_points) > 2:
+		try:
 			int_hull = ConvexHull(int_points)
 			int_area = int_hull.volume
 			vertices = int_hull.vertices
 			vertices = np.append(vertices,vertices[0])
 			int_x = [int_points[vertex][0] for vertex in vertices]
 			int_y = [int_points[vertex][1] for vertex in vertices]
-		else:
-			int_x,int_y,int_area = [],[],0
+		except:
+			int_x,int_y,int_area = ext_x,ext_y,ext_area
 		return ext_x,ext_y,ext_area,int_x,int_y,int_area
 
 	# DISTILL OVERLAPPING LISTS	
@@ -708,13 +740,18 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		lastfile = "" # Force the program to load a fresh TRXYT
 		seldict = {} # Selected trajectories and metrics
 		clusterdict = {} # Cluster information
-		try:
-			plt.close(1)
-			plt.close(2)
-			plt.close(3)
-			plt.close(4)
-		except:
+		for i in [1,2,3,4,5,6,7,8,9,10]:
+			try:
+				plt.close(i)
+			except:
+				pass
+		try:	
+			ax0.unshare_x_axes(ax8)	
+			ax0.unshare_y_axes(ax8)	
+			print ("Unsharing")
+		except: 
 			pass
+	
 		if infilename != lastfile:
 			# Read file into dictionary
 			lastfile=infilename
@@ -978,10 +1015,22 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# DISPLAY CLUSTERED DATA TAB
 	def	display_tab(xlims,ylims):
-		global buf0,plotflag
+		global buf0,plotflag,plotxmin,plotymin,plotxmax,plotymax
 		print ("Plotting clustered trajectories...")
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
+
+		# User zoom
+		if plotxmin !="" and plotxmax !="" and plotymin !="" and plotymax !="":
+			xlims = [plotxmin,plotxmax]
+			ylims = [plotymin,plotymax]
+		
+		# Reset zoom	
+		if plotxmin ==0.0 and plotxmax ==0.0 and plotymin ==0.0 and plotymax ==0.0:	
+			xlims =	[min(x_plot),max(x_plot)]
+			ylims =	[min(y_plot),max(y_plot)]
+		plotxmin,plotxmax,plotymin,plotymax="","","",""			
+
 		ax0.cla()
 		ax0.set_facecolor(canvas_color)
 		xcent = []
@@ -1071,7 +1120,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4
+		global buf0, buf1, buf2, buf3, buf4, buf5
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1212,7 +1261,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax4.plot(logdistances,intercluster_times,c="green")
 			ax4.set_xlabel(u"Distance (nm)")
 			ax4.set_ylabel("Time (s)")
-			ax4.set_title("Intercluster time")
+			ax4.set_title("Hotspot intercluster time")
 			ax4.axvline(av_radius*1000,linewidth=1.5,linestyle="dotted",c="k")
 			ax4.axvline(1,linewidth=1.5,linestyle="dotted",c="k")
 			ax4.set_ylim(0,)
@@ -1231,7 +1280,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax5.set_xlabel("Acq. time (s)")
 			ax5.set_ylabel(u"Clusters/μm²")
 			ax5.set_title("Cluster number")
-			ax5.set_ylim(0,1)
+			#ax5.set_ylim(0,1)
 			
 			plt.tight_layout()
 			fig2.canvas.set_window_title('Overlap metrics')
@@ -1284,7 +1333,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-M4-":	
 			print ("3D [x,y,t] plot of trajectories...")
 			t1 = time.time()
-			fig4 =plt.figure(6,figsize=(6,6))
+			fig4 =plt.figure(6,figsize=(8,8))
 			ax7 = plt.subplot(111,projection='3d')	
 			ax7.cla()
 			#ax7.set_facecolor("k")	
@@ -1328,13 +1377,56 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			pickle.dump(ax7, buf4)
 			buf4.seek(0)
 			print ("Plot completed in {} sec".format(round(t2-t1,3)))						
-			
 
+		# KDE
+		if event == "-M5-":	
+			print ("2D Kernel density estimation of all detections...")
+			t1 = time.time()
+			fig5 =plt.figure(7,figsize=(8,8))
+			#ax8 = plt.subplot(111,sharex=ax0,sharey=ax0)
+			ax8 = plt.subplot(111)				
+			ax8.cla()
+			ax8.set_facecolor("k")	
+			xlims = ax0.get_xlim()
+			ylims = ax0.get_ylim()
+			allpoints = [point[:2]  for i in seldict for point in seldict[i]["points"]] # All detection points 
+			allpoints = [i for i in allpoints if i[0] > xlims[0] and i[0] < xlims[1] and i[1] > ylims[0] and i[1] < ylims[1]] # Detection points within zoom 
+			kde_method = 0.10 # density estimation method. Larger for smaller amounts of data (0.05 - 0.15 should be ok)
+			kde_res = 0.55 # resolution of density map (0.5-0.9). Larger = higher resolution
+			x = np.array(list(zip(*allpoints))[0])
+			y = np.array(list(zip(*allpoints))[1])
+			k = gaussian_kde(np.vstack([x, y]),bw_method=kde_method)
+			xi, yi = np.mgrid[x.min():x.max():x.size**kde_res*1j,y.min():y.max():y.size**kde_res*1j]
+			zi = k(np.vstack([xi.flatten(), yi.flatten()]))
+			xy = np.vstack([x,y])
+			z = gaussian_kde(xy)(xy)
+			ax8.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=1,cmap="inferno",zorder=-100)
+			ax8.set_xlabel("X")
+			ax8.set_ylabel("Y")
+			x_perc = (xlims[1] - xlims[0])/100
+			y_perc = (ylims[1] - ylims[0])/100
+			ax8.imshow([[0,1], [0,1]], 
+			extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
+			cmap = "inferno", 
+			interpolation = 'bicubic',
+			zorder=1000)
+			ax8.set_xlim(xlims)
+			ax8.set_ylim(ylims)
+			plt.title("2D KDE")
+			plt.tight_layout()	
+			plt.show(block=False)
+			t2=time.time()
+			# Pickle
+			buf5 = io.BytesIO()
+			pickle.dump(ax8, buf5)
+			buf5.seek(0)
+			print ("Plot completed in {} sec".format(round(t2-t1,3)))	
+			
 		# Save metrics	
 		if event == "-SAVEANALYSES-":	
 			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 			outpath = os.path.dirname(infilename)
-			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_spatiotemporal_{}".format(stamp))
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_STIC_{}".format(stamp))
 			os.mkdir(outdir)
 			outfilename = "{}/metrics.tsv".format(outdir)
 			print ("Saving metrics, ROIs and all plots to {}...".format(outdir))
@@ -1345,7 +1437,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("ANALYSED:\t{}\n".format(stamp))
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
 				outfile.write("TIME THRESHOLD (s):\t{}\n".format(time_threshold))
-				outfile.write("CLUSTER THRESHOLD (s):\t{}\n".format(cluster_threshold))			
+				outfile.write("CLUSTER THRESHOLD:\t{}\n".format(cluster_threshold))			
 				outfile.write("RADIUS FACTOR:\t{}\n".format(radius_factor))
 				outfile.write("CLUSTER MAX RADIUS (um):\t{}\n".format(radius_thresh))	
 				outfile.write("SELECTION AREA (um^2):\t{}\n".format(sum(all_selareas)))
@@ -1353,9 +1445,58 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
 				outfile.write("UNCLUSTERED TRAJECTORIES:\t{}\n".format(len(unclustindices)))
 				outfile.write("TOTAL CLUSTERS:\t{}\n".format(len(clusterdict)))
-				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME\tAVG MSD\tAREA\tRADIUS\tDENSITY\tRATE\n")
+				# HOTSPOT INFO
+				radii = []
+				for cluster in clusterdict:
+					radius  = clusterdict[cluster]["radius"]
+					radii.append(radius)
+				av_radius = np.average(radii)/2
+				clustpoints = [clusterdict[i]["centroid"][:2] for i in clusterdict]
+				total = len(clustpoints)
+				overlapdict = {} # dictionary of overlapping clusters at av_radius
+				c_nums = [] # number of clusters per hotspot at av_radius
+				timediffs = [] # hotspot intercluster times at av_radius
+				labels,clusterlist = dbscan(clustpoints,av_radius,2) # does each cluster centroid any other cluster centroids within av_radius (epsilon)?
+				unclustered = [x for x in labels if x == -1] # select DBSCAN unclustered centroids	
+				p = 1 - float(len(unclustered))/total # probability of adjacent cluster centroids within dist 
+				clusterlist = [x for x in clusterlist]
+				try:
+					clusterlist.remove(-1)
+				except:
+					pass
+				for cluster in clusterlist:
+					overlapdict[cluster] = {}
+					overlapdict[cluster]["clusters"]=[]
+				for num,label in enumerate(labels):
+					if label > -1:
+						overlapdict[label]["clusters"].append(num)
+				if len(overlapdict) > 0:
+					for overlap in overlapdict:
+						clusters = overlapdict[overlap]["clusters"]
+						c_nums.append(len(clusters))
+						times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+						times.sort()
+						diffs = np.diff(times)
+						[timediffs.append(t) for t in diffs]
+				else:
+					c_nums.append(0)
+				timediffs.append(0)
+				hotspots = len(clusterlist)
+				hotspot_prob = p				
+				intercluster_time = np.average(timediffs)
+				hotspot_total = sum(c_nums)
+				hotspot_nums = np.average(c_nums)		
+				outfile.write("HOTSPOTS (CLUSTER SPATIAL OVERLAP AT 1/2 AVERAGE RADIUS):\t{}\n".format(hotspots))
+				outfile.write("TOTAL CLUSTERS IN HOTSPOTS:\t{}\n".format(hotspot_total))
+				outfile.write("AVERAGE CLUSTERS PER HOTSPOT:\t{}\n".format(hotspot_nums))
+				outfile.write("PERCENTAGE OF CLUSTERS IN HOTSPOTS:\t{}\n".format(round(100*hotspot_prob,3)))					
+
+				# INDIVIDUAL CLUSTER METRICS
+				outfile.write("\nINDIVIDUAL CLUSTER METRICS:\n")
+				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\n")
 				trajnums = []
 				lifetimes = []
+				times = []
 				av_msds = []
 				areas = []
 				radii = []
@@ -1369,19 +1510,27 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					radius = clusterdict[num]["radius"] # cluster radius um
 					density = clusterdict[num]["density"] # trajectories/um2
 					rate = clusterdict[num]["rate"] # accumulation rate (trajectories/sec)
-					outarray = [num,traj_num,lifetime,av_msd,area,radius,density,rate]
+					clusttime = clusterdict[num]["centroid"][2] # Time centroid of this cluster 
+					outarray = [num,traj_num,lifetime,av_msd,area,radius,density,rate,clusttime]
 					outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 					outfile.write(outstring + "\n")
 					trajnums.append(traj_num)
 					lifetimes.append(lifetime)
+					times.append(clusttime)
 					av_msds.append(av_msd)
 					areas.append(area)
 					radii.append(radius)
 					densities.append(density)
 					rates.append(rate)
-				outarray = ["AVG",np.average(trajnums),np.average(lifetimes),np.average(av_msds),np.average(areas),np.average(radii),np.average(densities),np.average(rates)]
+				# AVERAGE CLUSTER METRICS	
+				outarray = ["AVG",np.average(trajnums),np.average(lifetimes),np.average(av_msds),np.average(areas),np.average(radii),np.average(densities),np.average(rates),np.average(times)]
 				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 				outfile.write(outstring + "\n")	
+				# SEMS
+				outarray = ["SEM",np.std(trajnums)/math.sqrt(len(trajnums)),np.std(lifetimes)/math.sqrt(len(lifetimes)),np.std(av_msds)/math.sqrt(len(av_msds)),np.std(areas)/math.sqrt(len(areas)),np.std(radii)/math.sqrt(len(radii)),np.std(densities)/math.sqrt(len(densities)),np.std(rates)/math.sqrt(len(rates)),np.std(times)/math.sqrt(len(times))]
+				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
+				outfile.write(outstring + "\n")					
+				
 			# ROI
 			roi_file = "{}/roi_coordinates.tsv".format(outdir)
 			with open(roi_file,"w") as outfile:
@@ -1427,8 +1576,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				pass
 			try:
 				buf4.seek(0)
-				fig10=pickle.load(buf3)
+				fig10=pickle.load(buf4)
 				plt.savefig("{}/3d_trajectories.png".format(outdir),dpi=300)
+				plt.close()
+			except:
+				pass	
+			try:
+				buf5.seek(0)
+				fig10=pickle.load(buf5)
+				plt.savefig("{}/KDE.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass					
@@ -1439,13 +1595,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
 	initialdir = cwd
-	if os.path.isfile("spatiotemporal_gui.defaults"):
+	if os.path.isfile("stic_gui.defaults"):
 		load_defaults()
 	else:
 		reset_defaults()
 		save_defaults()	
 		
 	# GUI LAYOUT
+	appFont = ("Any 12")
+	sg.set_options(font=appFont)
 	sg.theme('DARKGREY11')
 	tab1_layout = [
 		[sg.FileBrowse(tooltip = "Select a TRXYT file to analyse\nEach line must only contain 4 space separated values\nTrajectory X-position Y-position Time",file_types=(("Trajectory Files", "*.trxyt"),),key="-INFILE-",initial_folder=initialdir),sg.Input("Select trajectory TRXYT file", key ="-FILENAME-",enable_events=True,size=(55,1))],
@@ -1509,7 +1667,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			])
 		],
 		[sg.B('PLOT CLUSTERED DATA',size=(25,2),button_color=("white","gray"),key ="-DISPLAYBUTTON-",disabled=True,tooltip="Plot clustered data using the above parameters.\nHit button again after changing parameters, to replot"),sg.B('SAVE PLOT',size=(25,2),button_color=("white","gray"),key ="-SAVEBUTTON-",disabled=True,tooltip = "Save plot using the above parameters in 'Export options'.\nEach time this button is pressed a new datastamped image will be saved.")],
-		[sg.Checkbox("Metrics immediately",key="-AUTOMETRIC-",default=auto_metric,tooltip ="Switch to 'Metrics' tab after plotting of clustered trajectories")]
+		[sg.T("Xmin"),sg.InputText(plotxmin,size="3",key="-PLOTXMIN-"),sg.T("Xmax"),sg.InputText(plotxmax,size="3",key="-PLOTXMAX-"),sg.T("Ymin"),sg.InputText(plotymin,size="3",key="-PLOTYMIN-"),sg.T("Ymax"),sg.InputText(plotymax,size="3",key="-PLOTYMAX-"),sg.Checkbox("Metrics immediately",key="-AUTOMETRIC-",default=auto_metric,tooltip ="Switch to 'Metrics' tab after plotting of clustered trajectories")]
 	]
 
 	tab5_layout = [
@@ -1517,6 +1675,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("Hotspot",key="-M2-",disabled=True),sg.T("Plot cluster overlap data")],
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
 		[sg.B("3D",key="-M4-",disabled=True),sg.T("X,Y,T plot of trajectories")],
+		[sg.B("KDE",key="-M5-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],		
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
 	]
 
@@ -1536,7 +1695,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			[sg.Tab("Metrics",tab5_layout)]
 			],key="-TABGROUP-")
 		],
-		[sg.ProgressBar(100, orientation='h',size=(42,20),key='-PROGBAR-')],
+		[sg.ProgressBar(100, orientation='h',size=(53,20),key='-PROGBAR-')],
 		#[sg.Output(size=(63,10))]	
 	]
 	window = sg.Window('STIC', layout)
@@ -1558,7 +1717,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	plt.rcdefaults() 
 	font = {"family" : "Arial","size": 12} 
 	matplotlib.rc('font', **font)
-	fig0 = plt.figure(0,figsize=(6,6))
+	fig0 = plt.figure(0,figsize=(8,8))
 	ax0 = plt.subplot(111)
 	# Activate selection functions
 	cid = fig0.canvas.mpl_connect('draw_event', ondraw)
@@ -1604,6 +1763,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		radius_thresh=values['-RADIUSTHRESH-']
 		cluster_fill = values['-CLUSTERFILL-']
 		auto_metric = values['-AUTOMETRIC-']
+		plotxmin = values['-PLOTXMIN-']
+		plotxmax = values['-PLOTXMAX-']
+		plotymin = values['-PLOTYMIN-']
+		plotymax = values['-PLOTYMAX-']		
 
 		# Check variables
 		check_variables()
@@ -1616,7 +1779,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		fignums = [x.num for x in matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
 		if 0 not in fignums:
 			sg.popup("Main display window closed!","Reinitialising new window","Please restart your analysis")
-			fig0 = plt.figure(0,figsize=(6,6))
+			fig0 = plt.figure(0,figsize=(8,8))
 			ax0 = plt.subplot(111)
 			# Activate selection functions
 			cid = fig0.canvas.mpl_connect('draw_event', ondraw)
@@ -1632,14 +1795,24 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			lastfile = "" # Force the program to load a fresh TRXYT
 			seldict = {} # Selected trajectories and metrics
 			clusterdict = {} # Cluster information
-			try:
-				plt.close(1)
-				plt.close(2)
-				plt.close(3)
-				plt.close(4)
+			
+			# Close any other windows
+			for i in [1,2,3,4,5,6,7,8,9,10]:
+				try:
+					plt.close(i)
+				except:
+					pass
+
+			# Unshare any shared axes
+
+			try:			
+				shared = [ax0,ax8]
+				shax = shared.get_shared_x_axes()
+				shay = shared.get_shared_y_axes()
+				shax.remove(shared)
+				shay.remove(shared)
 			except:
-				pass
-		
+				pass				
 
 		# Reset to hard coded default values
 		if event == 'Default settings':

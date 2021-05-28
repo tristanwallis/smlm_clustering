@@ -1,7 +1,7 @@
 '''
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering
 Tristan Wallis, Sophie Hou
-20210304
+20210527
 '''
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
@@ -33,16 +33,24 @@ cond_dict_1 = {}
 cond_dict_2 = {}
 
 # READ METRICS
-def read_metrics(infile):
-	metric_dict = {"CLUSTERS":{}}
+def read_metrics(infile,minradius,maxradius):
+	metric_dict = {"CLUSTERS":{},"AVG":[]}
 	with open (infile,"r") as infile:
 		for line in infile:
 			line = line.strip()
 			spl = line.split("\t")
 			try:
-				metric_dict["CLUSTERS"][int(spl[0])] = spl[1:]
+				if float(spl[5]) > minradius and float(spl[5]) < maxradius:
+					metric_dict["CLUSTERS"][int(spl[0])] = spl[1:]
 			except:
 				metric_dict[spl[0].replace(":","")] = spl[1:]
+	all_clust = [metric_dict["CLUSTERS"][x] for x in metric_dict["CLUSTERS"]]	
+	all_clust = zip(*all_clust)
+	avgs = []
+	for i in all_clust:
+		data = [float(x) for x in i]
+		avgs.append(np.average(data))	
+	metric_dict["AVG"]=avgs		
 	return metric_dict		
 
 # COMPARATIVE BAR PLOTS WITH STATS
@@ -87,6 +95,8 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	ylim = ax.get_ylim()[1]
 	plt.ylim(0,ylim*1.1)
 	plt.tight_layout()
+	
+	print ("{}: {}+/-{} | {}+/-{} p={}".format(ylabel, avgs[0],sems[0],avgs[1],sems[1],p))
 
 # NORMALIZE
 def normalize(lst):
@@ -96,10 +106,14 @@ def normalize(lst):
 
 # LAYOUT
 sg.theme('DARKGREY11')
+appFont = ("Any 12")
+sg.set_options(font=appFont)
 layout = [
 [sg.T("STIC Wrangler",font=("Any",24))],
 [sg.FolderBrowse("Browse",key="-B1-",target="-H1-",initial_folder=initialdir),sg.T("Choose directory 1",key = "-T1-",size=(20,1)),sg.T("Short:"),sg.Input("",key="-I1-",size=(10,1)),sg.T("Exclude"),sg.Combo([""] ,key="-C1-"),sg.Input("",key="-H1-",visible=False,enable_events=True)],
 [sg.FolderBrowse("Browse",key="-B2-",target="-H2-",initial_folder=initialdir),sg.T("Choose directory 2",key = "-T2-",size=(20,1)),sg.T("Short:"),sg.Input("",key="-I2-",size=(10,1)),sg.T("Exclude"),sg.Combo([""],key="-C2-"),sg.Input("",key="-H2-",visible=False,enable_events=True)],
+[sg.T("Min cluster radius (um)"),sg.Input("0",key="-M1-",enable_events=True,size=(10,1))],
+[sg.T("Max cluster radius (um)"),sg.Input("1000",key="-M2-",enable_events=True,size=(10,1))],
 [sg.B("LOAD DATA",key = "-B3-",size=(10,2),button_color=("white","gray"),disabled=True),sg.B("PLOT DATA",key = "-B4-",size=(10,2),button_color=("white","gray"),disabled=True),sg.B("HELP",key = "-B6-",size=(10,2),button_color=("white","dodgerblue")),sg.B("EXIT",key = "-B5-",size=(10,2),button_color=("white","red"))],
 #[sg.Output(size=(60,10))]
 ]
@@ -116,7 +130,7 @@ while True:
 	shortname2 = values["-I2-"]
 	exclude1 = values["-C1-"]
 	exclude2 = values["-C2-"]	
-	
+
 	# Directory stuff
 	if event == "-H1-":
 		shortdir1 = dir1.split("/")[-1]
@@ -132,6 +146,14 @@ while True:
 			cond2files = glob.glob(dir2 + '/**/metrics.tsv')	
 			combolist2 = [""]+[x for x in range(1,len(cond2files)+1)]
 			window.Element("-C2-").update(values=combolist2)
+			
+	# Cluster size filtering
+	try:
+		minradius = float(values["-M1-"])
+	except: minradius = 0
+	try:
+		maxradius = float(values["-M2-"])
+	except: maxradius = 1000	
 			
 	# Load
 	if dir1 != "" and dir2 != "" and shortname1 != "" and shortname2 != "":
@@ -152,7 +174,7 @@ while True:
 		for num,infile in enumerate(cond1files,start=1):
 			if num != exclude1:
 				infile=infile.replace("\\","/")
-				metric_dict = read_metrics(infile)
+				metric_dict = read_metrics(infile,minradius,maxradius)
 				print(num,metric_dict["TRAJECTORY FILE"][0])
 				cond_dict_1[num] = metric_dict
 				nums1.append(num)
@@ -162,7 +184,7 @@ while True:
 		for num,infile in enumerate(cond2files,start=1):
 			if num != exclude2:
 				infile=infile.replace("\\","/")
-				metric_dict = read_metrics(infile)
+				metric_dict = read_metrics(infile,minradius,maxradius)
 				print(num,metric_dict["TRAJECTORY FILE"][0])
 				cond_dict_2[num] = metric_dict
 				nums2.append(num)
@@ -199,7 +221,7 @@ while True:
 		plt.show(block=False)
 		
 		print ("Samp1 {} Samp2 {}".format(len(aggregate_1[0]),len(aggregate_2[0])))
-		
+
 		print ("Plotting average data for all samples")
 		# Average cluster data for all samples
 		average_1 = [[],[],[],[],[],[],[],[],[]]
@@ -270,7 +292,7 @@ while True:
 		plt.tight_layout()
 		fig3.canvas.set_window_title('PCA- all metrics')
 		plt.show(block=False)	
-		
+
 		'''
 		avnorm1 = [normalize(x) for x in average_1]
 		avnorm2 = [normalize(x) for x in average_2]

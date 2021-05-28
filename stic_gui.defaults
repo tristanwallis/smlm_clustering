@@ -1,0 +1,31 @@
+Trajectory probability	1
+Raw trajectory detection plot opacity	0.25
+Selection density	0
+Trajectory minimum length	8
+Trajectory maximum length	100
+Acquisition time (s)	320
+Time threshold (s)	20
+Radius factor	1.2
+Cluster threshold	3
+Canvas color	black
+Plot trajectories	True
+Plot centroids	False
+Plot clusters	True
+Plot colorbar	True
+Trajectory line width	1.5
+Trajectory line color	white
+Trajectory line opacity	0.25
+Centroid size	5
+Centroid color	white
+Centroid opacity	0.75
+Cluster fill	True
+Cluster line width	1.5
+Cluster line opacity	1
+Cluster line type	solid
+Plot save format	png
+Plot save dpi	300
+Plot background transparent	False
+Auto cluster	True
+Auto plot	True
+Cluster size screen	0.15
+Auto metric	False
