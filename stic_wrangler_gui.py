@@ -19,6 +19,8 @@ from scipy.stats import ttest_ind, ttest_ind_from_stats
 import math
 from mpl_toolkits.mplot3d import Axes3D
 from sklearn import manifold, datasets, decomposition, ensemble, random_projection
+from functools import reduce
+import datetime
 
 # INITIAL SETUP
 cwd = os.path.dirname(os.path.abspath(__file__))
@@ -97,13 +99,8 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	plt.ylim(0,ylim*1.1)
 	plt.tight_layout()
 	
-	#print ("{}: {}+/-{} | {}+/-{} p={}".format(ylabel, avgs[0],sems[0],avgs[1],sems[1],p))
-	if swarm:
-		outlist.append([ylabel,shortname1,avgs[0],sems[0],p,cond1])
-		outlist.append([ylabel,shortname2,avgs[1],sems[1],p,cond2])	
-	else:
-		outlist.append([ylabel,shortname1,avgs[0],sems[0],p])
-		outlist.append([ylabel,shortname2,avgs[1],sems[1],p])		
+	outlist.append([ylabel,shortname1,avgs[0],sems[0],p,len(cond1),reduce(lambda x, y: str(x) + "\t" + str(y), cond1)])
+	outlist.append([ylabel,shortname2,avgs[1],sems[1],p,len(cond2),reduce(lambda x, y: str(x) + "\t" + str(y), cond2)])	
 
 # NORMALIZE
 def normalize(lst):
@@ -202,6 +199,8 @@ while True:
 	if event == "-B4-":
 		print ("Plotting aggregate data for all samples")			
 		# Aggregate cluster data for all samples
+		outlist.append(["\nAGGREGATE CLUSTER DATA"])
+		outlist.append(["METRIC\tCONDITION\tAVG\tSEM\tT-TEST P\tN\tDATAPOINTS"])
 		aggregate_1 = [[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_1:
 			clusters = cond_dict_1[sample]["CLUSTERS"]
@@ -217,13 +216,13 @@ while True:
 		memb1,life1,msd1,area1,radius1,density1,rate1,time1 = aggregate_1	
 		memb2,life2,msd2,area2,radius2,density2,rate2,time2 = aggregate_2			
 		fig1 = plt.figure(figsize=(10,10))
-		barplot(1,memb1,memb2,"Membership",u"Membership (traj/cluster)",False)		
-		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime (s)",False)
-		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD (μm²)",False)
-		barplot(4,area1,area2,"Area",u"Cluster area (μm²)",False)
-		barplot(5,radius1,radius2,"Radius",u"Cluster radius (μm)",False)
-		barplot(6,density1,density2,"Density",u"Density (traj/μm²)",False)
-		barplot(7,rate1,rate2,"Rate",u"Rate (traj/s)",False)
+		barplot(1,memb1,memb2,"Membership",u"Membership \n(traj/cluster)",False)		
+		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime \n(s)",False)
+		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD \n(μm²)",False)
+		barplot(4,area1,area2,"Area",u"Cluster area \n(μm²)",False)
+		barplot(5,radius1,radius2,"Radius",u"Cluster radius \n(μm)",False)
+		barplot(6,density1,density2,"Density",u"Density in clusters \n(traj/μm²)",False)
+		barplot(7,rate1,rate2,"Rate",u"Rate \n(traj/s)",False)
 		fig1.canvas.set_window_title('Aggregate data')
 		plt.show(block=False)
 		
@@ -231,6 +230,8 @@ while True:
 
 		print ("Plotting average data for all samples")
 		# Average cluster data for all samples
+		outlist.append(["\nAVERAGE CLUSTER DATA"])
+		outlist.append(["METRIC\tCONDITION\tAVG\tSEM\tT-TEST P\tN\tDATAPOINTS"])		
 		average_1 = [[],[],[],[],[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_1:
 			averages = cond_dict_1[sample]["AVG"]
@@ -271,17 +272,17 @@ while True:
 		memb1,life1,msd1,area1,radius1,density1,rate1,time1,perc1,cldensity1,clperhotspot1,percclusthotspot1 = average_1	
 		memb2,life2,msd2,area2,radius2,density2,rate2,time2,perc2,cldensity2,clperhotspot2,percclusthotspot2 = average_2			
 		fig2 = plt.figure(figsize=(10,10))
-		barplot(1,memb1,memb2,"Membership",u"Traj./cluster",True)		
-		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime (s)",True)
-		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD (μm²)",True)
-		barplot(4,area1,area2,"Area",u"Cluster area (μm²)",True)
-		barplot(5,radius1,radius2,"Radius",u"Cluster radius (μm)",True)
-		barplot(6,density1,density2,"Density",u"(Traj./μm²)",True)
-		barplot(7,rate1,rate2,"Rate",u"Traj./s",True)
-		barplot(8,perc1,perc2,"Percentage",u"% clustered trajectories",True)
-		barplot(9,cldensity1,cldensity2,"Cluster density",u"Clusters/μm²",True)				
-		barplot(10,percclusthotspot1,percclusthotspot2,"Hotspots",u"% clusters in hotspots",True)	
-		barplot(11,clperhotspot1,clperhotspot2,"Hotspot membership",u"Clusters/hotspot",True)	
+		barplot(1,memb1,memb2,"Membership",u"Membership \n(traj/cluster)",True)		
+		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime \n(s)",True)
+		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD \n(μm²)",True)
+		barplot(4,area1,area2,"Area",u"Cluster area \n(μm²)",True)
+		barplot(5,radius1,radius2,"Radius",u"Cluster radius \n(μm)",True)
+		barplot(6,density1,density2,"Density",u"Density in clusters\n(traj/μm²)",True)
+		barplot(7,rate1,rate2,"Rate",u"Rate \n(traj/s)",True)
+		barplot(8,perc1,perc2,"Percentage",u"Clustered trajectories \n(%)",True)
+		barplot(9,cldensity1,cldensity2,"Cluster density",u"Cluster density \n(clusters/μm²)",True)				
+		barplot(10,percclusthotspot1,percclusthotspot2,"Hotspots",u"Clusters in hotspots \n(%)",True)	
+		barplot(11,clperhotspot1,clperhotspot2,"Hotspot membership",u"Hotspot membership \n(clusters/hotspot)",True)	
 		fig2.canvas.set_window_title('Average data')
 		plt.show(block=False)
 		
@@ -310,11 +311,20 @@ while True:
 		plt.tight_layout()
 		fig3.canvas.set_window_title('PCA- all metrics')
 		plt.show(block=False)
-
-		for line in outlist:
-			print (line)
 		
-
+		# WRITE OUTPUT FILE
+		stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
+		with open("stic_wrangler_output_{}.tsv".format(stamp),"w",encoding='utf8') as outfile:
+			outfile.write("STIC WRANGLER - Tristan Wallis t.wallis@uq.edu.au\n")
+			outfile.write("ANALYSED:\t{}\n".format(stamp))
+			outfile.write("{}:\t{}\n".format(shortname1,dir1))
+			outfile.write("{}:\t{}\n".format(shortname2,dir2))	
+		
+			for line in outlist:
+				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), line)
+				outstring = outstring.replace(u"μ","u").replace(u"²","^2").replace("\n","")
+				outfile.write(outstring + "\n")
+		
 	# Help
 	if event in ('-B6-'): 
 		sg.Popup("STIC WRANGLER HELP",
@@ -326,8 +336,8 @@ while True:
 		"Give each experimental condition a short name which will appear in subsequent plots",
 		"You can optionally exclude one file from each experimental condition",
 		"LOAD DATA: load the files and extract information"
-		"PLOT DATA: plot aggregate, average and PCA",
-		"Tristan Wallis, Sophie Hou 20210106")
+		"PLOT DATA: plot aggregate, average and PCA. Also saves a datestamped TSV of raw data used for plots",
+		"Tristan Wallis, Sophie Hou 20210531")
 			
 	# Exit	
 	if event in (sg.WIN_CLOSED, '-B5-'):   
