@@ -1,7 +1,7 @@
 '''
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering
 Tristan Wallis, Sophie Hou
-20210527
+20210531
 '''
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
@@ -55,7 +55,7 @@ def read_metrics(infile,minradius,maxradius):
 
 # COMPARATIVE BAR PLOTS WITH STATS
 def barplot(num,cond1,cond2,title,ylabel,swarm):
-	ax = plt.subplot(2,5,num)
+	ax = plt.subplot(3,4,num)
 	avg_cond1 = np.average(cond1)
 	avg_cond1_sem = np.std(cond1)/math.sqrt(len(cond1))	
 	avg_cond2 = np.average(cond2)
@@ -64,7 +64,7 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	avgs = [avg_cond1,avg_cond2]
 	sems = [avg_cond1_sem,avg_cond2_sem]
 	color=["orange","royalblue"]
-	ax.bar(bars, avgs, yerr=sems, align='center',color="w",edgecolor=color,linewidth=1.5, alpha=1,error_kw=dict(ecolor="k",elinewidth=1.5,antialiased=True,capsize=5,capthick=1.5,zorder=1000))
+	ax.bar(bars, avgs, yerr=sems, align='center',color=color,edgecolor=color,linewidth=1.5, alpha=1,error_kw=dict(ecolor="k",elinewidth=1.5,antialiased=True,capsize=5,capthick=1.5,zorder=1000))
 	if swarm:
 		rows = []		
 		for val in cond1:
@@ -72,7 +72,7 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 		for val in cond2:
 			rows.append({"condition":shortname2,"val":val})
 		df = pd.DataFrame(rows)
-		ax = sns.swarmplot(x="condition", y="val", data=df,alpha=0.9,size=5,order=bars,palette=color)
+		ax = sns.swarmplot(x="condition", y="val", data=df,alpha=0.9,size=5,order=bars,palette=["k","k"])
 	
 	#plt.title(title)
 	plt.ylabel(ylabel)
@@ -195,21 +195,21 @@ while True:
 	if event == "-B4-":
 		print ("Plotting aggregate data for all samples")			
 		# Aggregate cluster data for all samples
-		aggregate_1 = [[],[],[],[],[],[],[]]
+		aggregate_1 = [[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_1:
 			clusters = cond_dict_1[sample]["CLUSTERS"]
 			for cluster in clusters:
 				for num,val in enumerate(clusters[cluster]):
 					aggregate_1[num].append(float(val))
-		aggregate_2 = [[],[],[],[],[],[],[]]
+		aggregate_2 = [[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_2:
 			clusters = cond_dict_2[sample]["CLUSTERS"]
 			for cluster in clusters:
 				for num,val in enumerate(clusters[cluster]):
 					aggregate_2[num].append(float(val))
-		memb1,life1,msd1,area1,radius1,density1,rate1 = aggregate_1	
-		memb2,life2,msd2,area2,radius2,density2,rate2 = aggregate_2			
-		fig1 = plt.figure(figsize=(12,6))
+		memb1,life1,msd1,area1,radius1,density1,rate1,time1 = aggregate_1	
+		memb2,life2,msd2,area2,radius2,density2,rate2,time2 = aggregate_2			
+		fig1 = plt.figure(figsize=(10,10))
 		barplot(1,memb1,memb2,"Membership",u"Membership (traj/cluster)",False)		
 		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime (s)",False)
 		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD (μm²)",False)
@@ -224,36 +224,46 @@ while True:
 
 		print ("Plotting average data for all samples")
 		# Average cluster data for all samples
-		average_1 = [[],[],[],[],[],[],[],[],[]]
+		average_1 = [[],[],[],[],[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_1:
 			averages = cond_dict_1[sample]["AVG"]
 			clust_traj = float(cond_dict_1[sample]["CLUSTERED TRAJECTORIES"][0])
 			sel_traj = float(cond_dict_1[sample]["SELECTED TRAJECTORIES"][0])
 			clust_num = float(cond_dict_1[sample]["TOTAL CLUSTERS"][0])
-			sel_area = float(cond_dict_1[sample]["SELECTION AREA (um^2)"][0])	
+			sel_area = float(cond_dict_1[sample]["SELECTION AREA (um^2)"][0])
+			clust_hotspot = float(cond_dict_1[sample]["AVERAGE CLUSTERS PER HOTSPOT"][0])
+			perc_hotspot = float(cond_dict_1[sample]["PERCENTAGE OF CLUSTERS IN HOTSPOTS"][0])
+		
 			for num,val in enumerate(averages):
 				average_1[num].append(float(val))
 			perc_clust = 100*clust_traj/sel_traj
 			clust_density = clust_num/sel_area	
-			average_1[7].append(perc_clust)
-			average_1[8].append(clust_density)
-		average_2 = [[],[],[],[],[],[],[],[],[]]
+			average_1[8].append(perc_clust)
+			average_1[9].append(clust_density)
+			average_1[10].append(clust_hotspot)
+			average_1[11].append(perc_hotspot)			
+		average_2 = [[],[],[],[],[],[],[],[],[],[],[],[]]
 		for sample in cond_dict_2:
 			averages = cond_dict_2[sample]["AVG"]
 			clust_traj = float(cond_dict_2[sample]["CLUSTERED TRAJECTORIES"][0])
 			sel_traj = float(cond_dict_2[sample]["SELECTED TRAJECTORIES"][0])
 			clust_num = float(cond_dict_2[sample]["TOTAL CLUSTERS"][0])
-			sel_area = float(cond_dict_2[sample]["SELECTION AREA (um^2)"][0])			
+			sel_area = float(cond_dict_2[sample]["SELECTION AREA (um^2)"][0])
+			clust_hotspot = float(cond_dict_2[sample]["AVERAGE CLUSTERS PER HOTSPOT"][0])
+			perc_hotspot = float(cond_dict_2[sample]["PERCENTAGE OF CLUSTERS IN HOTSPOTS"][0])
+			
 			for num,val in enumerate(averages):
 				average_2[num].append(float(val))
 			perc_clust = 100*clust_traj/sel_traj
 			clust_density = clust_num/sel_area	
-			average_2[7].append(perc_clust)
-			average_2[8].append(clust_density)				
+			average_2[8].append(perc_clust)
+			average_2[9].append(clust_density)	
+			average_2[10].append(clust_hotspot)
+			average_2[11].append(perc_hotspot)				
 				
-		memb1,life1,msd1,area1,radius1,density1,rate1,perc1,cldensity1 = average_1	
-		memb2,life2,msd2,area2,radius2,density2,rate2,perc2,cldensity2 = average_2			
-		fig2 = plt.figure(figsize=(12,6))
+		memb1,life1,msd1,area1,radius1,density1,rate1,time1,perc1,cldensity1,clperhotspot1,percclusthotspot1 = average_1	
+		memb2,life2,msd2,area2,radius2,density2,rate2,time2,perc2,cldensity2,clperhotspot2,percclusthotspot2 = average_2			
+		fig2 = plt.figure(figsize=(10,10))
 		barplot(1,memb1,memb2,"Membership",u"Traj./cluster",True)		
 		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime (s)",True)
 		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD (μm²)",True)
@@ -262,10 +272,11 @@ while True:
 		barplot(6,density1,density2,"Density",u"(Traj./μm²)",True)
 		barplot(7,rate1,rate2,"Rate",u"Traj./s",True)
 		barplot(8,perc1,perc2,"Percentage",u"% clustered trajectories",True)
-		barplot(9,cldensity1,cldensity2,"Cluster density",u"Clusters/μm²",True)		
+		barplot(9,cldensity1,cldensity2,"Cluster density",u"Clusters/μm²",True)				
+		barplot(10,percclusthotspot1,percclusthotspot2,"Hotspots",u"% clusters in hotspots",True)	
+		barplot(11,clperhotspot1,clperhotspot2,"Hotspot membership",u"Clusters/hotspot",True)	
 		fig2.canvas.set_window_title('Average data')
 		plt.show(block=False)
-		
 		
 		# PCA
 		print ("Plotting PCA of all average metrics")
@@ -293,34 +304,6 @@ while True:
 		fig3.canvas.set_window_title('PCA- all metrics')
 		plt.show(block=False)	
 
-		'''
-		avnorm1 = [normalize(x) for x in average_1]
-		avnorm2 = [normalize(x) for x in average_2]
-		average_1 = list(zip(*avnorm1))
-		average_2 = list(zip(*avnorm2))
-		
-		mapdata_cond1 = decomposition.TruncatedSVD(n_components=3).fit_transform(average_1) 
-		mapdata_cond2 = decomposition.TruncatedSVD(n_components=3).fit_transform(average_2) 
-
-		fig3 = plt.figure(figsize=(4,4))
-		ax1 = plt.subplot(111,projection='3d')
-		ax1.scatter(mapdata_cond1[:, 0], mapdata_cond1[:, 1],mapdata_cond1[:, 2],c="orange",label=shortname1)
-		for i in range(mapdata_cond1.shape[0]):
-			ax1.text(mapdata_cond1[i, 0], mapdata_cond1[i, 1], mapdata_cond1[i, 2],str(nums1[i]),alpha=0.5)
-		ax1.scatter(mapdata_cond2[:, 0], mapdata_cond2[:, 1],mapdata_cond2[:, 2],c="royalblue",label=shortname2)
-		for i in range(mapdata_cond2.shape[0]):
-			ax1.text(mapdata_cond2[i, 0], mapdata_cond2[i, 1], mapdata_cond2[i, 2],str(nums2[i]),alpha=0.5)
-		ax1.legend()
-		ax1.set_xticks([])
-		ax1.set_yticks([])
-		ax1.set_zticks([])
-		ax1.set_xlabel('Dimension 1')
-		ax1.set_ylabel('Dimension 2')
-		ax1.set_zlabel('Dimension 3')
-		plt.tight_layout()
-		fig3.canvas.set_window_title('PCA- all metrics')
-		plt.show(block=False)	
-		'''
 	# Help
 	if event in ('-B6-'): 
 		sg.Popup("STIC WRANGLER HELP",
