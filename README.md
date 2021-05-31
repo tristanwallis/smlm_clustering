@@ -21,7 +21,7 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 Requires: Python 3.8+
 
-Modules: scipy, numpy, matplotlib, sklearn, rtree, multiprocessing, pysimplegui
+Modules: scipy, numpy, matplotlib, sklearn, rtree, multiprocessing, pysimplegui, seaborn
 
 Design and code: Tristan Wallis
 
