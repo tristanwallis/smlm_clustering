@@ -31,6 +31,7 @@ matplotlib.rc('font', **font)
 #VALS
 cond_dict_1 = {}
 cond_dict_2 = {}
+outlist = [] 
 
 # READ METRICS
 def read_metrics(infile,minradius,maxradius):
@@ -96,7 +97,13 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	plt.ylim(0,ylim*1.1)
 	plt.tight_layout()
 	
-	print ("{}: {}+/-{} | {}+/-{} p={}".format(ylabel, avgs[0],sems[0],avgs[1],sems[1],p))
+	#print ("{}: {}+/-{} | {}+/-{} p={}".format(ylabel, avgs[0],sems[0],avgs[1],sems[1],p))
+	if swarm:
+		outlist.append([ylabel,shortname1,avgs[0],sems[0],p,cond1])
+		outlist.append([ylabel,shortname2,avgs[1],sems[1],p,cond2])	
+	else:
+		outlist.append([ylabel,shortname1,avgs[0],sems[0],p])
+		outlist.append([ylabel,shortname2,avgs[1],sems[1],p])		
 
 # NORMALIZE
 def normalize(lst):
@@ -302,7 +309,11 @@ while True:
 		ax1.set_zlabel('Dimension 3')
 		plt.tight_layout()
 		fig3.canvas.set_window_title('PCA- all metrics')
-		plt.show(block=False)	
+		plt.show(block=False)
+
+		for line in outlist:
+			print (line)
+		
 
 	# Help
 	if event in ('-B6-'): 
