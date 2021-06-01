@@ -6,13 +6,13 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * segstic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
 
-* stic_wrangler_gui.py: meta analysis of output from stic_gui and segstic_gui
+* stic_wrangler_gui.py: meta analysis of output from stic_gui.py and segstic_gui.py
 
 * dbscan_gui.py: cluster using DBSCAN of trajectory centroids
 
 * voronoi_gui.py: cluster using Voronoi tesselation of trajectory centroids
 
-* dbscan_wrangler.py: meta analysis of output from dbscan_gui and voronoi_gui.py
+* dbscan_wrangler.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
 
 * synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 
