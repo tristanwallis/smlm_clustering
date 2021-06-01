@@ -1,8 +1,9 @@
 '''
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering
 Tristan Wallis, Sophie Hou
-20210531
 '''
+last_changed = 20210531
+
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
 popup = sg.Window("Initialising...",[[sg.T("STIC Wrangler initialising\nLots of modules...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
@@ -121,7 +122,7 @@ layout = [
 [sg.B("LOAD DATA",key = "-B3-",size=(10,2),button_color=("white","gray"),disabled=True),sg.B("PLOT DATA",key = "-B4-",size=(10,2),button_color=("white","gray"),disabled=True),sg.B("HELP",key = "-B6-",size=(10,2),button_color=("white","dodgerblue")),sg.B("EXIT",key = "-B5-",size=(10,2),button_color=("white","red"))],
 #[sg.Output(size=(60,10))]
 ]
-window = sg.Window("STIC Wrangler",layout)
+window = sg.Window("STIC Wrangler {}".format(last_changed),layout)
 popup.close()
 
 # MAIN LOOP

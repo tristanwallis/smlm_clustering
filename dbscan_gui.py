@@ -1335,7 +1335,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.ProgressBar(100, orientation='h',size=(53,20),key='-PROGBAR-')],
 		#[sg.Output(size=(64,10))]	
 	]
-	window = sg.Window('DBSCAN Clustering', layout)
+	window = sg.Window('DBSCAN Clustering v{}'.format(last_changed), layout)
 	popup.close()
 
 	# VARS
