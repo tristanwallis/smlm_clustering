@@ -1066,7 +1066,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if plot_trajectories:
 					for idx in indices:
 						x,y,t=zip(*seldict[idx]["points"])
-						alpha = line_alpha*5
+						alpha = line_alpha*2
 						if alpha > 1:
 							alpha = 1
 						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=alpha,linewidth=line_width)

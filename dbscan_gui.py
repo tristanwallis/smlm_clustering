@@ -30,7 +30,7 @@ The script will fork to multiple CPU cores for the heavy number crunching routin
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
 '''
 
-last_changed = "20210528"
+last_changed = "20210602"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1012,7 +1012,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if plot_trajectories:
 					for idx in indices:
 						x,y,t=zip(*seldict[idx]["points"])
-						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=line_alpha*3,linewidth=line_width)
+						alpha = line_alpha*2
+						if alpha > 1:
+							alpha = 1
+						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=alpha,linewidth=line_width)
 						ax0.add_artist(tr) 
 				if plot_clusters:
 					if cluster > -1:
