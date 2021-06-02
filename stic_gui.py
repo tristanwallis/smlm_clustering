@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210528"
+last_changed = "20210602"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1066,7 +1066,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if plot_trajectories:
 					for idx in indices:
 						x,y,t=zip(*seldict[idx]["points"])
-						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=line_alpha*5,linewidth=line_width)
+						alpha = line_alpha*5
+						if alpha > 1:
+							alpha = 1
+						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=alpha,linewidth=line_width)
 						ax0.add_artist(tr) 
 				if plot_clusters:
 					cx,cy,ct = clusterdict[cluster]["centroid"]
