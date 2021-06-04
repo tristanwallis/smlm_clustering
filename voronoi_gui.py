@@ -30,7 +30,7 @@ The script will fork to multiple CPU cores for the heavy number crunching routin
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
 '''
 
-last_changed = "20210602"
+last_changed = "20210604"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -242,7 +242,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("Using default GUI settings...")
 		global traj_prob,detection_alpha,minlength,maxlength,voronoi_threshold,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
 		traj_prob = 1
-		detection_alpha = 0.25
+		detection_alpha = 0.1
 		selection_density = 0
 		minlength = 8
 		maxlength = 100
@@ -262,7 +262,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		cluster_alpha = 1	
 		cluster_linetype = "solid"	
 		cluster_color = "orange"
-		cluster_fill = True		
+		cluster_fill = False		
 		saveformat = "png"
 		savedpi = 300	
 		savetransparency = False
@@ -745,11 +745,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.close(2)
 		except:
 			pass
+		'''	
+		# This bit can cause problems with drift corrected data from Matlab which incorrectly converts trajectory numbers > 99999. Eg 102103 to 1.0210e+05, 102104 to 10210e+05
 		if infilename != lastfile:
 			# Read file into dictionary
-			t1 = time.time()
 			lastfile=infilename
-			print("Loading raw trajectory data from {}...".format(infilename)),
+			print("Loading raw trajectory data from {}...".format(infilename))
+			t1=time.time()
 			rawtrajdict = {}
 			with open (infilename,"r") as infile:
 				for line in infile:
@@ -767,6 +769,36 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					except:
 						pass
 			print("{} trajectories".format(len(rawtrajdict)))		
+		'''
+		if infilename != lastfile:
+			# Read file into dictionary
+			lastfile=infilename
+			print("Loading raw trajectory data from {}...".format(infilename))
+			t1=time.time()
+			rawtrajdict = {}
+			ct = 0
+			x0 = -10000
+			y0 = -10000
+			with open (infilename,"r") as infile:
+				for line in infile:
+					try:
+						line = line.replace("\n","").replace("\r","")
+						spl = line.split(" ")
+						x = float(spl[1])
+						y = float(spl[2])
+						t = float(spl[3])
+						if abs(x-x0) < 0.32 and abs(y -y0) < 0.32:
+							rawtrajdict[ct]["points"].append([x,y,t])
+							x0 = x
+							y0=y
+						else:
+							ct += 1
+							rawtrajdict[ct]= {"points":[[x,y,t]]}	
+							x0 = x
+							y0=y
+					except:
+						pass
+			print("{} trajectories".format(len(rawtrajdict)))			
 		
 		# Don't bother with anything else if there's no trajectories				
 		if len(rawtrajdict) == 0:
@@ -916,7 +948,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),round(t2-t1,3)))
 			density = float(len(sel_traj)/sum(all_selareas))		
 			print ("{} trajectories/um^2".format(round(density,2)))
-
+			window.Element("-DENSITY-").update(round(density,2))
 			window["-TABGROUP-"].Widget.select(2)
 			if autocluster:
 				cluster_tab()
