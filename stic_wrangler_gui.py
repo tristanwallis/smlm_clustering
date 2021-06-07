@@ -108,7 +108,6 @@ def normalize(lst):
     s = sum(lst)
     return map(lambda x: float(x)/s, lst)	
 	
-
 # LAYOUT
 sg.theme('DARKGREY11')
 appFont = ("Any 12")
@@ -316,7 +315,7 @@ while True:
 		# WRITE OUTPUT FILE
 		stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 		with open("stic_wrangler_output_{}.tsv".format(stamp),"w",encoding='utf8') as outfile:
-			outfile.write("STIC WRANGLER - Tristan Wallis t.wallis@uq.edu.au\n")
+			outfile.write("STIC / SEGSTIC WRANGLER - Tristan Wallis t.wallis@uq.edu.au\n")
 			outfile.write("ANALYSED:\t{}\n".format(stamp))
 			outfile.write("{}:\t{}\n".format(shortname1,dir1))
 			outfile.write("{}:\t{}\n".format(shortname2,dir2))	
@@ -329,7 +328,7 @@ while True:
 	# Help
 	if event in ('-B6-'): 
 		sg.Popup("STIC WRANGLER HELP",
-		"This program allows visualising of the metrics.tsv files produced by Spatio Temporal Indexing Clustering. Comparison bar plots for each metric and statisitical significance (t-test) are shown.",
+		"This program allows visualising of the metrics.tsv files produced by STIC and SEGSTIC. Comparison bar plots for each metric and statisitical significance (t-test) are shown.",
 		"Aggregate data: aggregates individual cluster metrics across all samples. N = total number of clusters",
 		"Average data: aggregrates the averaged cluster metrics for each sample. N = number of samples"	,
 		"3D PCA analysis allows you to determine the overall relationships between samples",  	
