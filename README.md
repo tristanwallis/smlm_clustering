@@ -16,6 +16,8 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 
+* stic_user_manual.pdf: detailed instructions for stic_gui.py
+
 
 ### About
 
