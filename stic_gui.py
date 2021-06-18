@@ -1760,7 +1760,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	layout = [
 		[sg.Menu(menu_def)],
-		[sg.T('STIC MSD FILTER VERSION',font="Any 20")],
+		[sg.T('STIC',font="Any 20")],
 		[sg.TabGroup([
 			[sg.Tab("File",tab1_layout)],
 			[sg.Tab("ROI",tab2_layout)],
