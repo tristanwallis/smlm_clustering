@@ -2,7 +2,7 @@
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering
 Tristan Wallis, Sophie Hou
 '''
-last_changed = 20210531
+last_changed = 20210618
 
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
@@ -105,8 +105,9 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 
 # NORMALIZE
 def normalize(lst):
-    s = sum(lst)
-    return map(lambda x: float(x)/s, lst)	
+	lst = [x + 0.00000001 for x in lst] # wont spaz out if all zeros
+	s = sum(lst)
+	return map(lambda x: float(x)/s, lst)	
 	
 # LAYOUT
 sg.theme('DARKGREY11')

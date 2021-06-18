@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210607"
+last_changed = "20210618"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -243,9 +243,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
 		traj_prob = 1
-		detection_alpha = 0.25
+		detection_alpha = 0.05
 		selection_density = 0
 		minlength = 8
 		maxlength = 100
@@ -267,7 +267,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		cluster_width = 1.5	
 		cluster_alpha = 1	
 		cluster_linetype = "solid"
-		cluster_fill = True	
+		cluster_fill = False	
 		saveformat = "png"
 		savedpi = 300	
 		savetransparency = False
@@ -279,6 +279,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmax=""
 		plotymin=""
 		plotymax=""
+		msd_filter = False
 		return 
 
 	# SAVE SETTINGS
@@ -315,12 +316,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
 			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))	
-			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))			
+			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))	
+			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))	
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
 		try:
 			with open ("stic_gui.defaults","r") as infile:
 				print ("Loading GUI settings from stic_gui.defaults...")
@@ -398,7 +400,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plotxmin=""
 			plotxmax=""
 			plotymin=""
-			plotymax=""				
+			plotymax=""	
+			msd_filter = defaultdict["MSD filter"]
+			if msd_filter == "True":
+				msd_filter = True
+			if msd_filter == "False":
+				msd_filter = False	
+			
 		except:
 			print ("Settings could not be loaded")
 		return
@@ -479,7 +487,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTXMIN-").update(plotxmin)
 		window.Element("-PLOTXMAX-").update(plotxmax)
 		window.Element("-PLOTYMIN-").update(plotymin)
-		window.Element("-PLOTYMAX-").update(plotymax)		
+		window.Element("-PLOTYMAX-").update(plotymax)
+		window.Element("-MSDFILTER-").update(msd_filter)		
 		return	
 		
 	# CHECK VARIABLES
@@ -697,14 +706,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		return distilled
 
 	# FIND TRAJECTORIES WHOSE BOUNDING BOXES OVERLAP IN SPACE AND TIME	
-	def trajectory_overlap(indices,time_threshold):
+	def trajectory_overlap(indices,time_threshold,av_msd):
 		# Create and populate 3D r-tree
 		p = index.Property()
 		p.dimension=3
 		idx_3d = index.Index(properties=p)
 		intree = []
 		for idx in indices:
-			if seldict[idx]["msds"][0] < 10: # you can potentially screen by MSD
+			if seldict[idx]["msds"][0] < av_msd: # you can potentially screen by MSD
 				idx_3d.insert(idx,seldict[idx]["bounding_box"])
 				intree.append(idx)
 		# Query the r-tree
@@ -981,7 +990,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CLUSTERING TAB	
 	def cluster_tab():
-		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters
+		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,av_msd
 
 		# Dictionary of selected trajectories
 		print ("Generating bounding boxes of selected trajectories...")	
@@ -989,7 +998,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		sel_centroids = []
 		t1=time.time()
 		allpoints = [[trajdict[traj]["points"],minlength,radius_factor,trajdict[traj]["centroid"]] for traj in sel_traj]
-		allmetrics = multi(allpoints)
+		allmetrics = multi(allpoints) # fork these calculations onto all cores
+		all_msds = []
 		for num,metrics in enumerate(allmetrics):
 			if num%10 == 0:
 				bar = 100*num/(len(allmetrics)-10)
@@ -998,19 +1008,28 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			points,msds,area,radius,bbox,centroid = metrics
 			seldict[num]["points"]=points
 			seldict[num]["msds"]=msds
+			all_msds.append(msds[0])	
 			seldict[num]["area"]=area
 			seldict[num]["radius"]=radius
 			seldict[num]["bounding_box"]=bbox
 			seldict[num]["centroid"]=centroid
 			sel_centroids.append(centroid)
 		t2=time.time()
-		print ("{} bounding boxes generated in {} sec".format(len(allmetrics),round(t2-t1,3)))
+		print ("{} bounding boxes generated in {} sec".format(len(allmetrics),round(t2-t1,3)))	
+		
+		# Screen on MSD
+		if msd_filter:
+			print ("Calculating average MSD...")
+			#all_msds = [x if x == x else 0 for x in all_msds]
+			av_msd = np.average(all_msds)
+		else:
+			av_msd = 10000 # no molecule except in an intergalactic gas cloud has an MSD this big
 		
 		# Determine overlapping trajectories
 		print ("Clustering selected trajectories...")
 		indices = range(len(seldict))
 		t1 = time.time()
-		spatial_clusters =  trajectory_overlap(indices,time_threshold)
+		spatial_clusters =  trajectory_overlap(indices,time_threshold,av_msd)
 		t2 = time.time()
 		print ("{} trajectories clustered in {} sec".format(len(seldict),round(t2-t1,3)))
 		
@@ -1170,7 +1189,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5
+		global buf0, buf1, buf2, buf3, buf4, buf5,av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1487,6 +1506,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("TIME THRESHOLD (s):\t{}\n".format(time_threshold))
 				outfile.write("CLUSTER THRESHOLD:\t{}\n".format(cluster_threshold))			
 				outfile.write("RADIUS FACTOR:\t{}\n".format(radius_factor))
+				if msd_filter:
+					outfile.write("MSD FILTER THRESHOLD (um^2):\t{}\n".format(av_msd))
+				else:
+					outfile.write("MSD FILTER THRESHOLD (um^2):\tNone\n")
 				outfile.write("CLUSTER MAX RADIUS (um):\t{}\n".format(radius_thresh))	
 				outfile.write("SELECTION AREA (um^2):\t{}\n".format(sum(all_selareas)))
 				outfile.write("SELECTED TRAJECTORIES:\t{}\n".format(len(allindices)))
@@ -1680,6 +1703,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.T('Radius factor:',tooltip = "Adjust the radius around each centroid\n to check for overlap"),sg.InputText(radius_factor,size="50",key="-RADIUSFACTOR-")],	
 		[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectories"),sg.InputText(cluster_threshold,size="50",key="-CLUSTERTHRESHOLD-")],
 		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+		[sg.Checkbox('MSD screen',tooltip = "Don't analyse trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 
@@ -1736,7 +1760,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	layout = [
 		[sg.Menu(menu_def)],
-		[sg.T('STIC',font="Any 20")],
+		[sg.T('STIC MSD FILTER VERSION',font="Any 20")],
 		[sg.TabGroup([
 			[sg.Tab("File",tab1_layout)],
 			[sg.Tab("ROI",tab2_layout)],
@@ -1816,7 +1840,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmin = values['-PLOTXMIN-']
 		plotxmax = values['-PLOTXMAX-']
 		plotymin = values['-PLOTYMIN-']
-		plotymax = values['-PLOTYMAX-']		
+		plotymax = values['-PLOTYMAX-']	
+		msd_filter = values['-MSDFILTER-']		
 
 		# Check variables
 		check_variables()
