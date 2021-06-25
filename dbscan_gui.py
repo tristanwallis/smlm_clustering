@@ -9,7 +9,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib sklearn multiprocessing pysimplegui
+python -m pip install scipy numpy matplotlib scikit-learn pysimplegui
 
 INPUT:
 TRXYT trajectory files from Matlab
@@ -30,7 +30,7 @@ The script will fork to multiple CPU cores for the heavy number crunching routin
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
 '''
 
-last_changed = "20210607"
+last_changed = "20210627"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -692,11 +692,58 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		lastfile = "" # Force the program to load a fresh TRXYT
 		seldict = {} # Selected trajectories and metrics
 		clusterdict = {} # Cluster information
+		# Close open windows
 		for i in [1,2,3,4,5,6,7,8,9,10]:
 			try:
 				plt.close(i)
 			except:
 				pass
+
+		# Close all buffers		
+		try:
+			buf0.close()
+		except:
+			pass	
+		try:
+			buf1.close()
+		except:
+			pass	
+		try:
+			buf2.close()
+		except:
+			pass	
+		try:
+			buf3.close()
+		except:
+			pass	
+		try:
+			buf4.close()
+		except:
+			pass	
+		try:
+			buf5.close()
+		except:
+			pass	
+		try:
+			buf6.close()
+		except:
+			pass	
+		try:
+			buf7.close()
+		except:
+			pass	
+		try:
+			buf8.close()
+		except:
+			pass
+		try:
+			buf9.close()
+		except:
+			pass	
+		try:
+			buf10.close()
+		except:
+			pass	
 		'''
 		IMPORTANT: It appears that some matlab processing of trajectory data converts trajectory numbers > 99999 into scientific notation with insufficient decimal points. eg 102103 to 1.0210e+05, 102104 to 1.0210e+05. This can cause multiple trajectories to be incorrectly merged intoa  single trajectory.
 		For trajectories > 99999 we empirically determine whether detections are within 0.32u of each other, and assign them into a single trajectory accordingly. For trajectories <99999 we honour the existing trajectory number.

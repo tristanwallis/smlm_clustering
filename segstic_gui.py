@@ -9,7 +9,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib sklearn rtree multiprocessing pysimplegui
+python -m pip install scipy numpy matplotlib scikit-learn rtree pysimplegui
 
 INPUT:
 TRXYT trajectory files from Matlab
@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210604"
+last_changed = "20210627"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -402,10 +402,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		else:
 			window.Element("-PLOTBUTTON-").update(button_color=("white","gray"),disabled=True)	
 		if len(trajdict) > 0:
-			for buttonkey in ["-R1-","-R2-","-R3-","-R4-","-R5-","-R6-"]:
+			for buttonkey in ["-R1-","-R2-","-R3-","-R4-","-R5-","-R6-","-R7-","-R8-"]:
 				window.Element(buttonkey).update(disabled=False)
 		else:
-			for buttonkey in ["-R1-","-R2-","-R3-","-R4-","-R5-","-R6-"]:
+			for buttonkey in ["-R1-","-R2-","-R3-","-R4-","-R5-","-R6-","-R7-","-R8-"]:
 				window.Element(buttonkey).update(disabled=True)	
 		if len(roi_list) > 0:  
 			window.Element("-SELECTBUTTON-").update(button_color=("white","#111111"),disabled=False)
@@ -730,19 +730,74 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		lastfile = "" # Force the program to load a fresh TRXYT
 		seldict = {} # Selected trajectories and metrics
 		clusterdict = {} # Cluster information
+		
+		# Close open windows
 		for i in [1,2,3,4,5,6,7,8,9,10]:
 			try:
 				plt.close(i)
 			except:
 				pass
-		'''	
-		# This bit can cause problems with drift corrected data from Matlab which incorrectly converts trajectory numbers > 99999. Eg 102103 to 1.0210e+05, 102104 to 10210e+05
+
+		# Close all buffers		
+		try:
+			buf0.close()
+		except:
+			pass	
+		try:
+			buf1.close()
+		except:
+			pass	
+		try:
+			buf2.close()
+		except:
+			pass	
+		try:
+			buf3.close()
+		except:
+			pass	
+		try:
+			buf4.close()
+		except:
+			pass	
+		try:
+			buf5.close()
+		except:
+			pass	
+		try:
+			buf6.close()
+		except:
+			pass	
+		try:
+			buf7.close()
+		except:
+			pass	
+		try:
+			buf8.close()
+		except:
+			pass
+		try:
+			buf9.close()
+		except:
+			pass	
+		try:
+			buf10.close()
+		except:
+			pass				
+								
+				
+		'''
+		IMPORTANT: It appears that some matlab processing of trajectory data converts trajectory numbers > 99999 into scientific notation with insufficient decimal points. eg 102103 to 1.0210e+05, 102104 to 1.0210e+05. This can cause multiple trajectories to be incorrectly merged into a  single trajectory.
+		For trajectories > 99999 we empirically determine whether detections are within 0.32u of each other, and assign them into a single trajectory accordingly. For trajectories <99999 we honour the existing trajectory number.
+		'''		
 		if infilename != lastfile:
 			# Read file into dictionary
 			lastfile=infilename
 			print("Loading raw trajectory data from {}...".format(infilename))
 			t1=time.time()
 			rawtrajdict = {}
+			ct = 99999
+			x0 = -10000
+			y0 = -10000
 			with open (infilename,"r") as infile:
 				for line in infile:
 					try:
@@ -752,40 +807,22 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						x = float(spl[1])
 						y = float(spl[2])
 						t = float(spl[3])
-						try:
-							rawtrajdict[n]["points"].append([x,y,t])
-						except:
-							rawtrajdict[n]= {"points":[[x,y,t]]}	
-					except:
-						pass
-			print("{} trajectories".format(len(rawtrajdict)))		
-		'''
-		if infilename != lastfile:
-			# Read file into dictionary
-			lastfile=infilename
-			print("Loading raw trajectory data from {}...".format(infilename))
-			t1=time.time()
-			rawtrajdict = {}
-			ct = 0
-			x0 = -10000
-			y0 = -10000
-			with open (infilename,"r") as infile:
-				for line in infile:
-					try:
-						line = line.replace("\n","").replace("\r","")
-						spl = line.split(" ")
-						x = float(spl[1])
-						y = float(spl[2])
-						t = float(spl[3])
-						if abs(x-x0) < 0.32 and abs(y -y0) < 0.32:
-							rawtrajdict[ct]["points"].append([x,y,t])
-							x0 = x
-							y0=y
+						if n > 99999:
+							if abs(x-x0) < 0.32 and abs(y-y0) < 0.32:
+								rawtrajdict[ct]["points"].append([x,y,t])
+								x0 = x
+								y0= y
+							else:
+								ct += 1
+								rawtrajdict[ct]= {"points":[[x,y,t]]}	
+								x0 = x
+								y0=y
 						else:
-							ct += 1
-							rawtrajdict[ct]= {"points":[[x,y,t]]}	
-							x0 = x
-							y0=y
+							try:
+								rawtrajdict[n]["points"].append([x,y,t])
+							except:
+								rawtrajdict[n]= {"points":[[x,y,t]]}
+								
 					except:
 						pass
 			print("{} trajectories".format(len(rawtrajdict)))			
@@ -846,14 +883,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# ROI SELECTION TAB
 	def roi_tab():
-		global selverts,all_selverts,all_selareas,roi_list,trajdict,sel_traj,sel_centroids,all_selverts_copy
+		global selverts,all_selverts,all_selareas,roi_list,trajdict,sel_traj,sel_centroids,all_selverts_copy,all_selverts_bak
 
 		# Load and apply ROIs	
 		if event ==	"-R2-" and roi_file != "Load previously defined ROIs":
+			all_selverts_bak = [x for x in all_selverts]
 			roidict = read_roi()
 
 		# Clear all ROIs
 		if event ==	"-R3-" and len(roi_list) > 0:
+			all_selverts_bak = [x for x in all_selverts]
 			for roi in roi_list:
 				roi.remove()
 			roi_list = []			
@@ -864,6 +903,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		# Remove last added ROI
 		if event ==	"-R6-" and len(roi_list) > 0:
+			all_selverts_bak = [x for x in all_selverts]
 			roi_list[-1].remove()
 			roi_list.pop(-1)	
 			all_selverts.pop(-1)
@@ -872,6 +912,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		# Add ROI encompassing all detections	
 		if event ==	"-R4-":
+			all_selverts_bak = [x for x in all_selverts]
 			for roi in roi_list:
 				roi.remove()
 			roi_list = list()
@@ -885,8 +926,31 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			
 		# Add current ROI	
 		if event ==	"-R5-" and len(selverts) > 3:
+			all_selverts_bak = [x for x in all_selverts]
 			if selverts[0][0] != xlims[0] and selverts[0][1] != ylims[0]: # don't add entire plot
 				use_roi(selverts,"orange")
+				
+		# Undo last ROI change	
+		if event ==	"-R7-" and len(all_selverts_bak) > 0:
+			if len(roi_list) > 0:
+				for roi in roi_list:
+					roi.remove()
+			roi_list = list()
+			plt.show(block=False)	
+			all_selverts = []	
+			for selverts in all_selverts_bak:
+				use_roi(selverts,"orange")
+				
+		# Save current ROIs	
+		if event ==	"-R8-" and len(all_selverts) > 0:
+			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
+			roi_save = "{}_roi_coordinates.tsv".format(stamp)
+			with open(roi_save,"w") as outfile:
+				outfile.write("ROI\tx(um)\ty(um)\n")
+				for roi,selverts in enumerate(all_selverts):
+					for coord in selverts:
+						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+			print ("Current ROIs saved as {}_roi_coordinates.tsv".format(stamp))			
 
 		# Select trajectories within ROIs			
 		if event ==	"-SELECTBUTTON-" and len(roi_list) > 0:	
@@ -917,6 +981,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				miny=min(sely)
 				maxy=max(sely)	
 				pointarray = [i for i in all_centroids if i[0] > minx and i[0] < maxx and i[1] > miny and i[1] < maxy] # pre screen for centroids in selection bounding box
+				
 				p = path.Path(selverts)
 				pointarray = [i for i in pointarray if p.contains_point(i)] # screen for presecreened centroids actually within selection
 				selarea =PolyArea(list(zip(*selverts))[0],list(zip(*selverts))[1])
@@ -928,6 +993,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if selection_density > 0:
 				thresh = selection_density/density
 				sel_traj =[i for i in sel_traj if random.random()< thresh]
+		
 			all_selverts_copy = [x for x in all_selverts]
 			all_selverts = []
 			for roi in roi_list:
@@ -937,7 +1003,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				use_roi(selverts,"green")
 			window['-PROGBAR-'].update_bar(0)	
 			t2=time.time()
-			print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),round(t2-t1,3)))
+			print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),t2-t1))
 			density = float(len(sel_traj)/sum(all_selareas))		
 			print ("{} trajectories/um^2".format(round(density,2)))
 			window.Element("-DENSITY-").update(round(density,2))
@@ -1497,8 +1563,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			k = gaussian_kde(np.vstack([x, y]),bw_method=kde_method)
 			xi, yi = np.mgrid[x.min():x.max():x.size**kde_res*1j,y.min():y.max():y.size**kde_res*1j]
 			zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-			xy = np.vstack([x,y])
-			z = gaussian_kde(xy)(xy)
 			ax9.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=1,cmap="inferno",zorder=-100)
 			ax9.set_xlabel("X")
 			ax9.set_ylabel("Y")
@@ -1727,10 +1791,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	tab2_layout = [
 		[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv"),),key="-R1-",target="-R2-",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True)],
+		[sg.B("Save",key="-R8-",disabled=True),sg.T("Save currently defined ROIs")],
 		[sg.B("Clear",key="-R3-",disabled=True),sg.T("Clear all ROIs")],	
 		[sg.B("All",key="-R4-",disabled=True),sg.T("ROI encompassing all detections")],
 		[sg.B("Add",key="-R5-",disabled=True),sg.T("Add selected ROI")],
 		[sg.B("Remove",key="-R6-",disabled=True),sg.T("Remove last added ROI")],
+		[sg.B("Undo",key="-R7-",disabled=True),sg.T("Undo last change")],
 		[sg.T('Selection density:',tooltip = "Screen out random trajectories to maintain a \nfixed density of selected trajectories (traj/um^2)\n0 = do not adjust density"),sg.InputText(selection_density,size="50",key="-SELECTIONDENSITY-"),sg.T("",key = "-DENSITY-",size=(6,1))],
 		[sg.B('SELECT DATA IN ROIS',size=(25,2),button_color=("white","gray"),key ="-SELECTBUTTON-",disabled=True,tooltip = "Select trajectories whose detections lie within the yellow ROIs\nOnce selected the ROIs will turn green.\nSelected trajectories may then be clustered."),sg.Checkbox("Cluster immediately",key="-AUTOCLUSTER-",default=autocluster,tooltip="Switch to 'Clustering' tab and begin clustering automatically\nupon selection of data within ROIs")]
 	]

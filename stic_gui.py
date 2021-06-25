@@ -9,7 +9,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib sklearn rtree multiprocessing pysimplegui
+python -m pip install scipy numpy matplotlib scikit-learn rtree multiprocessing pysimplegui
 
 INPUT:
 TRXYT trajectory files from Matlab
@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210618"
+last_changed = "20210627"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -43,7 +43,7 @@ def metrics(data):
 	points,minlength,radius_factor,centroid=data
 	# MSD over time
 	msds = []
-	for i in range(1,minlength+1,1):
+	for i in range(1,minlength,1):
 		all_diff_sq = []
 		for j in range(0,i):
 			msdpoints = points[j::i]
@@ -749,11 +749,59 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		lastfile = "" # Force the program to load a fresh TRXYT
 		seldict = {} # Selected trajectories and metrics
 		clusterdict = {} # Cluster information
+		
+		# Close all opened windows
 		for i in [1,2,3,4,5,6,7,8,9,10]:
 			try:
 				plt.close(i)
 			except:
 				pass
+		# Close all buffers		
+		try:
+			buf0.close()
+		except:
+			pass	
+		try:
+			buf1.close()
+		except:
+			pass	
+		try:
+			buf2.close()
+		except:
+			pass	
+		try:
+			buf3.close()
+		except:
+			pass	
+		try:
+			buf4.close()
+		except:
+			pass	
+		try:
+			buf5.close()
+		except:
+			pass	
+		try:
+			buf6.close()
+		except:
+			pass	
+		try:
+			buf7.close()
+		except:
+			pass	
+		try:
+			buf8.close()
+		except:
+			pass
+		try:
+			buf9.close()
+		except:
+			pass	
+		try:
+			buf10.close()
+		except:
+			pass				
+				
 		try:	
 			ax0.unshare_x_axes(ax8)	
 			ax0.unshare_y_axes(ax8)	
@@ -1201,7 +1249,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			unclust_msds = [seldict[x]["msds"] for x in unclustindices]
 			clust_vals = []
 			unclust_vals = []
-			for i in range(minlength):
+			for i in range(minlength-1):
 				clust_vals.append([])
 				unclust_vals.append([])
 				[clust_vals[i].append(x[i]) for x in clust_msds if x[i] == x[i]]# don't append NaNs
@@ -1210,7 +1258,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
 			unclust_av = [np.average(x) for x in unclust_vals]	
 			unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-			msd_times = [0.001*20*x for x in range(1,minlength+1,1)]	
+			msd_times = [0.02*x for x in range(1,minlength,1)]	
 			ax1.scatter(msd_times,clust_av,s=10,c="orange")
 			ax1.errorbar(msd_times,clust_av,clust_sem,c="orange",label="Clustered: {}".format(len(clust_msds)),capsize=5)
 			ax1.scatter(msd_times,unclust_av,s=10,c="blue")
