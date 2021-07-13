@@ -30,7 +30,7 @@ The script will fork to multiple CPU cores for the heavy number crunching routin
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
 '''
 
-last_changed = "20210627"
+last_changed = "20210713"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -801,7 +801,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			detpoints = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/(len(trajdict)-10)
+					bar = 100*num/len(trajdict)
 					window['-PROGBAR-'].update_bar(bar)
 				if random.random() <= traj_prob:
 					ct+=1
@@ -919,7 +919,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			all_centroids = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/(len(trajdict)-10)
+					bar = 100*num/len(trajdict)
 					window['-PROGBAR-'].update_bar(bar)
 				points = trajdict[traj]["points"]
 				x,y,t=list(zip(*points))

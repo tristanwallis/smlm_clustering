@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210627"
+last_changed = "20210713"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -866,7 +866,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			detpoints = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/(len(trajdict)-10)
+					bar = 100*num/len(trajdict)
 					window['-PROGBAR-'].update_bar(bar)
 				
 				if random.random() <= traj_prob:
@@ -985,7 +985,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			all_centroids = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/(len(trajdict)-10)
+					bar = 100*num/len(trajdict)
 					window['-PROGBAR-'].update_bar(bar)
 				points = trajdict[traj]["points"]
 				x,y,t=list(zip(*points))
