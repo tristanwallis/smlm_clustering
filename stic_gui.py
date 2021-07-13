@@ -866,7 +866,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			detpoints = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/len(trajdict)
+					bar = 100*num/(len(trajdict))
 					window['-PROGBAR-'].update_bar(bar)
 				
 				if random.random() <= traj_prob:
@@ -985,7 +985,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			all_centroids = []
 			for num,traj in enumerate(trajdict):
 				if num%10 == 0:
-					bar = 100*num/len(trajdict)
+					bar = 100*num/(len(trajdict))
 					window['-PROGBAR-'].update_bar(bar)
 				points = trajdict[traj]["points"]
 				x,y,t=list(zip(*points))
@@ -1171,7 +1171,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		# Clustered trajectories
 		print ("Highlighting clustered trajectories...")
 		for cluster in clusterdict:
-			bar = 100*cluster/(len(clusterdict)-10)
+			bar = 100*cluster/(len(clusterdict))
 			window['-PROGBAR-'].update_bar(bar)
 			centx=clusterdict[cluster]["centroid"][0]
 			centy=clusterdict[cluster]["centroid"][1]
