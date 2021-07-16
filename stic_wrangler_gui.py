@@ -2,7 +2,7 @@
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering
 Tristan Wallis, Sophie Hou
 '''
-last_changed = 20210618
+last_changed = 20210718
 
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
@@ -35,6 +35,9 @@ matplotlib.rc('font', **font)
 cond_dict_1 = {}
 cond_dict_2 = {}
 outlist = [] 
+col1 = "black"
+col2= "red"
+
 
 # READ METRICS
 def read_metrics(infile,minradius,maxradius):
@@ -67,7 +70,7 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	bars = [shortname1,shortname2]
 	avgs = [avg_cond1,avg_cond2]
 	sems = [avg_cond1_sem,avg_cond2_sem]
-	color=["orange","royalblue"]
+	color=[col1,col2]
 	ax.bar(bars, avgs, yerr=sems, align='center',color=color,edgecolor=color,linewidth=1.5, alpha=1,error_kw=dict(ecolor="k",elinewidth=1.5,antialiased=True,capsize=5,capthick=1.5,zorder=1000))
 	if swarm:
 		rows = []		
@@ -196,7 +199,7 @@ while True:
 
 	# Plot
 	if cond_dict_1 != {} and cond_dict_2 != {}:
-		window.Element("-B4-").update(disabled=False,button_color=("white","orange"))
+		window.Element("-B4-").update(disabled=False,button_color=("white",col1))
 	if event == "-B4-":
 		print ("Plotting aggregate data for all samples")			
 		# Aggregate cluster data for all samples
@@ -294,8 +297,8 @@ while True:
 			combined_metric = average_1[num] + average_2[num]
 			all_average.append(combined_metric)
 		colors = []
-		[colors.append("orange") for x in cond_dict_1]
-		[colors.append("royalblue") for x in cond_dict_2]	
+		[colors.append(col1) for x in cond_dict_1]
+		[colors.append(col2) for x in cond_dict_2]	
 		avnorm = [normalize(x) for x in all_average]
 		all_average = list(zip(*avnorm))
 		
