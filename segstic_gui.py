@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210713"
+last_changed = "20210721"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -37,20 +37,19 @@ import multiprocessing
 import numpy as np
 import warnings
 import math
+from math import dist
 warnings.filterwarnings("ignore")
 
 def metrics(data):
 	points,minlength,centroid=data
 	# MSD over time
 	msds = []
-	for i in range(1,minlength+1,1):
+	for i in range(1,minlength,1):
 		all_diff_sq = []
 		for j in range(0,i):
 			msdpoints = points[j::i]
-			xdata,ydata,tdata = (np.array(msdpoints)/1).T 
-			r = np.sqrt(xdata**2 + ydata**2)
-			diff = np.diff(r) 
-			diff_sq = diff**2
+			diff = [dist(msdpoints[k][:2],msdpoints[k-1][:2]) for k in range(1,len(msdpoints))] # displacement 
+			diff_sq = np.array(diff)**2 # square displacement
 			[all_diff_sq.append(x) for x in diff_sq]
 		msd = np.average(all_diff_sq)
 		msds.append(msd)
@@ -82,6 +81,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from matplotlib import path
 	from mpl_toolkits.mplot3d import Axes3D,art3d
 	import math
+	from math import dist
 	import time
 	import datetime
 	import os
@@ -1267,7 +1267,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			unclust_msds = [seldict[x]["msds"] for x in unclustindices]
 			clust_vals = []
 			unclust_vals = []
-			for i in range(minlength):
+			for i in range(minlength-1):
 				clust_vals.append([])
 				unclust_vals.append([])
 				[clust_vals[i].append(x[i]) for x in clust_msds if x[i] == x[i]]# don't append NaNs
@@ -1276,7 +1276,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
 			unclust_av = [np.average(x) for x in unclust_vals]	
 			unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-			msd_times = [0.001*20*x for x in range(1,minlength+1,1)]	
+			msd_times = [0.001*20*x for x in range(1,minlength,1)]	
 			ax1.scatter(msd_times,clust_av,s=10,c="orange")
 			ax1.errorbar(msd_times,clust_av,clust_sem,c="orange",label="Clustered: {}".format(len(clust_msds)),capsize=5)
 			ax1.scatter(msd_times,unclust_av,s=10,c="blue")

@@ -29,7 +29,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210713"
+last_changed = "20210721"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -37,6 +37,7 @@ import multiprocessing
 import numpy as np
 import warnings
 import math
+from math import dist
 warnings.filterwarnings("ignore")
 
 def metrics(data):
@@ -47,10 +48,8 @@ def metrics(data):
 		all_diff_sq = []
 		for j in range(0,i):
 			msdpoints = points[j::i]
-			xdata,ydata,tdata = (np.array(msdpoints)/1).T 
-			r = np.sqrt(xdata**2 + ydata**2)
-			diff = np.diff(r) 
-			diff_sq = diff**2
+			diff = [dist(msdpoints[k][:2],msdpoints[k-1][:2]) for k in range(1,len(msdpoints))] # displacement 
+			diff_sq = np.array(diff)**2 # square displacement
 			[all_diff_sq.append(x) for x in diff_sq]
 		msd = np.average(all_diff_sq)
 		msds.append(msd)
