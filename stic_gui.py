@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
@@ -29,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, and with m
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210721"
+last_changed = "20210727"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -53,6 +54,10 @@ def metrics(data):
 			[all_diff_sq.append(x) for x in diff_sq]
 		msd = np.average(all_diff_sq)
 		msds.append(msd)
+		
+	# Instantaneous diffusion coefficient
+	diffcoeff = (msds[3]-msds[0])
+		
 	# Bounding box	
 	area =ConvexHull(points).volume 
 	radius = math.sqrt(area/math.pi)*radius_factor 
@@ -60,7 +65,7 @@ def metrics(data):
 	px,py,pt=zip(*points)
 	left,bottom,early,right,top,late = dx-radius,dy-radius,min(pt),dx+radius,dy+radius,max(pt) 
 	bbox = [left,bottom,early,right,top,late]		
-	return [points,msds,area,radius,bbox,centroid]
+	return [points,msds,area,radius,bbox,centroid,diffcoeff]
 	
 def multi(allpoints):
 	with multiprocessing.Pool() as pool:
@@ -242,13 +247,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time
 		traj_prob = 1
 		detection_alpha = 0.05
 		selection_density = 0
 		minlength = 8
 		maxlength = 100
 		acq_time = 320
+		frame_time = 0.02
 		time_threshold = 20
 		radius_factor = 1.2
 		cluster_threshold = 3
@@ -290,7 +296,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Selection density",selection_density))
 			outfile.write("{}\t{}\n".format("Trajectory minimum length",minlength))
 			outfile.write("{}\t{}\n".format("Trajectory maximum length",maxlength))
-			outfile.write("{}\t{}\n".format("Acquisition time (s)",acq_time))		
+			outfile.write("{}\t{}\n".format("Acquisition time (s)",acq_time))	
+			outfile.write("{}\t{}\n".format("Frame time (s)",frame_time))				
 			outfile.write("{}\t{}\n".format("Time threshold (s)",time_threshold))
 			outfile.write("{}\t{}\n".format("Radius factor",radius_factor))
 			outfile.write("{}\t{}\n".format("Cluster threshold",cluster_threshold))			
@@ -321,7 +328,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time
 		try:
 			with open ("stic_gui.defaults","r") as infile:
 				print ("Loading GUI settings from stic_gui.defaults...")
@@ -335,6 +342,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			minlength = int(defaultdict["Trajectory minimum length"])
 			maxlength = int(defaultdict["Trajectory maximum length"])
 			acq_time = int(defaultdict["Acquisition time (s)"])
+			frame_time = float(defaultdict["Frame time (s)"])
 			time_threshold = int(defaultdict["Time threshold (s)"])
 			radius_factor = float(defaultdict["Radius factor"])
 			cluster_threshold = int(defaultdict["Cluster threshold"])
@@ -439,7 +447,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=False)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)		
 			window.Element("-SAVEANALYSES-").update(button_color=("white","#111111"),disabled=False)
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-"]:
 				window.Element(buttonkey).update(disabled=False)
 		else:  
 			window.Element("-DISPLAYBUTTON-").update(button_color=("white","gray"),disabled=True)
@@ -448,14 +456,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=True)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=True)
 			window.Element("-SAVEANALYSES-").update(button_color=("white","gray"),disabled=True)		
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-"]:
 				window.Element(buttonkey).update(disabled=True)	
 		window.Element("-TRAJPROB-").update(traj_prob)
 		window.Element("-DETECTIONALPHA-").update(detection_alpha)	
 		window.Element("-SELECTIONDENSITY-").update(selection_density)	
 		window.Element("-MINLENGTH-").update(minlength)
 		window.Element("-MAXLENGTH-").update(maxlength)	
-		window.Element("-ACQTIME-").update(acq_time)	
+		window.Element("-ACQTIME-").update(acq_time)
+		window.Element("-FRAMETIME-").update(frame_time)		
 		window.Element("-TIMETHRESHOLD-").update(time_threshold)	
 		window.Element("-RADIUSFACTOR-").update(radius_factor)	
 		window.Element("-CLUSTERTHRESHOLD-").update(cluster_threshold)	
@@ -492,7 +501,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -523,6 +532,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				acq_time = 1
 		except:
 			acq_time = 320
+		try:
+			frame_time = float(frame_time)
+			if acq_time < 0:
+				acq_time = 0.02;
+		except:
+			frame_time = 0.02			
 		try:
 			time_threshold = int(time_threshold)
 			if time_threshold < 1:
@@ -1037,7 +1052,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CLUSTERING TAB	
 	def cluster_tab():
-		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,av_msd
+		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,av_msd,all_diffcoeffs
 
 		# Dictionary of selected trajectories
 		print ("Generating bounding boxes of selected trajectories...")	
@@ -1047,15 +1062,18 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		allpoints = [[trajdict[traj]["points"],minlength,radius_factor,trajdict[traj]["centroid"]] for traj in sel_traj]
 		allmetrics = multi(allpoints) # fork these calculations onto all cores
 		all_msds = []
+		all_diffcoeffs = []
 		for num,metrics in enumerate(allmetrics):
 			if num%10 == 0:
-				bar = 100*num/(len(allmetrics)-10)
+				bar = 100*num/(len(allmetrics))
 				window['-PROGBAR-'].update_bar(bar)
 			seldict[num]={}
-			points,msds,area,radius,bbox,centroid = metrics
+			points,msds,area,radius,bbox,centroid,diffcoeff = metrics
 			seldict[num]["points"]=points
 			seldict[num]["msds"]=msds
-			all_msds.append(msds[0])	
+			all_msds.append(msds[0])			
+			seldict[num]["diffcoeff"]=diffcoeff/(frame_time*3)
+			all_diffcoeffs.append(diffcoeff)
 			seldict[num]["area"]=area
 			seldict[num]["radius"]=radius
 			seldict[num]["bounding_box"]=bbox
@@ -1092,6 +1110,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clusterdict[num]["lifetime"] = max(clustertimes) - min(clustertimes) # lifetime of this cluster (sec)
 			msds = [seldict[i]["msds"][0] for i in cluster] # MSDs for each trajectory in this cluster
 			clusterdict[num]["av_msd"]= np.average(msds) # average trajectory MSD in this cluster
+			diffcoeffs = [seldict[i]["diffcoeff"] for i in cluster] # Instantaneous diffusion coefficients for each trajectory in this cluster
+			clusterdict[num]["av_diffcoeff"]= np.average(diffcoeffs) # average trajectory inst diff coeff in this cluster			
 			clusterpoints = [point[:2]  for i in cluster for point in seldict[i]["points"]] # All detection points [x,y] in this cluster
 			clusterdict[num]["det_num"] = len(clusterpoints) # number of detections in this cluster	
 			ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area
@@ -1236,7 +1256,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5,av_msd
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1257,7 +1277,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
 			unclust_av = [np.average(x) for x in unclust_vals]	
 			unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-			msd_times = [0.02*x for x in range(1,minlength,1)]	
+			msd_times = [frame_time*x for x in range(1,minlength,1)]	
 			ax1.scatter(msd_times,clust_av,s=10,c="orange")
 			ax1.errorbar(msd_times,clust_av,clust_sem,c="orange",label="Clustered: {}".format(len(clust_msds)),capsize=5)
 			ax1.scatter(msd_times,unclust_av,s=10,c="blue")
@@ -1484,7 +1504,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax7.set_xlim(xlims)
 			ax7.set_ylim(0,acq_time)
 			ax7.set_zlim(ylims)
-			plt.title("3D plot")
+			#plt.title("3D plot")
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -1526,7 +1546,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			zorder=1000)
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(ylims)
-			plt.title("2D KDE")
+			#plt.title("2D KDE")
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -1534,6 +1554,52 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			buf5 = io.BytesIO()
 			pickle.dump(ax8, buf5)
 			buf5.seek(0)
+			print ("Plot completed in {} sec".format(round(t2-t1,3)))	
+			
+		# Diffusion coefficient	
+		if event == "-M6-":	
+			print ("Instantaneous diffusion coefficient of trajectories...")
+			t1 = time.time()
+			fig6 =plt.figure(8,figsize=(8,8))
+			#ax9 = plt.subplot(111,sharex=ax0,sharey=ax0)	
+			ax9 = plt.subplot(111)
+			ax9.cla()
+			ax9.set_facecolor("k")	
+			xlims = ax0.get_xlim()
+			ylims = ax0.get_ylim()
+			maxdiffcoeff = max(all_diffcoeffs)/(3*frame_time)
+			cmap3 = matplotlib.cm.get_cmap('inferno_r')
+			for num,traj in enumerate(allindices): 
+				if num%10 == 0:
+					bar = 100*num/(len(allindices)-1)
+					window['-PROGBAR-'].update_bar(bar)
+				centx=seldict[traj]["centroid"][0]
+				centy=seldict[traj]["centroid"][1]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+					x,y,t=zip(*seldict[traj]["points"])
+					diffcoeff  = seldict[traj]["diffcoeff"]
+					col = cmap3(math.sqrt(abs(diffcoeff)/maxdiffcoeff))
+					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=0.5,linewidth=line_width,zorder=1-(diffcoeff/maxdiffcoeff))
+					ax9.add_artist(tr) 
+			ax9.set_xlabel("X")
+			ax9.set_ylabel("Y")
+			ax9.set_xlim(xlims)
+			ax9.set_ylim(ylims)
+			x_perc = (xlims[1] - xlims[0])/100
+			y_perc = (ylims[1] - ylims[0])/100
+			ax9.imshow([[0,1], [0,1]], 
+			extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
+			cmap = "inferno_r", 
+			interpolation = 'bicubic',
+			zorder=1000)	
+			#plt.title("Diffusion coefficient")			
+			plt.tight_layout()	
+			plt.show(block=False)
+			t2=time.time()
+			# Pickle
+			buf6 = io.BytesIO()
+			pickle.dump(ax9, buf6)
+			buf6.seek(0)
 			print ("Plot completed in {} sec".format(round(t2-t1,3)))	
 			
 		# Save metrics	
@@ -1563,6 +1629,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
 				outfile.write("UNCLUSTERED TRAJECTORIES:\t{}\n".format(len(unclustindices)))
 				outfile.write("TOTAL CLUSTERS:\t{}\n".format(len(clusterdict)))
+				# INSTANTANEOUS DIFFUSION COEFFICIENT (1ST 4 POINTS)
+				clustdiffcoeffs = []
+				for i in clustindices:
+					clustdiffcoeffs.append(seldict[i]["diffcoeff"])
+				outfile.write("CLUSTERED TRAJECTORIES AVERAGE INSTANTANEOUS DIFFUSION COEFFICIENT (um^2/s):\t{}\n".format(np.average(clustdiffcoeffs)))
+				unclustdiffcoeffs = []
+				for i in unclustindices:
+					unclustdiffcoeffs.append(seldict[i]["diffcoeff"])
+				outfile.write("UNCLUSTERED TRAJECTORIES AVERAGE INSTANTANEOUS DIFFUSION COEFFICIENT (um^2/s):\t{}\n".format(np.average(unclustdiffcoeffs)))				
+				
 				# HOTSPOT INFO
 				radii = []
 				for cluster in clusterdict:
@@ -1705,6 +1781,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plt.savefig("{}/KDE.png".format(outdir),dpi=300)
 				plt.close()
 			except:
+				pass	
+			try:
+				buf6.seek(0)
+				fig10=pickle.load(buf6)
+				plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
+				plt.close()
+			except:
 				pass					
 			print ("All data saved")	
 		return
@@ -1745,7 +1828,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab3_layout = [
-		[sg.T('Acquisition time:',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
+		[sg.T('Acquisition time (s):',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
+		[sg.T('Frame time (s):',tooltip = "Time between frames (s)"),sg.InputText(frame_time,size="50",key="-FRAMETIME-")],
 		[sg.T('Time threshold:',tooltip = "Trajectories must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
 		[sg.T('Radius factor:',tooltip = "Adjust the radius around each centroid\n to check for overlap"),sg.InputText(radius_factor,size="50",key="-RADIUSFACTOR-")],	
 		[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectories"),sg.InputText(cluster_threshold,size="50",key="-CLUSTERTHRESHOLD-")],
@@ -1796,7 +1880,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("Hotspot",key="-M2-",disabled=True),sg.T("Plot cluster overlap data")],
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
 		[sg.B("3D",key="-M4-",disabled=True),sg.T("X,Y,T plot of trajectories")],
-		[sg.B("KDE",key="-M5-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],		
+		[sg.B("KDE",key="-M5-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
+		[sg.B("Diffusion coefficient",key="-M6-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],			
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
 	]
 
@@ -1858,6 +1943,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		roi_file = values["-R2-"]
 		detection_alpha = values["-DETECTIONALPHA-"]
 		acq_time = values["-ACQTIME-"]
+		frame_time = values["-FRAMETIME-"]		
 		time_threshold = values["-TIMETHRESHOLD-"]
 		radius_factor = values["-RADIUSFACTOR-"]
 		cluster_threshold = values["-CLUSTERTHRESHOLD-"]
