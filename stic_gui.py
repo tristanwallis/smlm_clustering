@@ -247,7 +247,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax
 		traj_prob = 1
 		detection_alpha = 0.05
 		selection_density = 0
@@ -328,7 +328,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax
 		try:
 			with open ("stic_gui.defaults","r") as infile:
 				print ("Loading GUI settings from stic_gui.defaults...")
@@ -496,12 +496,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTXMAX-").update(plotxmax)
 		window.Element("-PLOTYMIN-").update(plotymin)
 		window.Element("-PLOTYMAX-").update(plotymax)
-		window.Element("-MSDFILTER-").update(msd_filter)		
+		window.Element("-MSDFILTER-").update(msd_filter)
+		window.Element("-TMIN-").update(tmin)
+		window.Element("-TMAX-").update(tmax)		
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -613,7 +615,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		try:
 			plotymax = float(plotymax)
 		except:
-			plotymax = ""				
+			plotymax = ""	
+		try:
+			tmin = float(tmin)
+			if tmin < 0 or tmin > acq_time:
+				tmin = 0
+		except:
+			tmin = 0	
+		try:
+			tmax = float(tmax)
+			if tmax < 0 or tmax > acq_time:
+				tmax = acq_time
+		except:
+			tmin = acq_time			
 
 				
 		return
@@ -1481,7 +1495,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					window['-PROGBAR-'].update_bar(bar)
 				centx=seldict[traj]["centroid"][0]
 				centy=seldict[traj]["centroid"][1]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+				centt=seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					#tr = matplotlib.lines.Line3D(x,y,t,c="w",alpha=0.25,linewidth=line_width)
 					tr = art3d.Line3D(x,y,t,c="k",alpha=0.25,linewidth=line_width,zorder=acq_time - np.average(y))
@@ -1492,7 +1507,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					window['-PROGBAR-'].update_bar(bar)
 				centx=seldict[traj]["centroid"][0]
 				centy=seldict[traj]["centroid"][1]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+				centt = seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					col = cmap(np.average(y)/float(acq_time))
 					#tr = matplotlib.lines.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width)
@@ -1502,7 +1518,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax7.set_ylabel("T")
 			ax7.set_zlabel("Y")
 			ax7.set_xlim(xlims)
-			ax7.set_ylim(0,acq_time)
+			ax7.set_ylim(tmin,tmax)
 			ax7.set_zlim(ylims)
 			#plt.title("3D plot")
 			plt.tight_layout()	
@@ -1629,6 +1645,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
 				outfile.write("UNCLUSTERED TRAJECTORIES:\t{}\n".format(len(unclustindices)))
 				outfile.write("TOTAL CLUSTERS:\t{}\n".format(len(clusterdict)))
+				
 				# INSTANTANEOUS DIFFUSION COEFFICIENT (1ST 4 POINTS)
 				clustdiffcoeffs = []
 				for i in clustindices:
@@ -1801,6 +1818,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	else:
 		reset_defaults()
 		save_defaults()	
+	tmin = 0
+	tmax = acq_time
 		
 	# GUI LAYOUT
 	appFont = ("Any 12")
@@ -1879,7 +1898,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("MSD",key="-M1-",disabled=True),sg.T("Plot clustered vs unclustered MSDs")],
 		[sg.B("Hotspot",key="-M2-",disabled=True),sg.T("Plot cluster overlap data")],
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
-		[sg.B("3D",key="-M4-",disabled=True),sg.T("X,Y,T plot of trajectories")],
+		[sg.B("3D",key="-M4-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-")],
 		[sg.B("KDE",key="-M5-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
 		[sg.B("Diffusion coefficient",key="-M6-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],			
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
@@ -1974,7 +1993,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmax = values['-PLOTXMAX-']
 		plotymin = values['-PLOTYMIN-']
 		plotymax = values['-PLOTYMAX-']	
-		msd_filter = values['-MSDFILTER-']		
+		msd_filter = values['-MSDFILTER-']	
+		tmin = values['-TMIN-']	
+		tmax = values['-TMAX-']			
 
 		# Check variables
 		check_variables()
