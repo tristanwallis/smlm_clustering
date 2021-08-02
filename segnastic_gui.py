@@ -26,11 +26,11 @@ No headers
 etc
 
 NOTES:
-This script has been tested and will run as intended on Windows 7/10, and with minor interface anomalies on Linux. Take your chances on a Mac.
+This script has been tested and will run as intended on Windows 7/10, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210727"
+last_changed = "20210802"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -68,7 +68,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# LOAD MODULES
 	import PySimpleGUI as sg
 	sg.theme('DARKGREY11')
-	popup = sg.Window("Initialising...",[[sg.T("Segment STIC initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
+	popup = sg.Window("Initialising...",[[sg.T("Segment NASTIC initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 	import random
 	from scipy.spatial import ConvexHull
@@ -164,12 +164,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		]
 		splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c")
 		obj_list=initialise_particles(graph)
-		graph.DrawText("SEG STIC v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
+		graph.DrawText("SEGMENT NASTIC v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Rtree: https://pypi.org/project/Rtree/",(0,-75),color="white",font=("Any",10),text_location="center")	
 		while True:
@@ -240,7 +241,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -280,8 +281,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# SAVE SETTINGS
 	def save_defaults():
-		print ("Saving GUI settings to segstic_gui.defaults...")
-		with open("segstic_gui.defaults","w") as outfile:
+		print ("Saving GUI settings to segnastic_gui.defaults...")
+		with open("segnastic_gui.defaults","w") as outfile:
 			outfile.write("{}\t{}\n".format("Trajectory probability",traj_prob))
 			outfile.write("{}\t{}\n".format("Raw trajectory detection plot opacity",detection_alpha))
 			outfile.write("{}\t{}\n".format("Selection density",selection_density))
@@ -317,10 +318,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax
 		try:
-			with open ("segstic_gui.defaults","r") as infile:
-				print ("Loading GUI settings from segstic_gui.defaults...")
+			with open ("segnastic_gui.defaults","r") as infile:
+				print ("Loading GUI settings from segnastic_gui.defaults...")
 				defaultdict = {}
 				for line in infile:
 					spl = line.split("\t")
@@ -476,12 +477,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTXMIN-").update(plotxmin)
 		window.Element("-PLOTXMAX-").update(plotxmax)
 		window.Element("-PLOTYMIN-").update(plotymin)
-		window.Element("-PLOTYMAX-").update(plotymax)		
+		window.Element("-PLOTYMAX-").update(plotymax)	
+		window.Element("-TMIN-").update(tmin)
+		window.Element("-TMAX-").update(tmax)			
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -587,7 +590,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		try:
 			plotymax = float(plotymax)
 		except:
-			plotymax = ""	
+			plotymax = ""
+		try:
+			tmin = float(tmin)
+			if tmin < 0 or tmin > acq_time:
+				tmin = 0
+		except:
+			tmin = 0	
+		try:
+			tmax = float(tmax)
+			if tmax < 0 or tmax > acq_time:
+				tmax = acq_time
+		except:
+			tmin = acq_time					
 				
 		return
 
@@ -1364,8 +1379,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				intercluster_times.append(np.average(timediffs))
 				cluster_numbers.append(np.average(c_nums))
 
-			fig2 =plt.figure(2,figsize=(12,4))	
-			ax2 = plt.subplot(131)
+			fig2 =plt.figure(2,figsize=(8,8))	
+			ax2 = plt.subplot(221)
 			ax2.cla()
 			ax2.plot(logdistances,hotspot_probs,c="blue")
 			ax2.set_xlabel(u"Distance (nm)")
@@ -1375,7 +1390,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax2.axvline(1,linewidth=1.5,linestyle="dotted",c="k")
 			ax2.set_xlim(0,)
 			ax2.set_ylim(0,)
-			ax3 = plt.subplot(132,sharex=ax2)
+			ax3 = plt.subplot(222,sharex=ax2)
 			ax3.cla()
 			ax3.plot(logdistances,cluster_numbers,c="orange")
 			ax3.set_xlabel(u"Distance (nm)")
@@ -1384,7 +1399,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax3.axvline(av_radius*1000,linewidth=1.5,linestyle="dotted",c="k")
 			ax3.axvline(1,linewidth=1.5,linestyle="dotted",c="k")
 			ax3.set_ylim(0,)
-			ax4 = plt.subplot(133,sharex=ax2)
+			ax4 = plt.subplot(223,sharex=ax2)
 			ax4.cla()
 			ax4.plot(logdistances,intercluster_times,c="green")
 			ax4.set_xlabel(u"Distance (nm)")
@@ -1393,6 +1408,24 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax4.axvline(av_radius*1000,linewidth=1.5,linestyle="dotted",c="k")
 			ax4.axvline(1,linewidth=1.5,linestyle="dotted",c="k")
 			ax4.set_ylim(0,)
+
+			ax5 = plt.subplot(224)
+			ax5.cla()
+			cluster_per_time = []
+			clustertimes = [[min(clusterdict[i]["centroid_times"]),max(clusterdict[i]["centroid_times"])] for i in clusterdict]
+			for timepoint in range(acq_time):
+				count=0
+				for ctime in clustertimes:
+					if ctime[0]< timepoint and ctime[1] > timepoint: 
+						count+=1
+				cluster_per_time.append(count/sum(all_selareas))
+				
+			ax5.plot(cluster_per_time,c="red")	
+			ax5.set_xlabel("Acq. time (s)")
+			ax5.set_ylabel(u"Clusters/μm²")
+			ax5.set_title("Cluster number")
+			#ax5.set_ylim(0,1)			
+			
 			plt.tight_layout()
 			fig2.canvas.set_window_title('Overlap metrics')
 			plt.show(block=False)
@@ -1529,7 +1562,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					window['-PROGBAR-'].update_bar(bar)
 				centx=seldict[traj]["centroid"][0]
 				centy=seldict[traj]["centroid"][1]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+				centt=seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					#tr = matplotlib.lines.Line3D(x,y,t,c="w",alpha=0.25,linewidth=line_width)
 					tr = art3d.Line3D(x,y,t,c="k",alpha=0.25,linewidth=line_width,zorder=acq_time - np.average(y))
@@ -1540,7 +1574,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					window['-PROGBAR-'].update_bar(bar)
 				centx=seldict[traj]["centroid"][0]
 				centy=seldict[traj]["centroid"][1]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+				centt=seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					col = cmap(np.average(y)/float(acq_time))
 					#tr = matplotlib.lines.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width)
@@ -1552,7 +1587,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(0,acq_time)
 			ax8.set_zlim(ylims)
-			plt.title("3D plot")
+			#plt.title("3D plot")
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -1593,7 +1628,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			zorder=1000)
 			ax9.set_xlim(xlims)
 			ax9.set_ylim(ylims)
-			plt.title("2D KDE")
+			#plt.title("2D KDE")
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -1652,13 +1687,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-SAVEANALYSES-":	
 			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 			outpath = os.path.dirname(infilename)
-			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_segstic_{}".format(stamp))
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_SEGNASTIC_{}".format(stamp))
 			os.mkdir(outdir)
 			outfilename = "{}/metrics.tsv".format(outdir)
 			print ("Saving metrics, ROIs and all plots to {}...".format(outdir))
 			# Metrics
 			with open(outfilename,"w") as outfile:
-				outfile.write("SEGMENT SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n")
+				outfile.write("SEGMENT NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n")
 				outfile.write("TRAJECTORY FILE:\t{}\n".format(infilename))	
 				outfile.write("ANALYSED:\t{}\n".format(stamp))
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
@@ -1852,11 +1887,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
 	initialdir = cwd
-	if os.path.isfile("segstic_gui.defaults"):
+	if os.path.isfile("segnastic_gui.defaults"):
 		load_defaults()
 	else:
 		reset_defaults()
 		save_defaults()	
+	tmin = 0
+	tmax = acq_time		
 		
 	# GUI LAYOUT
 	sg.theme('DARKGREY11')
@@ -1884,9 +1921,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab3_layout = [
-		[sg.T('Acquisition time:',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
+		[sg.T('Acquisition time (s):',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
 		[sg.T('Frame time (s):',tooltip = "Time between frames (s)"),sg.InputText(frame_time,size="50",key="-FRAMETIME-")],
-		[sg.T('Time threshold:',tooltip = "Trajectories must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
+		[sg.T('Time threshold (s):',tooltip = "Trajectories must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
 		[sg.T('Segment threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectory segments"),sg.InputText(segment_threshold,size="50",key="-SEGMENTTHRESHOLD-")],
 		[sg.T('Overlap threshold override:',tooltip = "Number of overlaps for a segment to be considered as potentially clustered\n 0 = use average of all segment overlaps as threshold"),sg.InputText(overlap_override,size="50",key="-OVERRIDE-")],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
@@ -1934,7 +1971,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("Hotspot",key="-M2-",disabled=True),sg.T("Plot cluster overlap data")],
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
 		[sg.B("Segment",key="-M4-",disabled=True),sg.T("Pseudo density plot of segment overlap (slow!)")],
-		[sg.B("3D",key="-M5-",disabled=True),sg.T("X,Y,T plot of trajectories")],
+		[sg.B("3D",key="-M5-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this")],
 		[sg.B("KDE",key="-M6-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
 		[sg.B("Diffusion coefficient",key="-M7-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],	
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
@@ -1947,7 +1984,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	layout = [
 		[sg.Menu(menu_def)],
-		[sg.T('SEGMENT STIC',font="Any 20")],
+		[sg.T('SEGMENT NASTIC',font="Any 20")],
 		[sg.TabGroup([
 			[sg.Tab("File",tab1_layout)],
 			[sg.Tab("ROI",tab2_layout)],
@@ -1959,7 +1996,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.ProgressBar(100, orientation='h',size=(53,20),key='-PROGBAR-')],
 		#[sg.Output(size=(64,10))]	
 	]
-	window = sg.Window('SEGMENT STIC v{}'.format(last_changed), layout)
+	window = sg.Window('SEGMENT NASTIC v{}'.format(last_changed), layout)
 	popup.close()
 
 	# VARS
@@ -2026,7 +2063,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmin = values['-PLOTXMIN-']
 		plotxmax = values['-PLOTXMAX-']
 		plotymin = values['-PLOTYMIN-']
-		plotymax = values['-PLOTYMAX-']			
+		plotymax = values['-PLOTYMAX-']	
+		tmin = values['-TMIN-']	
+		tmax = values['-TMAX-']			
 
 		# Check variables
 		check_variables()

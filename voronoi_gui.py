@@ -26,7 +26,7 @@ No headers
 etc
 
 NOTES:
-This script has been tested and will run as intended on Windows 7/10, and with minor interface anomalies on Linux. Take your chances on a Mac.
+This script has been tested and will run as intended on Windows 7/10, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
 '''
