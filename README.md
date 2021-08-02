@@ -2,13 +2,13 @@
 Python GUI scripts for molecular trajectory clustering analysis.
 
 ### Files
-* stic_gui.py: cluster using R-tree based spatio-temporal indexing of trajectory bounding boxes
+* nastic_gui.py: cluster using R-tree based spatio-temporal indexing of trajectory bounding boxes
 
-* stic_user_manual.pdf: detailed instructions for stic_gui.py
+* nastic_user_manual.pdf: detailed instructions for stic_gui.py
 
-* segstic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
+* segnastic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
 
-* stic_wrangler_gui.py: meta analysis of output from stic_gui.py and segstic_gui.py
+* nastic_wrangler_gui.py: meta analysis of output from stic_gui.py and segstic_gui.py
 
 * dbscan_gui.py: cluster using DBSCAN of trajectory centroids
 
@@ -23,7 +23,7 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 Requires: Python 3.8+
 
-Modules: scipy, numpy, matplotlib, sklearn, rtree, multiprocessing, pysimplegui, seaborn
+Modules: scipy, numpy, matplotlib, sklearn, rtree, pysimplegui, seaborn
 
 Design and code: Tristan Wallis
 
