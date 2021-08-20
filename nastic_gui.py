@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210802"
+last_changed = "20210817"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1087,7 +1087,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			seldict[num]["msds"]=msds
 			all_msds.append(msds[0])			
 			seldict[num]["diffcoeff"]=diffcoeff/(frame_time*3)
-			all_diffcoeffs.append(diffcoeff)
+			all_diffcoeffs.append(abs(diffcoeff))
 			seldict[num]["area"]=area
 			seldict[num]["radius"]=radius
 			seldict[num]["bounding_box"]=bbox
@@ -1270,7 +1270,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, av_msd
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1302,6 +1302,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.tight_layout()
 			fig1.canvas.set_window_title('MSD Curves')
 			plt.show(block=False)
+			
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST MSD (um^2):"] + unclust_av))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST SEM:"] + unclust_sem))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST MSD (um^2):"] + clust_av))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST SEM:"] + clust_sem))		
+	
 			t2=time.time()
 			print ("MSD plot completed in {} sec".format(round(t2-t1,3)))
 			# Pickle
@@ -1544,7 +1551,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			allpoints = [point[:2]  for i in seldict for point in seldict[i]["points"]] # All detection points 
 			allpoints = [i for i in allpoints if i[0] > xlims[0] and i[0] < xlims[1] and i[1] > ylims[0] and i[1] < ylims[1]] # Detection points within zoom 
 			kde_method = 0.10 # density estimation method. Larger for smaller amounts of data (0.05 - 0.15 should be ok)
-			kde_res = 0.55 # resolution of density map (0.5-0.9). Larger = higher resolution
+			kde_res = 0.7 # resolution of density map (0.5-0.9). Larger = higher resolution
 			x = np.array(list(zip(*allpoints))[0])
 			y = np.array(list(zip(*allpoints))[1])
 			k = gaussian_kde(np.vstack([x, y]),bw_method=kde_method)
@@ -1584,6 +1591,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			xlims = ax0.get_xlim()
 			ylims = ax0.get_ylim()
 			maxdiffcoeff = max(all_diffcoeffs)/(3*frame_time)
+			mindiffcoeff = min(all_diffcoeffs)/(3*frame_time)
+			print ("Minimum Inst Diff Coeff (um^2/s):",abs(mindiffcoeff))
+			print ("Maximum Inst Diff Coeff (um^2/s):",maxdiffcoeff)
 			cmap3 = matplotlib.cm.get_cmap('inferno_r')
 			for num,traj in enumerate(allindices): 
 				if num%10 == 0:
@@ -1670,10 +1680,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			buf6 = io.BytesIO()
 			pickle.dump(ax9, buf6)
 			buf6.seek(0)
+			
+			buf7 = io.BytesIO()
+			pickle.dump(fig7, buf7)
+			buf7.seek(0)			
 			print ("Plots completed in {} sec".format(round(t2-t1,3)))	
-			
-			
-			
 			
 		# Save metrics	
 		if event == "-SAVEANALYSES-":	
@@ -1862,7 +1873,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
 				plt.close()
 			except:
-				pass					
+				pass	
+			try:
+				buf7.seek(0)
+				fig10=pickle.load(buf7)
+				plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
+				plt.close()
+			except:
+				pass				
 			print ("All data saved")	
 		return
 
