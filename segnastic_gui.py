@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210802"
+last_changed = "20210823"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1061,7 +1061,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			seldict[num]["points"]=points
 			seldict[num]["msds"]=msds
 			seldict[num]["diffcoeff"]=diffcoeff/(frame_time*3)
-			all_diffcoeffs.append(diffcoeff)
+			all_diffcoeffs.append(abs(diffcoeff))
 			seldict[num]["centroid"]=centroid
 			sel_centroids.append(centroid)
 		
@@ -1648,8 +1648,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax10.set_facecolor("k")	
 			xlims = ax0.get_xlim()
 			ylims = ax0.get_ylim()
-			maxdiffcoeff = max(all_diffcoeffs)/(3*frame_time)
-			cmap3 = matplotlib.cm.get_cmap('inferno_r')
+			maxdiffcoeff = math.log(max(all_diffcoeffs)/(3*frame_time),10)
+			mindiffcoeff = math.log(min(all_diffcoeffs)/(3*frame_time),10)
+			print ("Minimum Inst Diff Coeff (log10 um^2/s):",mindiffcoeff)
+			print ("Maximum Inst Diff Coeff (log10 um^2/s):",maxdiffcoeff)
+			dcrange = abs(maxdiffcoeff-mindiffcoeff)
+			cmap3 = matplotlib.cm.get_cmap('viridis_r')
 			for num,traj in enumerate(allindices): 
 				if num%10 == 0:
 					bar = 100*num/(len(allindices)-1)
@@ -1658,9 +1662,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				centy=seldict[traj]["centroid"][1]
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
 					x,y,t=zip(*seldict[traj]["points"])
-					diffcoeff  = seldict[traj]["diffcoeff"]
-					col = cmap3(math.sqrt(abs(diffcoeff)/maxdiffcoeff))
-					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=0.5,linewidth=line_width,zorder=1-(diffcoeff/maxdiffcoeff))
+					diffcoeff  = abs(seldict[traj]["diffcoeff"])
+					dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1  
+					col = cmap3(dcnorm)
+					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=0.75,linewidth=line_width,zorder=1-dcnorm)
 					ax10.add_artist(tr) 
 			ax10.set_xlabel("X")
 			ax10.set_ylabel("Y")
@@ -1670,7 +1675,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			y_perc = (ylims[1] - ylims[0])/100
 			ax10.imshow([[0,1], [0,1]], 
 			extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
-			cmap = "inferno_r", 
+			cmap = "viridis_r", 
 			interpolation = 'bicubic',
 			zorder=1000)	
 			#plt.title("Diffusion coefficient")			
