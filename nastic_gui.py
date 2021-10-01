@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20210823"
+last_changed = "20211001"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -447,7 +447,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=False)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)		
 			window.Element("-SAVEANALYSES-").update(button_color=("white","#111111"),disabled=False)
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-"]:
 				window.Element(buttonkey).update(disabled=False)
 		else:  
 			window.Element("-DISPLAYBUTTON-").update(button_color=("white","gray"),disabled=True)
@@ -456,7 +456,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=True)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=True)
 			window.Element("-SAVEANALYSES-").update(button_color=("white","gray"),disabled=True)		
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-"]:
 				window.Element(buttonkey).update(disabled=True)	
 		window.Element("-TRAJPROB-").update(traj_prob)
 		window.Element("-DETECTIONALPHA-").update(detection_alpha)	
@@ -1270,7 +1270,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, av_msd
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1690,6 +1690,39 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			buf7.seek(0)			
 			print ("Plots completed in {} sec".format(round(t2-t1,3)))	
 			
+		# Density
+		if event == "-M7-":	
+			print ("Detection density over time...")
+			t1 = time.time()		
+			alltimes = []
+			for num,traj in enumerate(allindices): 
+				if num%10 == 0:
+					bar = 100*num/(len(allindices)-1)
+					window['-PROGBAR-'].update_bar(bar)
+				points=seldict[traj]["points"]
+				[alltimes.append(x[2]) for x in points]
+			
+			fig8 =plt.figure(10,figsize=(4,4))
+			ax12 = plt.subplot(111)
+			bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time/2)) # Sort into 2 second bins
+			dist,bins =np.histogram(alltimes,bin_edges)
+			dist = [float(x)/sum(dist) for x in dist]
+			bin_centers = 0.5*(bins[1:]+bins[:-1])
+			ax12.plot(bin_centers,dist,c="royalblue")
+			plt.ylabel("Frequency")
+			plt.xlabel("Acquisition time (s)")
+			#plt.title("Detection density over time")
+			plt.tight_layout()	
+			plt.show(block=False)
+			t2=time.time()
+			
+			buf8 = io.BytesIO()
+			pickle.dump(fig8, buf8)
+			buf8.seek(0)			
+			print ("Plot completed in {} sec".format(round(t2-t1,3)))	
+
+			
+			
 		# Save metrics	
 		if event == "-SAVEANALYSES-":	
 			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
@@ -1884,7 +1917,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
 				plt.close()
 			except:
-				pass				
+				pass
+			try:
+				buf8.seek(0)
+				fig10=pickle.load(buf8)
+				plt.savefig("{}/density_vs_time.png".format(outdir),dpi=300)
+				plt.close()
+			except:
+				pass					
 			print ("All data saved")	
 		return
 
@@ -1979,7 +2019,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
 		[sg.B("3D",key="-M4-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this")],
 		[sg.B("KDE",key="-M5-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
-		[sg.B("Diffusion coefficient",key="-M6-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],			
+		[sg.B("Diffusion coefficient",key="-M6-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],
+		[sg.B("Density over time",key="-M7-",disabled=True),sg.T("Detection density over the acquisition")],			
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
 	]
 
