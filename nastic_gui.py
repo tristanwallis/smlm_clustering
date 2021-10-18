@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20211001"
+last_changed = "20211015"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -247,7 +247,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
 		traj_prob = 1
 		detection_alpha = 0.05
 		selection_density = 0
@@ -262,14 +262,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plot_trajectories = True
 		plot_centroids = False
 		plot_clusters = True
-		plot_colorbar = True	
+		plot_colorbar = True
+		plot_hotspots = True
 		line_width = 1.5	
 		line_alpha = 0.25	
 		line_color = "white"	
 		centroid_size = 5	
 		centroid_alpha = 0.75
 		centroid_color = "white"
-		cluster_width = 1.5	
+		cluster_width = 2	
 		cluster_alpha = 1	
 		cluster_linetype = "solid"
 		cluster_fill = False	
@@ -285,6 +286,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotymin=""
 		plotymax=""
 		msd_filter = False
+		hotspot_width = 2.5	
+		hotspot_alpha = 1	
+		hotspot_linetype = "dotted"
+		hotspot_color = "white"				
+		hotspot_radius = 1.0			
 		return 
 
 	# SAVE SETTINGS
@@ -305,7 +311,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Plot trajectories",plot_trajectories))
 			outfile.write("{}\t{}\n".format("Plot centroids",plot_centroids))
 			outfile.write("{}\t{}\n".format("Plot clusters",plot_clusters))
-			outfile.write("{}\t{}\n".format("Plot colorbar",plot_colorbar))		
+			outfile.write("{}\t{}\n".format("Plot colorbar",plot_colorbar))	
+			outfile.write("{}\t{}\n".format("Plot hotspots",plot_hotspots))				
 			outfile.write("{}\t{}\n".format("Trajectory line width",line_width))
 			outfile.write("{}\t{}\n".format("Trajectory line color",line_color))
 			outfile.write("{}\t{}\n".format("Trajectory line opacity",line_alpha))
@@ -316,6 +323,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Cluster line width",cluster_width))			
 			outfile.write("{}\t{}\n".format("Cluster line opacity",cluster_alpha))
 			outfile.write("{}\t{}\n".format("Cluster line type",cluster_linetype))
+			outfile.write("{}\t{}\n".format("Hotspot line width",hotspot_width))			
+			outfile.write("{}\t{}\n".format("Hotspot line opacity",hotspot_alpha))
+			outfile.write("{}\t{}\n".format("Hotspot line type",hotspot_linetype))	
+			outfile.write("{}\t{}\n".format("Hotspot radius",hotspot_radius))	
+			outfile.write("{}\t{}\n".format("Hotspot color",hotspot_color))				
 			outfile.write("{}\t{}\n".format("Plot save format",saveformat))
 			outfile.write("{}\t{}\n".format("Plot save dpi",savedpi))
 			outfile.write("{}\t{}\n".format("Plot background transparent",savetransparency))
@@ -323,12 +335,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
 			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))	
 			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))	
-			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))	
+			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))
+			
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
 		try:
 			with open ("nastic_gui.defaults","r") as infile:
 				print ("Loading GUI settings from nastic_gui.defaults...")
@@ -366,7 +379,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if plot_colorbar == "True":
 				plot_colorbar = True
 			if plot_colorbar == "False":
-				plot_colorbar = False		
+				plot_colorbar = False
+			plot_hotspots = defaultdict["Plot hotspots"]
+			if plot_hotspots == "True":
+				plot_hotspots = True
+			if plot_hotspots == "False":
+				plot_hotspots = False					
 			line_width = float(defaultdict["Trajectory line width"])	
 			line_alpha = float(defaultdict["Trajectory line opacity"])	
 			line_color = defaultdict["Trajectory line color"]	
@@ -380,7 +398,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if cluster_fill == "True":
 				cluster_fill = True
 			if cluster_fill == "False":
-				cluster_fill = False			
+				cluster_fill = False	
+			hotspot_color = defaultdict["Hotspot color"]
+			hotspot_radius = defaultdict["Hotspot radius"]
+			hotspot_width = float(defaultdict["Hotspot line width"])	
+			hotspot_alpha = float(defaultdict["Hotspot line opacity"])	
+			hotspot_linetype = defaultdict["Hotspot line type"]					
 			saveformat = defaultdict["Plot save format"]
 			savedpi = defaultdict["Plot save dpi"]	
 			savetransparency = defaultdict["Plot background transparent"]
@@ -473,6 +496,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-TRAJECTORIES-").update(plot_trajectories)
 		window.Element("-CENTROIDS-").update(plot_centroids)
 		window.Element("-CLUSTERS-").update(plot_clusters)
+		window.Element("-HOTSPOTS-").update(plot_hotspots)			
 		window.Element("-COLORBAR-").update(plot_colorbar)	
 		window.Element("-LINEWIDTH-").update(line_width)
 		window.Element("-LINEALPHA-").update(line_alpha)
@@ -485,7 +509,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-CLUSTERWIDTH-").update(cluster_width)
 		window.Element("-CLUSTERALPHA-").update(cluster_alpha)
 		window.Element("-CLUSTERLINETYPE-").update(cluster_linetype)
-		window.Element("-CLUSTERFILL-").update(cluster_fill)	
+		window.Element("-CLUSTERFILL-").update(cluster_fill)
+		window.Element("-HOTSPOTCOLORCHOOSE-").update("Choose",button_color=("gray",hotspot_color))
+		window.Element("-HOTSPOTCOLOR-").update(hotspot_color)		
+		window.Element("-HOTSPOTWIDTH-").update(hotspot_width)
+		window.Element("-HOTSPOTALPHA-").update(hotspot_alpha)
+		window.Element("-HOTSPOTLINETYPE-").update(hotspot_linetype)		
+		window.Element("-HOTSPOTRADIUS-").update(hotspot_radius)				
 		window.Element("-SAVEFORMAT-").update(saveformat)	
 		window.Element("-SAVETRANSPARENCY-").update(savetransparency)
 		window.Element("-SAVEDPI-").update(savedpi)
@@ -503,7 +533,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -577,7 +607,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if cluster_alpha not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			cluster_alpha = 1.0 
 		if cluster_linetype not in ["solid","dotted","dashed"]:
-			cluster_linetype = "solid" 		
+			cluster_linetype = "solid" 	
+		if hotspot_width not in [0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0]:
+			hotspot_width = 1.5 
+		if hotspot_alpha not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
+			hotspot_alpha = 1.0 
+		if hotspot_linetype not in ["solid","dotted","dashed"]:
+			hotspot_linetype = "solid" 					
 		if saveformat not in ["eps","pdf","png","ps","svg"]:
 			saveformat = "png"
 		if savedpi not in [50,100,300,600,1200]:
@@ -600,6 +636,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				centroid_color = defaultdict["Centroid color"]
 			except:	
 				centroid_color = "white"
+		if hotspot_color == "None":
+			try:
+				hotspot_color = defaultdict["Hotspot color"]
+			except:	
+				hotspot_color = "white"				
+		if hotspot_radius not in [0.1,0.25,0.5,1.0,1.25,1.5,1.75,2.0]:
+			hotspot_radius = 1 					
 		try:
 			plotxmin = float(plotxmin)
 		except:
@@ -1210,14 +1253,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			centy=clusterdict[cluster]["centroid"][1]
 			if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
 				indices = clusterdict[cluster]["indices"]
-				if plot_trajectories:
-					for idx in indices:
-						x,y,t=zip(*seldict[idx]["points"])
-						alpha = line_alpha*2
-						if alpha > 1:
-							alpha = 1
-						tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=alpha,linewidth=line_width)
-						ax0.add_artist(tr) 
 				if plot_clusters:
 					cx,cy,ct = clusterdict[cluster]["centroid"]
 					col = cmap(ct/float(acq_time))
@@ -1230,9 +1265,50 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						vertices = list(zip(*clusterdict[cluster]["area_xy"]))
 						cl = plt.Polygon(vertices,facecolor=col,edgecolor=col,alpha=cluster_alpha,zorder=-ct)
 						ax0.add_patch(cl) 
+						
+		# Hotspots info
+		if plot_hotspots:	
+			radii = []
+			for cluster in clusterdict:
+				radius  = clusterdict[cluster]["radius"]
+				radii.append(radius)
+			av_radius = np.average(radii)*hotspot_radius
+			clustpoints = [clusterdict[i]["centroid"][:2] for i in clusterdict]
+			overlapdict = {} # dictionary of overlapping clusters at av_radius
+			labels,clusterlist = dbscan(clustpoints,av_radius,2) # does each cluster centroid any other cluster centroids within av_radius (epsilon)?
+			clusterlist = [x for x in clusterlist]
+			try:
+				clusterlist.remove(-1)
+			except:
+				pass
+			for cluster in clusterlist:
+				overlapdict[cluster] = {}
+				overlapdict[cluster]["clusters"]=[]
+			for num,label in enumerate(labels):
+				if label > -1:
+					overlapdict[label]["clusters"].append(num+1)
+			overlappers = [overlapdict[x]["clusters"] for x in clusterlist]
+			print ("Plotting hotspots of overlapping clusters...")	
+			if len(overlappers) > 0:
+				for num,overlap in enumerate(overlappers):
+					bar = 100*num/len(overlappers)
+					window['-PROGBAR-'].update_bar(bar)
+					clusterpoints = []
+					for cluster in overlap:
+						centx=clusterdict[cluster]["centroid"][0]
+						centy=clusterdict[cluster]["centroid"][1]
+						if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:	
+							points = zip(*clusterdict[cluster]["area_xy"])
+							[clusterpoints.append(point) for point in points]
+					if len(clusterpoints) > 0:	
+						ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints)
+						cl = matplotlib.lines.Line2D(ext_x,ext_y,c=hotspot_color,alpha=hotspot_alpha,linewidth=hotspot_width,linestyle=hotspot_linetype,zorder=15000)
+						ax0.add_artist(cl) 	
+						
 		ax0.set_xlabel("X")
 		ax0.set_ylabel("Y")
 		
+		# Colorbar
 		if plot_colorbar:
 			x_perc = (xlims[1] - xlims[0])/100
 			y_perc = (ylims[1] - ylims[0])/100
@@ -1240,7 +1316,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
 			cmap = cmap, 
 			interpolation = 'bicubic',
-			zorder=1000
+			zorder=100000
 			)
 		window['-PROGBAR-'].update_bar(0)
 		selverts = [y for x in all_selverts_copy for y in x]
@@ -1932,7 +2008,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
 	initialdir = cwd
-	if os.path.isfile("stic_gui.defaults"):
+	if os.path.isfile("nastic_gui.defaults"):
 		load_defaults()
 	else:
 		reset_defaults()
@@ -1994,6 +2070,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.T("Line type",tooltip = "Cluster line type"),sg.Combo(["solid","dashed","dotted"],default_value =cluster_linetype,key="-CLUSTERLINETYPE-")]
 	]
 
+	hotspot_layout = [	
+		[sg.T("Radius",tooltip = "Clusters within this multiple of the \naverage cluster radius"),sg.Combo([0.1,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0],default_value= hotspot_radius,key="-HOTSPOTRADIUS-")],
+		[sg.T("Opacity",tooltip = "Opacity of plotted hotspots"),sg.Combo([0.1,0.25,0.5,0.75,1.0],default_value= hotspot_alpha,key="-HOTSPOTALPHA-")],
+		[sg.T("Line width",tooltip = "Width of plotted hotspot lines"),sg.Combo([0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],default_value= hotspot_width,key="-HOTSPOTWIDTH-")],
+		[sg.T("Line type",tooltip = "Hotspot line type"),sg.Combo(["solid","dashed","dotted"],default_value =hotspot_linetype,key="-HOTSPOTLINETYPE-")],
+		[sg.T("Color",tooltip = "Hotspot color"),sg.ColorChooserButton("Choose",key="-HOTSPOTCOLORCHOOSE-",target="-HOTSPOTCOLOR-",button_color=("gray",hotspot_color),disabled=True),sg.Input(hotspot_color,key ="-HOTSPOTCOLOR-",enable_events=True,visible=False)]
+	]		
+
 	export_layout = [
 		[sg.T("Format",tooltip = "Format of saved figure"),sg.Combo(["eps","pdf","png","ps","svg"],default_value= saveformat,key="-SAVEFORMAT-"),sg.Checkbox('Transparent background',tooltip = "Useful for making figures",key = "-SAVETRANSPARENCY-",default=False)],
 		[sg.T("DPI",tooltip = "Resolution of saved figure"),sg.Combo([50,100,300,600,1200],default_value=savedpi,key="-SAVEDPI-")],
@@ -2001,12 +2085,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab4_layout = [
-		[sg.T('Canvas',tooltip = "Background colour of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Colorbar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
+		[sg.T('Canvas',tooltip = "Background colour of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspotss",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Col.bar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
 		[sg.TabGroup([
-			[sg.Tab("Trajectory options",trajectory_layout)],
-			[sg.Tab("Centroid options",centroid_layout)],
-			[sg.Tab("Cluster options",cluster_layout)],
-			[sg.Tab("Export options",export_layout)]
+			[sg.Tab("Trajectory",trajectory_layout)],
+			[sg.Tab("Centroid",centroid_layout)],
+			[sg.Tab("Cluster",cluster_layout)],
+			[sg.Tab("Hotspot",hotspot_layout)],
+			[sg.Tab("Export",export_layout)]
 			])
 		],
 		[sg.B('PLOT CLUSTERED DATA',size=(25,2),button_color=("white","gray"),key ="-DISPLAYBUTTON-",disabled=True,tooltip="Plot clustered data using the above parameters.\nHit button again after changing parameters, to replot"),sg.B('SAVE PLOT',size=(25,2),button_color=("white","gray"),key ="-SAVEBUTTON-",disabled=True,tooltip = "Save plot using the above parameters in 'Export options'.\nEach time this button is pressed a new datastamped image will be saved.")],
@@ -2115,7 +2200,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotymax = values['-PLOTYMAX-']	
 		msd_filter = values['-MSDFILTER-']	
 		tmin = values['-TMIN-']	
-		tmax = values['-TMAX-']			
+		tmax = values['-TMAX-']		
+		hotspot_radius = values["-HOTSPOTRADIUS-"]
+		hotspot_width = values["-HOTSPOTWIDTH-"]
+		hotspot_alpha = values["-HOTSPOTALPHA-"]
+		hotspot_linetype = values["-HOTSPOTLINETYPE-"]		
+		hotspot_color = values["-HOTSPOTCOLOR-"]
+		plot_hotspots = values["-HOTSPOTS-"]			
 
 		# Check variables
 		check_variables()
