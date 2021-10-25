@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20211018"
+last_changed = "20211025"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1374,7 +1374,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1652,7 +1652,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					#tr = matplotlib.lines.Line3D(x,y,t,c="w",alpha=0.25,linewidth=line_width)
-					tr = art3d.Line3D(x,y,t,c="k",alpha=0.25,linewidth=line_width,zorder=acq_time - np.average(y))
+					tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax8.add_artist(tr) 
 			for num,traj in enumerate(clustindices):
 				if num%10 == 0:
@@ -1665,8 +1665,23 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					x,t,y=zip(*seldict[traj]["points"])
 					col = cmap(np.average(y)/float(acq_time))
 					#tr = matplotlib.lines.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width)
-					tr = art3d.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width,zorder=acq_time - np.average(y))
+					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax8.add_artist(tr) 	
+			if plot_clusters:		
+				for cluster in clusterdict:
+					bar = 100*cluster/(len(clusterdict))
+					window['-PROGBAR-'].update_bar(bar)
+					centx=clusterdict[cluster]["centroid"][0]
+					centy=clusterdict[cluster]["centroid"][1]
+					if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+						cx,cy,ct = clusterdict[cluster]["centroid"]
+						col = cmap(ct/float(acq_time))
+						bx,by = clusterdict[cluster]["area_xy"]
+						bt = [ct for x in bx]
+						cl = art3d.Line3D(bx,bt,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=acq_time - ct)
+						ax8.add_artist(cl)					
+					
+					
 			ax8.set_xlabel("X")
 			ax8.set_ylabel("T")
 			ax8.set_zlabel("Y")
@@ -1764,14 +1779,75 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			cmap = "viridis_r", 
 			interpolation = 'bicubic',
 			zorder=1000)	
+			
 			#plt.title("Diffusion coefficient")			
 			plt.tight_layout()	
 			plt.show(block=False)
+
+			# DIFF COEFF TIME PLOT		
+			fig7 =plt.figure(9,figsize=(6,3))
+			ax11 = plt.subplot(211)
+			ax12 = plt.subplot(212,sharex=ax11,sharey=ax11)	
+			ax11.cla()
+			ax11.set_facecolor("k")	
+			ax12.cla()
+			ax12.set_facecolor("k")		
+			clustcols = []
+			diffcols = []
+			times = []
+			for num,traj in enumerate(clustindices): 
+				if num%10 == 0:
+					bar = 100*num/(len(clustindices)-1)
+					window['-PROGBAR-'].update_bar(bar)
+				centx=seldict[traj]["centroid"][0]
+				centy=seldict[traj]["centroid"][1]
+				centt=seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+					diffcoeff  = abs(seldict[traj]["diffcoeff"])
+					clustcol = cmap(centt/float(acq_time))
+					dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1 
+					diffcol = cmap3(dcnorm)
+					times.append(centt)
+					clustcols.append(clustcol)	
+					diffcols.append(diffcol)
+			for num,traj in enumerate(unclustindices): 
+				if num%10 == 0:
+					bar = 100*num/(len(unclustindices)-1)
+					window['-PROGBAR-'].update_bar(bar)
+				centx=seldict[traj]["centroid"][0]
+				centy=seldict[traj]["centroid"][1]
+				centt=seldict[traj]["centroid"][2]
+				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+					diffcoeff  = abs(seldict[traj]["diffcoeff"])
+					dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1 
+					clustcol = "dimgray"
+					diffcol = cmap3(dcnorm)
+					times.append(centt)
+					clustcols.append(clustcol)	
+					diffcols.append(diffcol)	
+
+			for i,t in enumerate(times):
+				ax11.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75)
+				ax12.axvline(t,linewidth=1.5,c=diffcols[i],alpha = 0.75)
+
+			ax11.set_ylabel("Cluster")
+			ax12.set_ylabel("D Coeff")				
+			ax12.set_xlabel("time (s)")	
+			ax11.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
+			ax12.tick_params(axis = "both",left = False, labelleft = False)			
+			plt.tight_layout()	
+			plt.show(block=False)	
+
 			t2=time.time()
 			# Pickle
 			buf8 = io.BytesIO()
 			pickle.dump(ax10, buf8)
 			buf8.seek(0)
+
+			buf9 = io.BytesIO()
+			pickle.dump(fig7, buf9)
+			buf9.seek(0)			
+
 			print ("Plot completed in {} sec".format(round(t2-t1,3)))				
 
 		# Save metrics	
@@ -1970,7 +2046,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
 				plt.close()
 			except:
-				pass				
+				pass	
+			try:
+				buf9.seek(0)
+				fig10=pickle.load(buf9)
+				plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
+				plt.close()
+			except:
+				pass	
+				
 			print ("All data saved")	
 		return
 

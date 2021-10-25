@@ -1582,7 +1582,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					#tr = matplotlib.lines.Line3D(x,y,t,c="w",alpha=0.25,linewidth=line_width)
-					tr = art3d.Line3D(x,y,t,c="k",alpha=0.25,linewidth=line_width,zorder=acq_time - np.average(y))
+					tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax7.add_artist(tr) 
 			for num,traj in enumerate(clustindices):
 				if num%10 == 0:
@@ -1595,8 +1595,23 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					x,t,y=zip(*seldict[traj]["points"])
 					col = cmap(np.average(y)/float(acq_time))
 					#tr = matplotlib.lines.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width)
-					tr = art3d.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width,zorder=acq_time - np.average(y))
+					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax7.add_artist(tr) 	
+			if plot_clusters:		
+				for cluster in clusterdict:
+					bar = 100*cluster/(len(clusterdict))
+					window['-PROGBAR-'].update_bar(bar)
+					centx=clusterdict[cluster]["centroid"][0]
+					centy=clusterdict[cluster]["centroid"][1]
+					if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
+						cx,cy,ct = clusterdict[cluster]["centroid"]
+						col = cmap(ct/float(acq_time))
+						bx,by = clusterdict[cluster]["area_xy"]
+						bt = [ct for x in bx]
+						cl = art3d.Line3D(bx,bt,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=acq_time - ct)
+						ax7.add_artist(cl)							
+					
+					
 			ax7.set_xlabel("X")
 			ax7.set_ylabel("T")
 			ax7.set_zlabel("Y")
