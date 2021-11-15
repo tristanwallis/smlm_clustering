@@ -8,7 +8,7 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * segnastic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
 
-* nastic_wrangler_gui.py: meta analysis of output from stic_gui.py and segstic_gui.py
+* nastic_wrangler_gui.py: meta analysis of output from nastic_gui.py and segnastic_gui.py
 
 * dbscan_gui.py: cluster using DBSCAN of trajectory centroids
 
