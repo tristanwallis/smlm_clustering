@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20211025"
+last_changed = "20211115"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1929,6 +1929,28 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("TOTAL CLUSTERS IN HOTSPOTS:\t{}\n".format(hotspot_total))
 				outfile.write("AVERAGE CLUSTERS PER HOTSPOT:\t{}\n".format(hotspot_nums))
 				outfile.write("PERCENTAGE OF CLUSTERS IN HOTSPOTS:\t{}\n".format(round(100*hotspot_prob,3)))	
+				
+				# MSD CURVES
+				outfile.write("\nMSD CURVE DATA:\n")				
+				clust_msds = [seldict[x]["msds"] for x in clustindices]
+				unclust_msds = [seldict[x]["msds"] for x in unclustindices]
+				clust_vals = []
+				unclust_vals = []
+				for i in range(minlength-1):
+					clust_vals.append([])
+					unclust_vals.append([])
+					[clust_vals[i].append(x[i]) for x in clust_msds if x[i] == x[i]]# don't append NaNs
+					[unclust_vals[i].append(x[i]) for x in unclust_msds if x[i] == x[i]]
+				clust_av = [np.average(x) for x in clust_vals]	
+				clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
+				unclust_av = [np.average(x) for x in unclust_vals]	
+				unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
+				msd_times = [frame_time*x for x in range(1,minlength,1)]
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times) + "\n") 
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST MSD (um^2):"] + unclust_av) + "\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST SEM:"] + unclust_sem) + "\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST MSD (um^2):"] + clust_av) + "\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST SEM:"] + clust_sem) + "\n")					
 				
 				# INDIVIDUAL CLUSTER METRICS
 				outfile.write("\nINDIVIDUAL CLUSTER METRICS:\n")
