@@ -4,9 +4,13 @@ Python GUI scripts for molecular trajectory clustering analysis.
 ### Files
 * nastic_gui.py: cluster using R-tree based spatio-temporal indexing of trajectory bounding boxes
 
-* nastic_user_manual.pdf: detailed instructions for stic_gui.py
+* nastic2c_gui.py: two color version of nastic
 
 * segnastic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
+
+* segnastic2c_gui.py: two color version of segnastic
+
+* nastic_user_manual.pdf: detailed instructions for nastic_gui.py and derivatives
 
 * nastic_wrangler_gui.py: meta analysis of output from nastic_gui.py and segnastic_gui.py
 
@@ -16,7 +20,9 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * dbscan_wrangler.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
 
-* synthetic_data.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
+* synthetic_col1.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
+
+* synthetic_col2.trxyt: synthetic trajectory data sharing some spatial and temporal clustering with synthetic_col1  
 
 
 ### About
