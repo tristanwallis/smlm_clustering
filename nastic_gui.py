@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20211206"
+last_changed = "20211215"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1567,7 +1567,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print ("3D [x,y,t] plot of trajectories...")
 			t1 = time.time()
 			fig4 =plt.figure(6,figsize=(8,8))
-			ax7 = plt.subplot(111,projection='3d')	
+			ax7 = plt.subplot(111,projection='3d')
+			ax7.set_box_aspect(aspect = (1,1,1))			
 			ax7.cla()
 			#ax7.set_facecolor("k")	
 			xlims = ax0.get_xlim()

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA
+PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA - 2 COLOUR VERSION
 
 Design and code: Tristan Wallis
 Debugging: Sophie Huiyi Hou
@@ -68,7 +68,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# LOAD MODULES
 	import PySimpleGUI as sg
 	sg.theme('DARKGREY11')
-	popup = sg.Window("Initialising...",[[sg.T("Segment NASTIC initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
+	popup = sg.Window("Initialising...",[[sg.T("SEGNASTIC2C initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 	import random
 	from scipy.spatial import ConvexHull
@@ -82,6 +82,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	import matplotlib.pyplot as plt
 	from matplotlib.widgets import LassoSelector
 	from matplotlib import path
+	from matplotlib.colors import LinearSegmentedColormap
+	import matplotlib.colors as cols	
 	from mpl_toolkits.mplot3d import Axes3D,art3d
 	import math
 	from math import dist
@@ -95,6 +97,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	import warnings
 	import multiprocessing
 	warnings.filterwarnings("ignore")
+
+	# CUSTOM COLORMAP
+	def custom_colormap(colorlist,segments):
+		cmap = LinearSegmentedColormap.from_list('mycmap', colorlist) # gradient cmap
+		N = segments
+		colors_i = np.concatenate((np.linspace(0, 1., N), (0.,0.,0.,0.)))
+		colors_rgba = cmap(colors_i)
+		indices = np.linspace(0, 1., N+1)
+		cdict = {}
+		for ki,key in enumerate(('red','green','blue')):
+			cdict[key] = [ (indices[i], colors_rgba[i-1,ki], colors_rgba[i,ki]) for i in range(N+1) ]
+		cmap_s = cols.LinearSegmentedColormap(cmap.name + "_%d"%N, cdict, 1024) # segmented colormap
+		return cmap,cmap_s		
 
 
 	# NORMALIZE
@@ -164,7 +179,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		]
 		splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c")
 		obj_list=initialise_particles(graph)
-		graph.DrawText("SEGMENT NASTIC v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
+		graph.DrawText("S E G N A S T I C 2 C v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
@@ -241,7 +256,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -257,12 +272,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plot_centroids = False
 		plot_clusters = True
 		plot_colorbar = True	
+		plot_hotspots= True	
 		line_width = 1.5	
 		line_alpha = 0.25	
-		line_color = "white"	
+		line_color = "cyan"	
+		line_color2 = "magenta"	
 		centroid_size = 5	
 		centroid_alpha = 0.75
 		centroid_color = "white"
+		cluster_colorby = "time"
 		cluster_width = 2	
 		cluster_alpha = 1	
 		cluster_linetype = "solid"
@@ -276,19 +294,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmin=""
 		plotxmax=""
 		plotymin=""
-		plotymax=""	
+		plotymax=""
 		hotspot_width = 2.5	
 		hotspot_alpha = 1	
 		hotspot_linetype = "dotted"
 		hotspot_color = "white"				
 		hotspot_radius = 1.0	
-		plot_hotspots = True		
+		balance =True	
 		return 
 
 	# SAVE SETTINGS
 	def save_defaults():
-		print ("Saving GUI settings to segnastic_gui.defaults...")
-		with open("segnastic_gui.defaults","w") as outfile:
+		print ("Saving GUI settings to segnastic2c_gui.defaults...")
+		with open("segnastic2c_gui.defaults","w") as outfile:
 			outfile.write("{}\t{}\n".format("Trajectory probability",traj_prob))
 			outfile.write("{}\t{}\n".format("Raw trajectory detection plot opacity",detection_alpha))
 			outfile.write("{}\t{}\n".format("Selection density",selection_density))
@@ -303,15 +321,17 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Plot trajectories",plot_trajectories))
 			outfile.write("{}\t{}\n".format("Plot centroids",plot_centroids))
 			outfile.write("{}\t{}\n".format("Plot clusters",plot_clusters))
-			outfile.write("{}\t{}\n".format("Plot hotspots",plot_hotspots))
 			outfile.write("{}\t{}\n".format("Plot colorbar",plot_colorbar))		
+			outfile.write("{}\t{}\n".format("Plot hotspots",plot_hotspots))		
 			outfile.write("{}\t{}\n".format("Trajectory line width",line_width))
 			outfile.write("{}\t{}\n".format("Trajectory line color",line_color))
+			outfile.write("{}\t{}\n".format("Trajectory line color 2",line_color2))
 			outfile.write("{}\t{}\n".format("Trajectory line opacity",line_alpha))
 			outfile.write("{}\t{}\n".format("Centroid size",centroid_size))
 			outfile.write("{}\t{}\n".format("Centroid color",centroid_color))
 			outfile.write("{}\t{}\n".format("Centroid opacity",centroid_alpha))
 			outfile.write("{}\t{}\n".format("Cluster fill",cluster_fill))		
+			outfile.write("{}\t{}\n".format("Cluster color by",cluster_colorby))
 			outfile.write("{}\t{}\n".format("Cluster line width",cluster_width))			
 			outfile.write("{}\t{}\n".format("Cluster line opacity",cluster_alpha))
 			outfile.write("{}\t{}\n".format("Cluster line type",cluster_linetype))
@@ -319,21 +339,22 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Hotspot line opacity",hotspot_alpha))
 			outfile.write("{}\t{}\n".format("Hotspot line type",hotspot_linetype))	
 			outfile.write("{}\t{}\n".format("Hotspot radius",hotspot_radius))	
-			outfile.write("{}\t{}\n".format("Hotspot color",hotspot_color))			
+			outfile.write("{}\t{}\n".format("Hotspot color",hotspot_color))				
 			outfile.write("{}\t{}\n".format("Plot save format",saveformat))
 			outfile.write("{}\t{}\n".format("Plot save dpi",savedpi))
 			outfile.write("{}\t{}\n".format("Plot background transparent",savetransparency))
 			outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
 			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))			
+			outfile.write("{}\t{}\n".format("Color balance",balance))			
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance
 		try:
-			with open ("segnastic_gui.defaults","r") as infile:
-				print ("Loading GUI settings from segnastic_gui.defaults...")
+			with open ("segnastic2c_gui.defaults","r") as infile:
+				print ("Loading GUI settings from segnastic2c_gui.defaults...")
 				defaultdict = {}
 				for line in infile:
 					spl = line.split("\t")
@@ -376,10 +397,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plot_hotspots = False					
 			line_width = float(defaultdict["Trajectory line width"])	
 			line_alpha = float(defaultdict["Trajectory line opacity"])	
-			line_color = defaultdict["Trajectory line color"]	
+			line_color = defaultdict["Trajectory line color"]
+			line_color2 = defaultdict["Trajectory line color 2"]			
 			centroid_size = int(defaultdict["Centroid size"])	
 			centroid_alpha = float(defaultdict["Centroid opacity"])	
 			centroid_color = defaultdict["Centroid color"]
+			cluster_colorby = defaultdict["Cluster color by"]			
 			cluster_width = float(defaultdict["Cluster line width"])	
 			cluster_alpha = float(defaultdict["Cluster line opacity"])	
 			cluster_linetype = defaultdict["Cluster line type"]		
@@ -387,13 +410,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if cluster_fill == "True":
 				cluster_fill = True
 			if cluster_fill == "False":
-				cluster_fill = False				
+				cluster_fill = False	
 			hotspot_color = defaultdict["Hotspot color"]
 			hotspot_radius = defaultdict["Hotspot radius"]
 			hotspot_width = float(defaultdict["Hotspot line width"])	
 			hotspot_alpha = float(defaultdict["Hotspot line opacity"])	
-			hotspot_linetype = defaultdict["Hotspot line type"]
-				
+			hotspot_linetype = defaultdict["Hotspot line type"]					
 			saveformat = defaultdict["Plot save format"]
 			savedpi = defaultdict["Plot save dpi"]	
 			savetransparency = defaultdict["Plot background transparent"]
@@ -419,7 +441,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plotxmin=""
 			plotxmax=""
 			plotymin=""
-			plotymax=""					
+			plotymax=""	
+			balance = defaultdict["Color balance"]	
+			if balance == "True":
+				balance = True
+			if balance == "False":
+				balance = False		
+			
 		except:
 			print ("Settings could not be loaded")
 		return
@@ -428,7 +456,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	def update_buttons():
 		if len(infilename) > 0:  
 			window.Element("-PLOTBUTTON-").update(button_color=("white","#111111"),disabled=False)
-			window.Element("-INFILE-").InitialFolder = os.path.dirname(infilename)			
+			window.Element("-INFILE-").InitialFolder = os.path.dirname(infilename)	
+			window.Element("-INFILE2-").InitialFolder = os.path.dirname(infilename2)			
 		else:
 			window.Element("-PLOTBUTTON-").update(button_color=("white","gray"),disabled=True)	
 		if len(trajdict) > 0:
@@ -451,9 +480,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				window.Element("-SAVEBUTTON-").update(button_color=("white","#111111"),disabled=False)
 			window.Element("-CANVASCOLORCHOOSE-").update(disabled=False)
 			window.Element("-LINECOLORCHOOSE-").update(disabled=False)
+			window.Element("-LINECOLORCHOOSE2-").update(disabled=False)			
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)		
 			window.Element("-SAVEANALYSES-").update(button_color=("white","#111111"),disabled=False)
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-","-M8-"]:
 				window.Element(buttonkey).update(disabled=False)
 		else:  
 			window.Element("-DISPLAYBUTTON-").update(button_color=("white","gray"),disabled=True)
@@ -462,7 +492,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			window.Element("-LINECOLORCHOOSE-").update(disabled=True)
 			window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=True)
 			window.Element("-SAVEANALYSES-").update(button_color=("white","gray"),disabled=True)		
-			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-"]:
+			for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-","-M8-"]:
 				window.Element(buttonkey).update(disabled=True)	
 		window.Element("-TRAJPROB-").update(traj_prob)
 		window.Element("-DETECTIONALPHA-").update(detection_alpha)	
@@ -484,7 +514,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-LINEWIDTH-").update(line_width)
 		window.Element("-LINEALPHA-").update(line_alpha)
 		window.Element("-LINECOLORCHOOSE-").update("Choose",button_color=("gray",line_color))
+		window .Element("-LINECOLORCHOOSE2-").update(disabled=True)
+		window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=True)
+		window.Element("-HOTSPOTCOLORCHOOSE-").update(disabled=True)		
 		window.Element("-LINECOLOR-").update(line_color)		
+		window.Element("-LINECOLOR2-").update(line_color2)		
 		window.Element("-CENTROIDSIZE-").update(centroid_size)
 		window.Element("-CENTROIDALPHA-").update(centroid_alpha)
 		window.Element("-CENTROIDCOLORCHOOSE-").update("Choose",button_color=("gray",centroid_color))
@@ -492,7 +526,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-CLUSTERWIDTH-").update(cluster_width)
 		window.Element("-CLUSTERALPHA-").update(cluster_alpha)
 		window.Element("-CLUSTERLINETYPE-").update(cluster_linetype)
-		window.Element("-CLUSTERFILL-").update(cluster_fill)
+		window.Element("-CLUSTERFILL-").update(cluster_fill)	
 		window.Element("-HOTSPOTCOLORCHOOSE-").update("Choose",button_color=("gray",hotspot_color))
 		window.Element("-HOTSPOTCOLOR-").update(hotspot_color)		
 		window.Element("-HOTSPOTWIDTH-").update(hotspot_width)
@@ -510,11 +544,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTYMAX-").update(plotymax)	
 		window.Element("-TMIN-").update(tmin)
 		window.Element("-TMAX-").update(tmax)			
+		window.Element("-BALANCE-").update(balance)			
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -588,9 +623,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if hotspot_alpha not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			hotspot_alpha = 1.0 
 		if hotspot_linetype not in ["solid","dotted","dashed"]:
-			hotspot_linetype = "dotted" 		
-		if hotspot_radius not in [0.1,0.25,0.5,1.0,1.25,1.5,1.75,2.0]:
-			hotspot_radius = 1 				
+			hotspot_linetype = "solid" 				
 		if saveformat not in ["eps","pdf","png","ps","svg"]:
 			saveformat = "png"
 		if savedpi not in [50,100,300,600,1200]:
@@ -605,14 +638,26 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				canvas_color = "black"
 		if line_color == "None":
 			try:
-				line_color = defaultdict["Trajectory line color"]
+				line_color = defaultdict["Trajectory line color 1"]
 			except:	
-				line_color = "white"
+				line_color = "cyan"
+		if line_color2 == "None":
+			try:
+				line_color2 = defaultdict["Trajectory line color 2"]
+			except:	
+				line_color2 = "magenta"	
 		if centroid_color == "None":
 			try:
 				centroid_color = defaultdict["Centroid color"]
 			except:	
 				centroid_color = "white"
+		if hotspot_color == "None":
+			try:
+				hotspot_color = defaultdict["Hotspot color"]
+			except:	
+				hotspot_color = "white"				
+		if hotspot_radius not in [0.1,0.25,0.5,1.0,1.25,1.5,1.75,2.0]:
+			hotspot_radius = 1 				
 		try:
 			plotxmin = float(plotxmin)
 		except:
@@ -787,23 +832,24 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# LOAD AND PLOT TRXYT TAB
 	def trxyt_tab():
 		# Reset variables
-		global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,seldict,clusterdict,x_plot,y_plot,xlims,ylims,savefolder,buf
+		global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,lastfile2,seldict,clusterdict,x_plot,y_plot,xlims,ylims,savefolder,buf
 		all_selverts = [] # all ROI vertices
 		all_selareas = [] # all ROI areas
 		roi_list = [] # ROI artists
 		trajdict = {} # Dictionary holding raw trajectory info
+		trajdict2 = {} # Dictionary holding raw trajectory info
 		sel_traj = [] # Selected trajectory indices
 		lastfile = "" # Force the program to load a fresh TRXYT
+		lastfile2 = "" # Force the program to load a fresh TRXYT		
 		seldict = {} # Selected trajectories and metrics
 		clusterdict = {} # Cluster information
 		
-		# Close open windows
+		# Close all opened windows
 		for i in [1,2,3,4,5,6,7,8,9,10]:
 			try:
 				plt.close(i)
 			except:
 				pass
-
 		# Close all buffers		
 		try:
 			buf0.close()
@@ -849,8 +895,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			buf10.close()
 		except:
 			pass				
-								
 				
+		try:	
+			ax0.unshare_x_axes(ax8)	
+			ax0.unshare_y_axes(ax8)	
+			print ("Unsharing")
+		except: 
+			pass
+
 		'''
 		IMPORTANT: It appears that some matlab processing of trajectory data converts trajectory numbers > 99999 into scientific notation with insufficient decimal points. eg 102103 to 1.0210e+05, 102104 to 1.0210e+05. This can cause multiple trajectories to be incorrectly merged into a  single trajectory.
 		For trajectories > 99999 we empirically determine whether detections are within 0.32u of each other, and assign them into a single trajectory accordingly. For trajectories <99999 we honour the existing trajectory number.
@@ -891,17 +943,65 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 								
 					except:
 						pass
-			print("{} trajectories".format(len(rawtrajdict)))			
+			
+			print("{} trajectories in file 1".format(len(rawtrajdict)))	
+
+		if infilename2 != lastfile2:
+			# Read file into dictionary
+			lastfile2=infilename2
+			print("Loading raw trajectory data from {}...".format(infilename2))
+			ct = 10099999
+			x0 = -10000
+			y0 = -10000
+			rawtrajdict2 = {}
+			with open (infilename2,"r") as infile:
+				for line in infile:
+					try:
+						line = line.replace("\n","").replace("\r","")
+						spl = line.split(" ")
+						n = int(float(spl[0])) + 10000000
+						x = float(spl[1])
+						y = float(spl[2])
+						t = float(spl[3])
+						if n > 10099999:
+							if abs(x-x0) < 0.32 and abs(y-y0) < 0.32:
+								rawtrajdict2[ct]["points"].append([x,y,t])
+								x0 = x
+								y0= y
+							else:
+								ct += 1
+								rawtrajdict2[ct]= {"points":[[x,y,t]]}	
+								x0 = x
+								y0=y
+						else:
+							try:
+								rawtrajdict2[n]["points"].append([x,y,t])
+							except:
+								rawtrajdict2[n]= {"points":[[x,y,t]]}
+								
+					except:
+						pass
+			print("{} trajectories in file 2".format(len(rawtrajdict2)))					
 		
 		# Don't bother with anything else if there's no trajectories				
-		if len(rawtrajdict) == 0:
-			sg.popup("Alert","No trajectory information found")
+		if len(rawtrajdict) == 0 or len(rawtrajdict2) == 0:
+			sg.popup("Alert","No trajectory information found in file 1 or file 2")
 		else:
+			
 			# Screen and display
 			for traj in rawtrajdict:
 				points = rawtrajdict[traj]["points"]
 				if len(points) >=minlength and len(points) <=maxlength:
 					trajdict[traj] = rawtrajdict[traj]
+					
+			for traj in rawtrajdict2:
+				points = rawtrajdict2[traj]["points"]
+				if len(points) >=minlength and len(points) <=maxlength:
+					trajdict2[traj] = rawtrajdict2[traj]
+
+			trajdict = {**trajdict,**trajdict2}			
+
+		
 			print("Plotting detections...")
 			ct = 0
 			ax0.cla() # clear last plot if present
@@ -914,8 +1014,22 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				if random.random() <= traj_prob:
 					ct+=1
 					[detpoints.append(i) for i in trajdict[traj]["points"]]
+			detpoints2 = []
+			for num,traj in enumerate(trajdict2):
+				if num%10 == 0:
+					bar = 100*num/(len(trajdict2))
+					window['-PROGBAR-'].update_bar(bar)
+				
+				if random.random() <= traj_prob:
+					ct+=1
+					[detpoints2.append(i) for i in trajdict2[traj]["points"]]					
+					
 			x_plot,y_plot,t_plot=zip(*detpoints)
-			ax0.scatter(x_plot,y_plot,c="w",s=3,linewidth=0,alpha=detection_alpha)	
+			ax0.scatter(x_plot,y_plot,c=line_color,s=3,linewidth=0,alpha=detection_alpha)	
+
+			x_plot,y_plot,t_plot=zip(*detpoints2)
+			ax0.scatter(x_plot,y_plot,c=line_color2,s=3,linewidth=0,alpha=detection_alpha)			
+			
 			ax0.set_facecolor("k")
 			#ax0.set_title(infilename.split("/")[-1])		
 			ax0.set_xlabel("X")
@@ -1080,11 +1194,30 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CLUSTERING TAB	
 	def cluster_tab():
-		global segdict,seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,overlap_threshold,all_diffcoeffs
+		global sel_traj,segdict,seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,overlap_threshold,all_diffcoeffs,indices1,balance
 
 		# Dictionary of selected trajectories
 		print ("Generating bounding boxes of segments in selected trajectories...")	
 		seldict = {}
+		indices1 = len([x for x in sel_traj if x < 10000000])
+
+		# Balance trajectory numbers
+		if balance:
+			print ("Balancing trajectory numbers between colors..")
+			col1 = [x for x in sel_traj if x < 10000000]
+			col2 = [x for x in sel_traj if x > 10000000]
+			col_ratio = float(len(col1)/len(col2))	
+
+			if col_ratio < 1:
+				col2 = [x for x in col2 if random.random() < col_ratio]
+			else:
+				col1 = [x for x in col1 if random.random() < (1/col_ratio)]
+				indices1 = len(col1)
+			print ("Balanced trajectory numbers within ROI: {} {}".format(len(col1),len(col2)))
+			sel_traj = col1 + col2		
+
+	
+	
 		sel_centroids = []
 		t1=time.time()
 		all_diffcoeffs = []
@@ -1191,6 +1324,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ymean = np.average(y)
 			tmean = np.average(t)
 			clusterdict[num]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
+			clusterdict[num]["composition"] = float(len([x for x in clusterdict[num]["traj_list"] if x > indices1])/clusterdict[num]["traj_num"]) # composition 0 = 100% molecule 1, 1 = 100% molecule 2 			
 		allindices = range(len(seldict))
 		clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
 		unclustindices = [idx for idx in allindices if idx not in clustindices] 	
@@ -1204,7 +1338,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# DISPLAY CLUSTERED DATA TAB
 	def	display_tab(xlims,ylims):
-		global buf0,plotflag,plotxmin,plotymin,plotxmax,plotymax
+		global buf0,plotflag,plotxmin,plotymin,plotxmax,plotymax,indices1
 		print ("Plotting clustered trajectories...")
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
@@ -1223,65 +1357,72 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		ax0.set_facecolor(canvas_color)
 		xcent = []
 		ycent = []
-		
+
 		# All trajectories
-		print ("Plotting unclustered trajectories...")
-		t1=time.time()
+		print ("Plotting all selected trajectories...")
+		t1=time.time()		
 		for num,traj in enumerate(seldict):
 			if num%10 == 0:
-				bar = 100*num/(len(unclustindices)-1)
+				bar = 100*num/(len(seldict)-1)
 				window['-PROGBAR-'].update_bar(bar)
 			centx=seldict[traj]["centroid"][0]
 			centy=seldict[traj]["centroid"][1]
 			if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
 				if plot_trajectories:
+					if traj < indices1:
+						col = line_color
+					else:
+						col = line_color2
 					x,y,t=zip(*seldict[traj]["points"])
-					tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=line_alpha,linewidth=line_width)
+					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=line_alpha,linewidth=line_width)
 					ax0.add_artist(tr) 
 				if plot_centroids:
 					xcent.append(seldict[traj]["centroid"][0])
 					ycent.append(seldict[traj]["centroid"][1])	
-		
+		ax0.scatter(xcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0,zorder=100)
+
 		# Clustered trajectories
 		print ("Highlighting clustered trajectories...")
+		
+		# Custom colormap
+		if cluster_colorby == "composition":
+			twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
+		else:
+			twmap = cmap		
+		
 		for cluster in clusterdict:
 			bar = 100*cluster/(len(clusterdict))
 			window['-PROGBAR-'].update_bar(bar)
 			centx=clusterdict[cluster]["centroid"][0]
 			centy=clusterdict[cluster]["centroid"][1]
 			if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
-				
-				indices = clusterdict[cluster]["traj_list"]
-				'''
-				linestyle="solid"
-				if len(indices)==1:
-					linestyle="dotted"
-				if plot_trajectories:
-					for idx in indices:
-						x,y,t=zip(*seldict[idx]["points"])
-						col = cmap(np.average(t)/float(acq_time))
-						alpha=0.5
-						tr = matplotlib.lines.Line2D(x,y,c=col,alpha=alpha,linewidth=line_width,linestyle=linestyle)
-						ax0.add_artist(tr) 
-				'''
 				if plot_clusters:
 					cx,cy,ct = clusterdict[cluster]["centroid"]
-					col = cmap(ct/float(acq_time))
+					comp = clusterdict[cluster]["composition"]
+					if cluster_colorby == "time":
+						col = twmap(ct/float(acq_time))
+					else:
+						col = twmap(comp)
+						
 					# Unfilled polygon
 					bx,by = clusterdict[cluster]["area_xy"]
-					cl = matplotlib.lines.Line2D(bx,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=100)
+					cl = matplotlib.lines.Line2D(bx,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=10000-ct)
 					ax0.add_artist(cl)
-					
 					# Filled polygon
 					if cluster_fill:
 						vertices = list(zip(*clusterdict[cluster]["area_xy"]))
 						cl = plt.Polygon(vertices,facecolor=col,edgecolor=col,alpha=cluster_alpha,zorder=-ct)
-						ax0.add_patch(cl)
-				if plot_centroids:
-					for idx in indices:
-						xcent.append(seldict[idx]["centroid"][0])
-						ycent.append(seldict[idx]["centroid"][1])
-		ax0.scatter(xcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0,zorder=1000)		
+						ax0.add_patch(cl) 
+						
+					# Unfilled polygon
+					bx,by = clusterdict[cluster]["area_xy"]
+					cl = matplotlib.lines.Line2D(bx,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=10000-ct)
+					ax0.add_artist(cl)
+					# Filled polygon
+					if cluster_fill:
+						vertices = list(zip(*clusterdict[cluster]["area_xy"]))
+						cl = plt.Polygon(vertices,facecolor=col,edgecolor=col,alpha=cluster_alpha,zorder=-ct)
+						ax0.add_patch(cl) 
 
 		# Hotspots info
 		if plot_hotspots:	
@@ -1321,12 +1462,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints)
 						cl = matplotlib.lines.Line2D(ext_x,ext_y,c=hotspot_color,alpha=hotspot_alpha,linewidth=hotspot_width,linestyle=hotspot_linetype,zorder=15000)
 						ax0.add_artist(cl) 	
-						
-		ax0.set_xlabel("X")
-		ax0.set_ylabel("Y")
 
-
-		
+				
 		ax0.set_xlabel("X")
 		ax0.set_ylabel("Y")
 		window['-PROGBAR-'].update_bar(0)
@@ -1351,7 +1488,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			y_perc = (ylims[1] - ylims[0])/100
 			ax0.imshow([[0,1], [0,1]], 
 			extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
-			cmap = cmap, 
+			cmap = twmap, 
 			interpolation = 'bicubic',
 			zorder=1000000
 			)
@@ -1382,30 +1519,69 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			fig1 = plt.figure(1,figsize=(4,4))
 			ax1 = plt.subplot(111)
 			ax1.cla()
-			clust_msds = [seldict[x]["msds"] for x in clustindices]
-			unclust_msds = [seldict[x]["msds"] for x in unclustindices]
-			clust_vals = []
-			unclust_vals = []
+			
+			clustindices1 = [x for x in clustindices if x < indices1]
+			clustindices2 = [x for x in clustindices if x > indices1]
+			unclustindices1 = [x for x in unclustindices if x < indices1]
+			unclustindices2 = [x for x in unclustindices if x > indices1]			
+		
+			clust_msds1 = [seldict[x]["msds"] for x in clustindices1]
+			unclust_msds1 = [seldict[x]["msds"] for x in unclustindices1]			
+			clust_msds2 = [seldict[x]["msds"] for x in clustindices2]
+			unclust_msds2 = [seldict[x]["msds"] for x in unclustindices2]
+			clust_vals1 = []
+			clust_vals2 = []
+			unclust_vals1 = []
+			unclust_vals2 = []
 			for i in range(minlength-1):
-				clust_vals.append([])
-				unclust_vals.append([])
-				[clust_vals[i].append(x[i]) for x in clust_msds if x[i] == x[i]]# don't append NaNs
-				[unclust_vals[i].append(x[i]) for x in unclust_msds if x[i] == x[i]]
-			clust_av = [np.average(x) for x in clust_vals]	
-			clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
-			unclust_av = [np.average(x) for x in unclust_vals]	
-			unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-			msd_times = [0.001*20*x for x in range(1,minlength,1)]	
-			ax1.scatter(msd_times,clust_av,s=10,c="orange")
-			ax1.errorbar(msd_times,clust_av,clust_sem,c="orange",label="Clustered: {}".format(len(clust_msds)),capsize=5)
-			ax1.scatter(msd_times,unclust_av,s=10,c="blue")
-			ax1.errorbar(msd_times,unclust_av,unclust_sem,c="blue",label="Unclustered: {}".format(len(unclust_msds)),capsize=5)
+				clust_vals1.append([])
+				clust_vals2.append([])
+				unclust_vals1.append([])
+				unclust_vals2.append([])
+				[clust_vals1[i].append(x[i]) for x in clust_msds1 if x[i] == x[i]]# don't append NaNs
+				[clust_vals2[i].append(x[i]) for x in clust_msds2 if x[i] == x[i]]# don't append NaNs
+				[unclust_vals1[i].append(x[i]) for x in unclust_msds1 if x[i] == x[i]]
+				[unclust_vals2[i].append(x[i]) for x in unclust_msds2 if x[i] == x[i]]
+			clust_av1 = [np.average(x) for x in clust_vals1]	
+			clust_sem1 = [np.std(x)/math.sqrt(len(x)) for x in clust_vals1]
+			unclust_av1 = [np.average(x) for x in unclust_vals1]	
+			unclust_sem1 = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals1]
+			
+			clust_av2 = [np.average(x) for x in clust_vals2]	
+			clust_sem2 = [np.std(x)/math.sqrt(len(x)) for x in clust_vals2]
+			unclust_av2 = [np.average(x) for x in unclust_vals2]	
+			unclust_sem2 = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals2]	
+	
+			msd_times = [frame_time*x for x in range(1,minlength,1)]	
+			ax1.scatter(msd_times,clust_av1,s=10,c=line_color)
+			ax1.errorbar(msd_times,clust_av1,clust_sem1,c=line_color,label="Col 1 Clustered: {}".format(len(clust_msds1)),capsize=5)
+			ax1.scatter(msd_times,unclust_av1,s=10,c=line_color)
+			ax1.errorbar(msd_times,unclust_av1,unclust_sem1,c=line_color,linestyle="dotted",label="Col 1 Unclustered: {}".format(len(unclust_msds1)),capsize=5)
+			
+			ax1.scatter(msd_times,clust_av2,s=10,c=line_color2)
+			ax1.errorbar(msd_times,clust_av2,clust_sem1,c=line_color2,label="Col 2 Clustered: {}".format(len(clust_msds2)),capsize=5)
+			ax1.scatter(msd_times,unclust_av2,s=10,c=line_color2)
+			ax1.errorbar(msd_times,unclust_av2,unclust_sem2,c=line_color2,linestyle="dotted",label="Col 2 Unclustered: {}".format(len(unclust_msds2)),capsize=5)
+			
 			ax1.legend()
 			plt.xlabel("Time (s)")
 			plt.ylabel(u"MSD (μm²)")
 			plt.tight_layout()
 			fig1.canvas.set_window_title('MSD Curves')
 			plt.show(block=False)
+			
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 UNCLUST MSD (um^2):"] + unclust_av1))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 UNCLUST SEM:"] + unclust_sem1))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 CLUST MSD (um^2):"] + clust_av1))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 CLUST SEM:"] + clust_sem1))
+
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 UNCLUST MSD (um^2):"] + unclust_av2))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 UNCLUST SEM:"] + unclust_sem2))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 CLUST MSD (um^2):"] + clust_av2))
+			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 CLUST SEM:"] + clust_sem2))				
+	
 			t2=time.time()
 			print ("MSD plot completed in {} sec".format(round(t2-t1,3)))
 			# Pickle
@@ -1635,10 +1811,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		# 3D plot
 		if event == "-M5-":	
 			print ("3D [x,y,t] plot of trajectories...")
+			if cluster_colorby == "composition":
+				twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
+			else:
+				twmap = cmap
+			
 			t1 = time.time()
 			fig6 =plt.figure(6,figsize=(8,8))
-			ax8 = plt.subplot(111,projection='3d')
-			ax8.set_box_aspect(aspect = (1,1,1))			
+			ax8 = plt.subplot(111,projection='3d')	
+			ax8.set_box_aspect(aspect = (1,1,1))
 			ax8.cla()
 			#ax8.set_facecolor("k")	
 			xlims = ax0.get_xlim()
@@ -1652,7 +1833,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				centt=seldict[traj]["centroid"][2]
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
-					#tr = matplotlib.lines.Line3D(x,y,t,c="w",alpha=0.25,linewidth=line_width)
 					tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax8.add_artist(tr) 
 			for num,traj in enumerate(clustindices):
@@ -1664,8 +1844,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				centt=seldict[traj]["centroid"][2]
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
-					col = cmap(np.average(y)/float(acq_time))
-					#tr = matplotlib.lines.Line3D(x,y,t,c=col,alpha=0.5,linewidth=line_width)
+					col = line_color
+					if traj > indices1:
+						col = line_color2
 					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 					ax8.add_artist(tr) 	
 			if plot_clusters:		
@@ -1676,12 +1857,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					centy=clusterdict[cluster]["centroid"][1]
 					if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
 						cx,cy,ct = clusterdict[cluster]["centroid"]
-						col = cmap(ct/float(acq_time))
+						comp = clusterdict[cluster]["composition"]
+						if cluster_colorby == "time":
+							col = twmap(ct/float(acq_time))
+						else:
+							col = twmap(comp)
 						bx,by = clusterdict[cluster]["area_xy"]
 						bt = [ct for x in bx]
 						cl = art3d.Line3D(bx,bt,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=acq_time - ct)
-						ax8.add_artist(cl)					
-					
+						ax8.add_artist(cl)
 					
 			ax8.set_xlabel("X")
 			ax8.set_ylabel("T")
@@ -1780,82 +1964,57 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			cmap = "viridis_r", 
 			interpolation = 'bicubic',
 			zorder=1000)	
-			
 			#plt.title("Diffusion coefficient")			
 			plt.tight_layout()	
 			plt.show(block=False)
-
-			# DIFF COEFF TIME PLOT		
-			fig7 =plt.figure(9,figsize=(6,3))
-			ax11 = plt.subplot(211)
-			ax12 = plt.subplot(212,sharex=ax11,sharey=ax11)	
-			ax11.cla()
-			ax11.set_facecolor("k")	
-			ax12.cla()
-			ax12.set_facecolor("k")		
-			clustcols = []
-			diffcols = []
-			times = []
-			for num,traj in enumerate(clustindices): 
-				if num%10 == 0:
-					bar = 100*num/(len(clustindices)-1)
-					window['-PROGBAR-'].update_bar(bar)
-				centx=seldict[traj]["centroid"][0]
-				centy=seldict[traj]["centroid"][1]
-				centt=seldict[traj]["centroid"][2]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
-					diffcoeff  = abs(seldict[traj]["diffcoeff"])
-					clustcol = cmap(centt/float(acq_time))
-					dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1 
-					diffcol = cmap3(dcnorm)
-					times.append(centt)
-					clustcols.append(clustcol)	
-					diffcols.append(diffcol)
-			for num,traj in enumerate(unclustindices): 
-				if num%10 == 0:
-					bar = 100*num/(len(unclustindices)-1)
-					window['-PROGBAR-'].update_bar(bar)
-				centx=seldict[traj]["centroid"][0]
-				centy=seldict[traj]["centroid"][1]
-				centt=seldict[traj]["centroid"][2]
-				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
-					diffcoeff  = abs(seldict[traj]["diffcoeff"])
-					dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1 
-					clustcol = "dimgray"
-					diffcol = cmap3(dcnorm)
-					times.append(centt)
-					clustcols.append(clustcol)	
-					diffcols.append(diffcol)	
-
-			for i,t in enumerate(times):
-				ax11.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75)
-				ax12.axvline(t,linewidth=1.5,c=diffcols[i],alpha = 0.75)
-
-			ax11.set_ylabel("Cluster")
-			ax12.set_ylabel("D Coeff")				
-			ax12.set_xlabel("time (s)")	
-			ax11.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
-			ax12.tick_params(axis = "both",left = False, labelleft = False)			
-			plt.tight_layout()	
-			plt.show(block=False)	
-
 			t2=time.time()
 			# Pickle
 			buf8 = io.BytesIO()
 			pickle.dump(ax10, buf8)
 			buf8.seek(0)
+			print ("Plot completed in {} sec".format(round(t2-t1,3)))
 
+		# 2 color stuff	
+		if event == "-M8-":	
+			print ("Two color metrics...")		
+
+			t1 = time.time()		
+			allcomp = []
+			for cluster in clusterdict: 
+				comp = clusterdict[cluster]["composition"]
+				allcomp.append(comp)
+
+			fig7 =plt.figure(10,figsize=(4,4))
+			ax11 = plt.subplot(111)
+
+			twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
+
+			bin_edges = np.histogram_bin_edges(allcomp,bins=10)
+			dist,bins =np.histogram(allcomp,bin_edges)
+			dist = [float(x)/sum(dist) for x in dist]
+			bin_centers = 0.5*(bins[1:]+bins[:-1])
+	
+			for i in range(len(dist)-1):
+				ax11.plot((bin_centers[i],bin_centers[i+1]),(dist[i],dist[i+1]),c = twmap(bin_centers[i]))	
+				
+			#ax12.plot(bin_centers,dist,c="royalblue")
+			plt.ylabel("Frequency")
+			plt.xlabel("Proportion of col 2")
+			#plt.title("Detection density over time")
+			plt.tight_layout()	
+			plt.show(block=False)
+			t2=time.time()
+			
 			buf9 = io.BytesIO()
 			pickle.dump(fig7, buf9)
 			buf9.seek(0)			
-
 			print ("Plot completed in {} sec".format(round(t2-t1,3)))				
 
 		# Save metrics	
 		if event == "-SAVEANALYSES-":	
 			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 			outpath = os.path.dirname(infilename)
-			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_SEGNASTIC_{}".format(stamp))
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","") + "_" + infilename2.split("/")[-1].replace(".trxyt","_SEGNASTIC2C_{}".format(stamp))
 			os.mkdir(outdir)
 			outfilename = "{}/metrics.tsv".format(outdir)
 			print ("Saving metrics, ROIs and all plots to {}...".format(outdir))
@@ -1929,41 +2088,59 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("HOTSPOTS (CLUSTER SPATIAL OVERLAP AT 1/2 AVERAGE RADIUS):\t{}\n".format(hotspots))
 				outfile.write("TOTAL CLUSTERS IN HOTSPOTS:\t{}\n".format(hotspot_total))
 				outfile.write("AVERAGE CLUSTERS PER HOTSPOT:\t{}\n".format(hotspot_nums))
-				outfile.write("PERCENTAGE OF CLUSTERS IN HOTSPOTS:\t{}\n".format(round(100*hotspot_prob,3)))	
-				
+				outfile.write("PERCENTAGE OF CLUSTERS IN HOTSPOTS:\t{}\n".format(round(100*hotspot_prob,3)))
+
 				# MSD CURVES
-				outfile.write("\nMSD CURVE DATA:\n")
-				clust_msds = [seldict[x]["msds"] for x in clustindices]
-				unclust_msds = [seldict[x]["msds"] for x in unclustindices]
-				all_msds = [seldict[x]["msds"] for x in allindices]
-				clust_vals = []
-				unclust_vals = []
-				all_vals = []
+				outfile.write("\nMSD CURVE DATA:\n")	
+				clustindices1 = [x for x in clustindices if x < indices1]
+				clustindices2 = [x for x in clustindices if x > indices1]
+				unclustindices1 = [x for x in unclustindices if x < indices1]
+				unclustindices2 = [x for x in unclustindices if x > indices1]			
+			
+				clust_msds1 = [seldict[x]["msds"] for x in clustindices1]
+				unclust_msds1 = [seldict[x]["msds"] for x in unclustindices1]			
+				clust_msds2 = [seldict[x]["msds"] for x in clustindices2]
+				unclust_msds2 = [seldict[x]["msds"] for x in unclustindices2]
+				clust_vals1 = []
+				clust_vals2 = []
+				unclust_vals1 = []
+				unclust_vals2 = []
 				for i in range(minlength-1):
-					clust_vals.append([])
-					unclust_vals.append([])
-					all_vals.append([])
-					[clust_vals[i].append(x[i]) for x in clust_msds if x[i] == x[i]]# don't append NaNs
-					[unclust_vals[i].append(x[i]) for x in unclust_msds if x[i] == x[i]]
-					[all_vals[i].append(x[i]) for x in all_msds if x[i] == x[i]]
-				clust_av = [np.average(x) for x in clust_vals]	
-				clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
-				unclust_av = [np.average(x) for x in unclust_vals]	
-				unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-				all_av = [np.average(x) for x in all_vals]	
-				all_sem = [np.std(x)/math.sqrt(len(x)) for x in all_vals]
-				msd_times = [frame_time*x for x in range(1,minlength,1)]
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times) + "\n") 
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST MSD (um^2):"] + unclust_av) + "\n")
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST SEM:"] + unclust_sem) + "\n")
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST MSD (um^2):"] + clust_av) + "\n")
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["CLUST SEM:"] + clust_sem) + "\n")	
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["ALL MSD (um^2):"] + all_av) + "\n")
-				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["ALL SEM:"] + all_sem) + "\n")			
+					clust_vals1.append([])
+					clust_vals2.append([])
+					unclust_vals1.append([])
+					unclust_vals2.append([])
+					[clust_vals1[i].append(x[i]) for x in clust_msds1 if x[i] == x[i]]# don't append NaNs
+					[clust_vals2[i].append(x[i]) for x in clust_msds2 if x[i] == x[i]]# don't append NaNs
+					[unclust_vals1[i].append(x[i]) for x in unclust_msds1 if x[i] == x[i]]
+					[unclust_vals2[i].append(x[i]) for x in unclust_msds2 if x[i] == x[i]]
+				clust_av1 = [np.average(x) for x in clust_vals1]	
+				clust_sem1 = [np.std(x)/math.sqrt(len(x)) for x in clust_vals1]
+				unclust_av1 = [np.average(x) for x in unclust_vals1]	
+				unclust_sem1 = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals1]
+				
+				clust_av2 = [np.average(x) for x in clust_vals2]	
+				clust_sem2 = [np.std(x)/math.sqrt(len(x)) for x in clust_vals2]
+				unclust_av2 = [np.average(x) for x in unclust_vals2]	
+				unclust_sem2 = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals2]	
+		
+				msd_times = [frame_time*x for x in range(1,minlength,1)]	
+
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 UNCLUST MSD (um^2):"] + unclust_av1)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 UNCLUST SEM:"] + unclust_sem1)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 CLUST MSD (um^2):"] + clust_av1)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 1 CLUST SEM:"] + clust_sem1)+"\n")
+
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 UNCLUST MSD (um^2):"] + unclust_av2)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 UNCLUST SEM:"] + unclust_sem2)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 CLUST MSD (um^2):"] + clust_av2)+"\n")
+				outfile.write(reduce(lambda x, y: str(x) + "\t" + str(y), ["COL 2 CLUST SEM:"] + clust_sem2)+"\n")				
+								
 				
 				# INDIVIDUAL CLUSTER METRICS
 				outfile.write("\nINDIVIDUAL CLUSTER METRICS:\n")
-				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\n")
+				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\tCOL 2\n")
 				trajnums = []
 				lifetimes = []
 				times = []
@@ -1972,6 +2149,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				radii = []
 				densities = []
 				rates = []
+				compositions = []
 				for num in clusterdict:
 					traj_num=clusterdict[num]["traj_num"] # number of trajectories in this cluster
 					lifetime = clusterdict[num]["lifetime"]  # lifetime of this cluster (sec)
@@ -1981,7 +2159,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					density = clusterdict[num]["density"] # trajectories/um2
 					rate = clusterdict[num]["rate"] # accumulation rate (trajectories/sec)
 					clusttime = clusterdict[num]["centroid"][2] # Time centroid of this cluster 
-					outarray = [num,traj_num,lifetime,av_msd,area,radius,density,rate,clusttime]
+					composition = clusterdict[num]["composition"] # 0 = all col1, 1 = all col2
+					outarray = [num,traj_num,lifetime,av_msd,area,radius,density,rate,clusttime,composition]
 					outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 					outfile.write(outstring + "\n")
 					trajnums.append(traj_num)
@@ -1992,12 +2171,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					radii.append(radius)
 					densities.append(density)
 					rates.append(rate)
+					compositions.append(composition)
 				# AVERAGE CLUSTER METRICS	
-				outarray = ["AVG",np.average(trajnums),np.average(lifetimes),np.average(av_msds),np.average(areas),np.average(radii),np.average(densities),np.average(rates),np.average(times)]
+				outarray = ["AVG",np.average(trajnums),np.average(lifetimes),np.average(av_msds),np.average(areas),np.average(radii),np.average(densities),np.average(rates),np.average(times),np.average(compositions)]
 				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 				outfile.write(outstring + "\n")	
 				# SEMS
-				outarray = ["SEM",np.std(trajnums)/math.sqrt(len(trajnums)),np.std(lifetimes)/math.sqrt(len(lifetimes)),np.std(av_msds)/math.sqrt(len(av_msds)),np.std(areas)/math.sqrt(len(areas)),np.std(radii)/math.sqrt(len(radii)),np.std(densities)/math.sqrt(len(densities)),np.std(rates)/math.sqrt(len(rates)),np.std(times)/math.sqrt(len(times))]
+				outarray = ["SEM",np.std(trajnums)/math.sqrt(len(trajnums)),np.std(lifetimes)/math.sqrt(len(lifetimes)),np.std(av_msds)/math.sqrt(len(av_msds)),np.std(areas)/math.sqrt(len(areas)),np.std(radii)/math.sqrt(len(radii)),np.std(densities)/math.sqrt(len(densities)),np.std(rates)/math.sqrt(len(rates)),np.std(times)/math.sqrt(len(times)),np.std(compositions)/math.sqrt(len(compositions))]
 				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 				outfile.write(outstring + "\n")		
 			# ROI
@@ -2081,10 +2261,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			try:
 				buf9.seek(0)
 				fig10=pickle.load(buf9)
-				plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
+				plt.savefig("{}/2col_proportion.png".format(outdir),dpi=300)
 				plt.close()
 			except:
-				pass	
+				pass
 				
 			print ("All data saved")	
 		return
@@ -2093,7 +2273,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
 	initialdir = cwd
-	if os.path.isfile("segnastic_gui.defaults"):
+	if os.path.isfile("segnastic2c_gui.defaults"):
 		load_defaults()
 	else:
 		reset_defaults()
@@ -2107,6 +2287,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	sg.set_options(font=appFont)	
 	tab1_layout = [
 		[sg.FileBrowse(tooltip = "Select a TRXYT file to analyse\nEach line must only contain 4 space separated values\nTrajectory X-position Y-position Time",file_types=(("Trajectory Files", "*.trxyt"),),key="-INFILE-",initial_folder=initialdir),sg.Input("Select trajectory TRXYT file", key ="-FILENAME-",enable_events=True,size=(55,1))],
+		[sg.FileBrowse(tooltip = "Select a second TRXYT file to analyse\nEach line must only contain 4 space separated values\nTrajectory X-position Y-position Time",file_types=(("Trajectory Files", "*.trxyt"),),key="-INFILE2-",initial_folder=initialdir),sg.Input("Select trajectory TRXYT file 2", key ="-FILENAME2-",enable_events=True,size=(55,1))],			
 		[sg.T('Minimum trajectory length:',tooltip = "Trajectories must contain at least this many steps"),sg.InputText(minlength,size="50",key="-MINLENGTH-")],
 		[sg.T('Maximum trajectory length:',tooltip = "Trajectories must contain fewer steps than this"),sg.InputText(maxlength,size="50",key="-MAXLENGTH-")],
 		[sg.T('Probability:',tooltip = "Probability of displaying a trajectory\n1 = all trajectories\nIMPORTANT: only affects display of trajectories,\nundisplayed trajectories can still be selected"),sg.Combo([0.01,0.05,0.1,0.25,0.5,0.75,1.0],default_value=traj_prob,key="-TRAJPROB-")],
@@ -2123,6 +2304,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("Remove",key="-R6-",disabled=True),sg.T("Remove last added ROI")],
 		[sg.B("Undo",key="-R7-",disabled=True),sg.T("Undo last change")],
 		[sg.T('Selection density:',tooltip = "Screen out random trajectories to maintain a \nfixed density of selected trajectories (traj/um^2)\n0 = do not adjust density"),sg.InputText(selection_density,size="50",key="-SELECTIONDENSITY-"),sg.T("",key = "-DENSITY-",size=(6,1))],
+		[sg.Checkbox("Balance colors",tooltip = "Screen out random trajectories to ensure that \nboth colors have the same number of trajectories",key = "-BALANCE-",default=balance)],
 		[sg.B('SELECT DATA IN ROIS',size=(25,2),button_color=("white","gray"),key ="-SELECTBUTTON-",disabled=True,tooltip = "Select trajectories whose detections lie within the yellow ROIs\nOnce selected the ROIs will turn green.\nSelected trajectories may then be clustered."),sg.Checkbox("Cluster immediately",key="-AUTOCLUSTER-",default=autocluster,tooltip="Switch to 'Clustering' tab and begin clustering automatically\nupon selection of data within ROIs")]
 	]
 
@@ -2138,7 +2320,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	trajectory_layout = [
 		[sg.T("Width",tooltip = "Width of plotted trajectory lines"),sg.Combo([0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],default_value= line_width,key="-LINEWIDTH-")],
 		[sg.T("Opacity",tooltip = "Opacity of plotted trajectory lines"),sg.Combo([0.01,0.05,0.1,0.25,0.5,0.75,1.0],default_value= line_alpha,key="-LINEALPHA-")],
-		[sg.T("Color",tooltip = "Trajectory color"),sg.ColorChooserButton("Choose",key="-LINECOLORCHOOSE-",target="-LINECOLOR-",button_color=("gray",line_color),disabled=True),sg.Input(line_color,key ="-LINECOLOR-",enable_events=True,visible=False)]
+		[sg.T("Color 1",tooltip = "Trajectory color 1"),sg.ColorChooserButton("Choose",key="-LINECOLORCHOOSE-",target="-LINECOLOR-",button_color=("gray",line_color),disabled=True),sg.Input(line_color,key ="-LINECOLOR-",enable_events=True,visible=False)],
+		[sg.T("Color 2",tooltip = "Trajectory color 2"),sg.ColorChooserButton("Choose",key="-LINECOLORCHOOSE2-",target="-LINECOLOR2-",button_color=("gray",line_color2),disabled=True),sg.Input(line_color2,key ="-LINECOLOR2-",enable_events=True,visible=False)]	
 	]
 
 	centroid_layout = [
@@ -2148,11 +2331,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	cluster_layout = [	
+		[sg.T("Color by",tooltip = "Color clusters by their average time\nor by the proportion of each molecule"),sg.Combo(["time","composition"],default_value= cluster_colorby,key="-CLUSTERCOLORBY-")],
 		[sg.T("Opacity",tooltip = "Opacity of plotted clusters"),sg.Combo([0.1,0.25,0.5,0.75,1.0],default_value= cluster_alpha,key="-CLUSTERALPHA-"),sg.Checkbox('Filled',tooltip = "Display clusters as filled polygons",key = "-CLUSTERFILL-",default=cluster_fill)],
 		[sg.T("Line width",tooltip = "Width of plotted cluster lines"),sg.Combo([0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],default_value= cluster_width,key="-CLUSTERWIDTH-")],
 		[sg.T("Line type",tooltip = "Cluster line type"),sg.Combo(["solid","dashed","dotted"],default_value =cluster_linetype,key="-CLUSTERLINETYPE-")]
 	]
-
+	
 	hotspot_layout = [	
 		[sg.T("Radius",tooltip = "Clusters within this multiple of the \naverage cluster radius"),sg.Combo([0.1,0.25,0.5,0.75,1.0,1.25,1.5,1.75,2.0],default_value= hotspot_radius,key="-HOTSPOTRADIUS-")],
 		[sg.T("Opacity",tooltip = "Opacity of plotted hotspots"),sg.Combo([0.1,0.25,0.5,0.75,1.0],default_value= hotspot_alpha,key="-HOTSPOTALPHA-")],
@@ -2168,7 +2352,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab4_layout = [
-		[sg.T('Canvas',tooltip = "Background colour of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Colorbar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
+		[sg.T('Canvas',tooltip = "Background colour of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Col.bar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
 		[sg.TabGroup([
 			[sg.Tab("Trajectory",trajectory_layout)],
 			[sg.Tab("Centroid",centroid_layout)],
@@ -2189,6 +2373,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("3D",key="-M5-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this")],
 		[sg.B("KDE",key="-M6-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
 		[sg.B("Diffusion coefficient",key="-M7-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],	
+		[sg.B("2 color metrics",key="-M8-",disabled=True),sg.T("Specific 2 color clustering metrics")],	
 		[sg.B("SAVE ANALYSES",key="-SAVEANALYSES-",size=(25,2),button_color=("white","gray"),disabled=True,tooltip = "Save all analysis metrics, ROIs and plots")]	
 	]
 
@@ -2199,7 +2384,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	layout = [
 		[sg.Menu(menu_def)],
-		[sg.T('SEGMENT NASTIC',font="Any 20")],
+		[sg.T('SEGNASTIC2C',font="Any 20")],
 		[sg.TabGroup([
 			[sg.Tab("File",tab1_layout)],
 			[sg.Tab("ROI",tab2_layout)],
@@ -2211,7 +2396,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.ProgressBar(100, orientation='h',size=(53,20),key='-PROGBAR-')],
 		#[sg.Output(size=(64,10))]	
 	]
-	window = sg.Window('SEGMENT NASTIC v{}'.format(last_changed), layout)
+	window = sg.Window('SEGNASTIC2C v{}'.format(last_changed), layout)
 	popup.close()
 
 	# VARS
@@ -2222,6 +2407,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	trajdict = {} # Dictionary holding raw trajectory info
 	sel_traj = [] # Selected trajectory indices
 	lastfile = "" # Force the program to load a fresh TRXYT
+	lastfile2 = "" # Force the program to load a fresh TRXYT
 	seldict = {} # Selected trajectories and metrics
 	clusterdict = {} # Cluster information
 	plotflag = False # Has clustered data been plotted?
@@ -2242,6 +2428,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		#Read events and values
 		event, values = window.read(timeout=5000)
 		infilename = values["-INFILE-"]	
+		infilename2 = values["-INFILE2-"]	
 		minlength = values["-MINLENGTH-"]
 		maxlength = values["-MAXLENGTH-"]
 		traj_prob = values["-TRAJPROB-"]
@@ -2286,8 +2473,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		hotspot_alpha = values["-HOTSPOTALPHA-"]
 		hotspot_linetype = values["-HOTSPOTLINETYPE-"]		
 		hotspot_color = values["-HOTSPOTCOLOR-"]
-		plot_hotspots = values["-HOTSPOTS-"]			
-	
+		plot_hotspots = values["-HOTSPOTS-"]		
+		cluster_colorby = values["-CLUSTERCOLORBY-"]			
+		balance = values["-BALANCE-"]			
 
 		# Check variables
 		check_variables()
