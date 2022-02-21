@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20211215"
+last_changed = "20220221"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1743,7 +1743,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			t1 = time.time()
 			cmap2 = matplotlib.cm.get_cmap('inferno')
 			fig4 =plt.figure(4,figsize=(8,8))
-			ax6 = plt.subplot(111,sharex=ax0,sharey=ax0)	
+			ax6 = plt.subplot(111)	
 			ax6.cla()
 			ax6.set_facecolor("k")	
 			xlims = ax0.get_xlim()
@@ -1775,6 +1775,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			fig4.canvas.set_window_title('Segment overlap density plot')
 			ax6.set_xlabel("X")
 			ax6.set_ylabel("Y")
+			ax6.set_xlim(xlims)
+			ax6.set_ylim(ylims)			
 			plt.show(block=False)
 			t2=time.time()
 			print ("Segment overlap plot completed in {} sec".format(round(t2-t1,3)))			
