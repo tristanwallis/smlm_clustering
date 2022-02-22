@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220221"
+last_changed = "20220222"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1917,7 +1917,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					for overlap in overlapdict:
 						clusters = overlapdict[overlap]["clusters"]
 						c_nums.append(len(clusters))
-						times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+						times = [clusterdict[i]["centroid"][2] for i in clusters]
 						times.sort()
 						diffs = np.diff(times)
 						[timediffs.append(t) for t in diffs]
