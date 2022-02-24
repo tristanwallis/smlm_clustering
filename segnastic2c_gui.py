@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220222"
+last_changed = "20220224"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1875,6 +1875,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(0,acq_time)
 			ax8.set_zlim(ylims)
+			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot. Delete them if they bug out on your particular Python install
+			xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
+			ax8.set_box_aspect(aspect=(xy_ratio,1,1))
 			#plt.title("3D plot")
 			plt.tight_layout()	
 			plt.show(block=False)
