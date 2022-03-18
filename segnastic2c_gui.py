@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220224"
+last_changed = "20220318"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1749,6 +1749,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			xlims = ax0.get_xlim()
 			ylims = ax0.get_ylim()
 			max_overlap = max([segdict[seg]["overlap"] for seg in segdict])
+			min_overlap = min([segdict[seg]["overlap"] for seg in segdict])
 			for seg in segdict:
 				if seg%100 == 0:
 					bar = 100*seg/(len(segdict)-10)
@@ -1779,6 +1780,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax6.set_ylim(ylims)			
 			plt.show(block=False)
 			t2=time.time()
+			print ("Minimum log2 overlap:{} maximum log2 overlap:{}".format(math.log(min_overlap,2),math.log(max_overlap,2)))
 			print ("Segment overlap plot completed in {} sec".format(round(t2-t1,3)))			
 			# Pickle
 			buf4 = io.BytesIO()
