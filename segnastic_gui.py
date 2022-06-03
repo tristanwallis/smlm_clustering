@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220318"
+last_changed = "20220603"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1225,8 +1225,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		ycent = []
 		
 		# All trajectories
-		print ("Plotting unclustered trajectories...")
+		print ("Plotting trajectories...")
 		t1=time.time()
+		plottraj = []
 		for num,traj in enumerate(seldict):
 			if num%10 == 0:
 				bar = 100*num/(len(unclustindices)-1)
@@ -1238,9 +1239,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					x,y,t=zip(*seldict[traj]["points"])
 					tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=line_alpha,linewidth=line_width)
 					ax0.add_artist(tr) 
+					plottraj.append(traj)
+
 				if plot_centroids:
 					xcent.append(seldict[traj]["centroid"][0])
 					ycent.append(seldict[traj]["centroid"][1])	
+
+		# Find and plot unclustered trajectory with highest mobility
+		diffcoeffs = [seldict[x]["diffcoeff"] for x in plottraj]
+		mindiffcoeff = max(diffcoeffs)
+		idx = diffcoeffs.index(mindiffcoeff)
+		x,y,t=zip(*seldict[plottraj[idx]]["points"])
+		tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=1,linewidth=line_width*2)
+		ax0.add_artist(tr) 
 		
 		# Clustered trajectories
 		print ("Highlighting clustered trajectories...")
@@ -1252,18 +1263,30 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1]:
 				
 				indices = clusterdict[cluster]["traj_list"]
-				'''
+				
 				linestyle="solid"
-				if len(indices)==1:
-					linestyle="dotted"
+				#if len(indices)==1:
+				#	linestyle="dotted"
 				if plot_trajectories:
+					'''
 					for idx in indices:
 						x,y,t=zip(*seldict[idx]["points"])
 						col = cmap(np.average(t)/float(acq_time))
 						alpha=0.5
 						tr = matplotlib.lines.Line2D(x,y,c=col,alpha=alpha,linewidth=line_width,linestyle=linestyle)
 						ax0.add_artist(tr) 
-				'''
+					
+					'''
+					
+					# Find and display trajectory with the lowest mobility in the cluster
+					diffcoeffs = [seldict[x]["diffcoeff"] for x in indices]
+					mindiffcoeff = min(diffcoeffs)
+					idx = diffcoeffs.index(mindiffcoeff)
+					x,y,t=zip(*seldict[indices[idx]]["points"])
+					col = cmap(np.average(t)/float(acq_time))
+					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=1,linewidth=line_width*2,linestyle=linestyle)
+					ax0.add_artist(tr) 
+					
 				if plot_clusters:
 					cx,cy,ct = clusterdict[cluster]["centroid"]
 					col = cmap(ct/float(acq_time))
@@ -1322,8 +1345,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						cl = matplotlib.lines.Line2D(ext_x,ext_y,c=hotspot_color,alpha=hotspot_alpha,linewidth=hotspot_width,linestyle=hotspot_linetype,zorder=15000)
 						ax0.add_artist(cl) 	
 						
-		ax0.set_xlabel("X")
-		ax0.set_ylabel("Y")
+
 
 
 		
@@ -1587,7 +1609,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					val = math.log(overlap,2)/math.log(max_overlap,2) + 0.15 # offset to increase visibility of low overlap segs
 					col = cmap2(val)
 					alpha=0.5
-					seg = matplotlib.lines.Line2D(segx,segy,c=col,alpha=alpha,linewidth=line_width,zorder=overlap)
+					seg = matplotlib.lines.Line2D(segx,segy,c=col,alpha=line_alpha,linewidth=line_width,zorder=overlap)
 					ax6.add_artist(seg)	
 			x_perc = (xlims[1] - xlims[0])/100
 			y_perc = (ylims[1] - ylims[0])/100
@@ -1643,7 +1665,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			t1 = time.time()
 			fig6 =plt.figure(6,figsize=(8,8))
 			ax8 = plt.subplot(111,projection='3d')
-			ax8.set_box_aspect(aspect = (1,1,1))			
+			#ax8.set_box_aspect(aspect = (1,1,1))			
 			ax8.cla()
 			#ax8.set_facecolor("k")	
 			xlims = ax0.get_xlim()
@@ -1694,9 +1716,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(0,acq_time)
 			ax8.set_zlim(ylims)
-			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot. Delete them if they bug out on your particular Python install
-			xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
-			ax8.set_box_aspect(aspect=(xy_ratio,1,1))
+			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot
+			try:
+				xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
+				ax8.set_box_aspect(aspect=(xy_ratio,1,1))
+			except:
+				pass
 			#plt.title("3D plot")
 			plt.tight_layout()	
 			plt.show(block=False)

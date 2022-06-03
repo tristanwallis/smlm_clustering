@@ -1809,9 +1809,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax7.set_xlim(xlims)
 			ax7.set_ylim(tmin,tmax)
 			ax7.set_zlim(ylims)
-			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot. Delete them if they bug out on your particular Python install
-			xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
-			ax7.set_box_aspect(aspect=(xy_ratio,1,1))
+			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot
+			try:
+				xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
+				ax7.set_box_aspect(aspect=(xy_ratio,1,1))
+			except:
+				pass
 			#plt.title("3D plot")
 			plt.tight_layout()	
 			plt.show(block=False)
