@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220603"
+last_changed = "20220615"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -1246,12 +1246,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					ycent.append(seldict[traj]["centroid"][1])	
 
 		# Find and plot unclustered trajectory with highest mobility
+		'''
 		diffcoeffs = [seldict[x]["diffcoeff"] for x in plottraj]
 		mindiffcoeff = max(diffcoeffs)
 		idx = diffcoeffs.index(mindiffcoeff)
 		x,y,t=zip(*seldict[plottraj[idx]]["points"])
 		tr = matplotlib.lines.Line2D(x,y,c=line_color,alpha=1,linewidth=line_width*2)
 		ax0.add_artist(tr) 
+		'''
 		
 		# Clustered trajectories
 		print ("Highlighting clustered trajectories...")
@@ -1279,13 +1281,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					'''
 					
 					# Find and display trajectory with the lowest mobility in the cluster
+					'''
 					diffcoeffs = [seldict[x]["diffcoeff"] for x in indices]
 					mindiffcoeff = min(diffcoeffs)
 					idx = diffcoeffs.index(mindiffcoeff)
 					x,y,t=zip(*seldict[indices[idx]]["points"])
 					col = cmap(np.average(t)/float(acq_time))
 					tr = matplotlib.lines.Line2D(x,y,c=col,alpha=1,linewidth=line_width*2,linestyle=linestyle)
-					ax0.add_artist(tr) 
+					ax0.add_artist(tr)
+					'''                    
 					
 				if plot_clusters:
 					cx,cy,ct = clusterdict[cluster]["centroid"]
