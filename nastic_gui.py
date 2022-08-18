@@ -3,7 +3,7 @@
 PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
 Design and code: Tristan Wallis
-Debugging: Sophie Huiyi Hou
+Debugging: Sophie Huiyi Hou, Kye Kudo
 Queensland Brain Institute
 University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220603"
+last_changed = "20220803"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -59,6 +59,7 @@ def metrics(data):
 	diffcoeff = (msds[3]-msds[0])
 		
 	# Bounding box	
+	points2d =[sublist[:2] for sublist in points] # only get 2D hull
 	area =ConvexHull(points).volume 
 	radius = math.sqrt(area/math.pi)*radius_factor 
 	dx,dy,dt = centroid 
@@ -173,7 +174,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		obj_list=initialise_particles(graph)
 		graph.DrawText("N A S T I C v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo",(0,30),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
@@ -226,7 +227,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						splash["-GRAPH-"].delete_figure(cluster)
 					clusters = []
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts*1.5)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -2103,7 +2104,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.T('Radius factor:',tooltip = "Adjust the radius around each centroid\n to check for overlap"),sg.InputText(radius_factor,size="50",key="-RADIUSFACTOR-")],	
 		[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectories"),sg.InputText(cluster_threshold,size="50",key="-CLUSTERTHRESHOLD-")],
 		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
-		[sg.Checkbox('MSD screen',tooltip = "Don't analyse trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
+		[sg.Checkbox('MSD screen',tooltip = "Don't analyse segments from trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 

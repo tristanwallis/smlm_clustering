@@ -3,7 +3,7 @@
 PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA
 
 Design and code: Tristan Wallis
-Debugging: Sophie Huiyi Hou
+Debugging: Sophie Huiyi Hou, Kye Kudo
 Queensland Brain Institute
 University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220615"
+last_changed = "20220811"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -166,7 +166,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		obj_list=initialise_particles(graph)
 		graph.DrawText("SEGMENT NASTIC v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo",(0,30),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
@@ -220,7 +220,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						splash["-GRAPH-"].delete_figure(cluster)
 					clusters = []
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts*1.5)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -241,7 +241,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,msd_filter,radius_thresh
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -250,7 +250,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		acq_time = 320
 		frame_time = 0.02
 		time_threshold = 20
-		segment_threshold = 2
+		segment_threshold = 1
 		overlap_override = 0
 		canvas_color = "black"
 		plot_trajectories = True
@@ -282,7 +282,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		hotspot_linetype = "dotted"
 		hotspot_color = "white"				
 		hotspot_radius = 1.0	
-		plot_hotspots = True		
+		plot_hotspots = True
+		msd_filter=False
+		radius_thresh = 0.15 		
 		return 
 
 	# SAVE SETTINGS
@@ -325,12 +327,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Plot background transparent",savetransparency))
 			outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
-			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))			
+			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))		
+			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))			
+			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))			
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,msd_filter,radius_thresh
 		try:
 			with open ("segnastic_gui.defaults","r") as infile:
 				print ("Loading GUI settings from segnastic_gui.defaults...")
@@ -419,7 +423,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plotxmin=""
 			plotxmax=""
 			plotymin=""
-			plotymax=""					
+			plotymax=""	
+			msd_filter = defaultdict["MSD filter"]
+			if msd_filter == "True":
+				msd_filter = True
+			if msd_filter == "False":
+				msd_filter = False	
+			radius_thresh = defaultdict["Cluster size screen"]				
 		except:
 			print ("Settings could not be loaded")
 		return
@@ -509,12 +519,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTYMIN-").update(plotymin)
 		window.Element("-PLOTYMAX-").update(plotymax)	
 		window.Element("-TMIN-").update(tmin)
-		window.Element("-TMAX-").update(tmax)			
+		window.Element("-TMAX-").update(tmax)
+		window.Element("-MSDFILTER-").update(msd_filter)	
+		window.Element("-RADIUSTHRESH-").update(radius_thresh)		
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -559,10 +571,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			time_threshold = 20
 		try:
 			segment_threshold = int(segment_threshold)
-			if segment_threshold < 2:
-				segment_threshold = 2
+			if segment_threshold < 1:
+				segment_threshold = 1
 		except:
-			segment_threshold = 3
+			segment_threshold = 1
 		try:
 			overlap_override = int(overlap_override)
 			if overlap_override < 0:
@@ -641,7 +653,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				tmax = acq_time
 		except:
 			tmin = acq_time					
-				
+		try:
+			radius_thresh = float(radius_thresh)
+			if radius_thresh < 0.001:
+				radius_thresh = 0.15
+		except:
+			radius_thresh = 0.15					
 		return
 
 	# GET DIMENSIONS OF ZOOM
@@ -746,7 +763,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		return distilled
 
 	# FIND SEGMENTS WHOSE BOUNDING BOXES OVERLAP IN SPACE AND TIME	
-	def segment_overlap(segdict,time_threshold):
+	def segment_overlap(segdict,time_threshold,av_msd):
 		# Create and populate 3D r-tree
 		p = index.Property()
 		p.dimension=3
@@ -754,8 +771,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		intree = []
 		indices = segdict.keys()
 		for idx in indices:
-			idx_3d.insert(idx,segdict[idx]["bbox"])
-			intree.append(idx)
+			if segdict[idx]["msds"][0] < av_msd: # potentially screen by MSD of parent traj
+				idx_3d.insert(idx,segdict[idx]["bbox"])
+				intree.append(idx)
 		# Query the r-tree
 		overlappers = []
 		for idx in intree:
@@ -1080,13 +1098,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CLUSTERING TAB	
 	def cluster_tab():
-		global segdict,seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,overlap_threshold,all_diffcoeffs
+		global segdict,seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,overlap_threshold,all_diffcoeffs,av_msd
 
 		# Dictionary of selected trajectories
 		print ("Generating bounding boxes of segments in selected trajectories...")	
 		seldict = {}
 		sel_centroids = []
 		t1=time.time()
+		all_msds = []
 		all_diffcoeffs = []
 		allpoints = [[trajdict[traj]["points"],minlength,trajdict[traj]["centroid"]] for traj in sel_traj]
 		allmetrics = multi(allpoints)
@@ -1098,23 +1117,27 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			points,msds,centroid,diffcoeff = metrics
 			seldict[num]["points"]=points
 			seldict[num]["msds"]=msds
+			all_msds.append(msds[0])
 			seldict[num]["diffcoeff"]=diffcoeff/(frame_time*3)
 			all_diffcoeffs.append(abs(diffcoeff))
 			seldict[num]["centroid"]=centroid
 			sel_centroids.append(centroid)
+			seldict[num]["overlapsegs"] = 0 # how many segments in this traj are greater than the overlap threshold
 		
 		# Dictionary of all segments
 		segdict = {}
 		ct=0
 		for traj in seldict:
 			points = seldict[traj]["points"]
+			msds = seldict[traj]["msds"]	
 			for i in range(1,len(points),1):
 				segment = [points[i-1],points[i]]
 				segdict[ct] = {}
 				segdict[ct]["traj"]=traj
 				segdict[ct]["segment"] = segment
 				segdict[ct]["overlap"] = 1
-				segdict[ct]["centroid"] = np.average(segment,axis=0)				
+				segdict[ct]["centroid"] = np.average(segment,axis=0)
+				segdict[ct]["msds"] = msds # MSDs for parent trajectory									
 				left = min(points[i-1][0],points[i][0])
 				right = max(points[i-1][0],points[i][0])
 				top = max(points[i-1][1],points[i][1])
@@ -1125,11 +1148,19 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				ct+=1
 			t2=time.time()
 		print ("{} segment bounding boxes generated in {} sec".format(len(segdict),round(t2-t1,3)))
+
+		# Screen on MSD
+		if msd_filter:
+			print ("Calculating average MSD...")
+			#all_msds = [x if x == x else 0 for x in all_msds]
+			av_msd = np.average(all_msds)
+		else:
+			av_msd = 10000 # no molecule except in an intergalactic gas cloud has an MSD this big
 		
 		# Determine overlapping segments
 		print ("Total segment overlap...")
 		t1 = time.time()
-		segment_overlap(segdict,time_threshold) # list of lists of overlapping segments
+		segment_overlap(segdict,time_threshold,av_msd) # list of lists of overlapping segments
 		all_overlaps = [segdict[seg]["overlap"] for seg in segdict]
 		overlap_threshold = np.average(all_overlaps)
 		
@@ -1144,11 +1175,30 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		thresh_segdict = {}
 		for seg in segdict:
 			if segdict[seg]["overlap"] > overlap_threshold:
-			#if segdict[seg]["overlap"] > 2:
 				thresh_segdict[seg]=segdict[seg]
-		raw_seg_clusters =  segment_overlap(thresh_segdict,time_threshold)
-		seg_clusters = distill_list(raw_seg_clusters)		
-		seg_clusters = [seg for seg in seg_clusters if len(seg) > segment_threshold]
+		raw_seg_clusters =  segment_overlap(thresh_segdict,time_threshold,av_msd)
+		seg_clusters = distill_list(raw_seg_clusters)
+		
+		# For each trajectory determine how many of its segments are greater than the overlap threshold
+		print ("Screening trajectories...")
+		for cluster in seg_clusters:
+			for seg in cluster:
+				traj = thresh_segdict[seg]["traj"]
+				seldict[traj]["overlapsegs"] += 1
+				
+		# Now screen each cluster to remove segments belonging to trajectories with fewer than segment_threshold 		
+		screened_seg_clusters = []
+		for cluster in seg_clusters:
+			screened_cluster = []
+			for seg in cluster:	
+				traj = thresh_segdict[seg]["traj"]
+				if seldict[traj]["overlapsegs"] >= segment_threshold:
+					screened_cluster.append(seg)
+			if len(screened_cluster)>= 3: # A cluster must contain segments from at least 3 trajectories 		
+				screened_seg_clusters.append(screened_cluster)
+	
+		seg_clusters = screened_seg_clusters
+		#seg_clusters = [seg for seg in seg_clusters if len(seg) > segment_threshold]
 		t2 = time.time()
 		all_overlaps = [thresh_segdict[seg]["overlap"] for seg in thresh_segdict]
 		av_overlap = np.average(all_overlaps)
@@ -1191,6 +1241,17 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ymean = np.average(y)
 			tmean = np.average(t)
 			clusterdict[num]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
+
+		# Screen out large clusters
+		clustindices = []
+		tempclusterdict = {}
+		counter = 0	
+		for num in clusterdict:
+			if clusterdict[num]["radius"] < radius_thresh:
+				tempclusterdict[counter] = clusterdict[num]
+				[clustindices.append(i) for i in clusterdict[num]["indices"]]
+				counter +=1			
+		clusterdict = tempclusterdict.copy()		
 		allindices = range(len(seldict))
 		clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
 		unclustindices = [idx for idx in allindices if idx not in clustindices] 	
@@ -1348,10 +1409,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints)
 						cl = matplotlib.lines.Line2D(ext_x,ext_y,c=hotspot_color,alpha=hotspot_alpha,linewidth=hotspot_width,linestyle=hotspot_linetype,zorder=15000)
 						ax0.add_artist(cl) 	
-						
-
-
-
 		
 		ax0.set_xlabel("X")
 		ax0.set_ylabel("Y")
@@ -1400,7 +1457,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9, av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1904,7 +1961,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
 				outfile.write("TIME THRESHOLD (s):\t{}\n".format(time_threshold))
 				outfile.write("SEGMENT THRESHOLD:\t{}\n".format(segment_threshold))	
-				outfile.write("OVERLAP THRESHOLD:\t{}\n".format(overlap_threshold))		
+				outfile.write("OVERLAP THRESHOLD:\t{}\n".format(overlap_threshold))	
+				if msd_filter:
+					outfile.write("MSD FILTER THRESHOLD (um^2):\t{}\n".format(av_msd))
+				else:
+					outfile.write("MSD FILTER THRESHOLD (um^2):\tNone\n")				
 				outfile.write("SELECTION AREA (um^2):\t{}\n".format(sum(all_selareas)))
 				outfile.write("SELECTED TRAJECTORIES:\t{}\n".format(len(allindices)))
 				outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
@@ -2166,9 +2227,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	tab3_layout = [
 		[sg.T('Acquisition time (s):',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
 		[sg.T('Frame time (s):',tooltip = "Time between frames (s)"),sg.InputText(frame_time,size="50",key="-FRAMETIME-")],
-		[sg.T('Time threshold (s):',tooltip = "Trajectories must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
-		[sg.T('Segment threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectory segments"),sg.InputText(segment_threshold,size="50",key="-SEGMENTTHRESHOLD-")],
+		[sg.T('Time threshold (s):',tooltip = "Trajectory segments must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
+		[sg.T('Segment threshold:',tooltip = "Trajectories must contain at least this many segments\nwhich overlap with other trajectory segments\nSee overlap threshold override below"),sg.InputText(segment_threshold,size="50",key="-SEGMENTTHRESHOLD-")],
 		[sg.T('Overlap threshold override:',tooltip = "Number of overlaps for a segment to be considered as potentially clustered\n 0 = use average of all segment overlaps as threshold"),sg.InputText(overlap_override,size="50",key="-OVERRIDE-")],
+		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+		[sg.Checkbox('MSD screen',tooltip = "Don't analyse trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 
@@ -2323,8 +2386,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		hotspot_alpha = values["-HOTSPOTALPHA-"]
 		hotspot_linetype = values["-HOTSPOTLINETYPE-"]		
 		hotspot_color = values["-HOTSPOTCOLOR-"]
-		plot_hotspots = values["-HOTSPOTS-"]			
-	
+		plot_hotspots = values["-HOTSPOTS-"]
+		msd_filter = values['-MSDFILTER-']	
+		radius_thresh=values['-RADIUSTHRESH-']		
 
 		# Check variables
 		check_variables()
