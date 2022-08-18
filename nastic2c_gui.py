@@ -30,7 +30,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220224"
+last_changed = "20220803"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -59,6 +59,7 @@ def metrics(data):
 	diffcoeff = (msds[3]-msds[0])
 		
 	# Bounding box	
+	points2d =[sublist[:2] for sublist in points] # only get 2D hull
 	area =ConvexHull(points).volume 
 	radius = math.sqrt(area/math.pi)*radius_factor 
 	dx,dy,dt = centroid 
@@ -241,7 +242,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						splash["-GRAPH-"].delete_figure(cluster)
 					clusters = []
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts*1.5)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
