@@ -2,10 +2,11 @@
 '''
 PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA - 2 COLOUR VERSION
 
-Design and code: Tristan Wallis
+Design and coding: Tristan Wallis
+Additional coding: Alex McCann
 Debugging: Sophie Huiyi Hou
 Queensland Brain Institute
-University of Queensland
+The University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
@@ -30,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20220603"
+last_changed = "20230208"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -180,12 +181,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c")
 		obj_list=initialise_particles(graph)
 		graph.DrawText("S E G N A S T I C 2 C v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
-		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
-		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
-		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
-		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("Design and coding: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Additional coding: Kyle Young, Alex McCann",(0,30),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo",(0,15),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Queensland Brain Institute",(0,0),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("The University of Queensland",(0,-15),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-30),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Rtree: https://pypi.org/project/Rtree/",(0,-75),color="white",font=("Any",10),text_location="center")	
 		while True:
@@ -235,7 +236,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						splash["-GRAPH-"].delete_figure(cluster)
 					clusters = []
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts*1.5)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -256,7 +257,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -301,6 +302,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		hotspot_color = "white"				
 		hotspot_radius = 1.0	
 		balance =True	
+		axes_3d = True
+		radius_thresh = 0.15
+		msd_filter = False
 		return 
 
 	# SAVE SETTINGS
@@ -346,12 +350,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
 			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))			
-			outfile.write("{}\t{}\n".format("Color balance",balance))			
+			outfile.write("{}\t{}\n".format("Color balance",balance))	
+			outfile.write("{}\t{}\n".format("3D axes",axes_3d))
+			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))
+			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))				
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter
 		try:
 			with open ("segnastic2c_gui.defaults","r") as infile:
 				print ("Loading GUI settings from segnastic2c_gui.defaults...")
@@ -447,6 +454,17 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				balance = True
 			if balance == "False":
 				balance = False		
+			axes_3d = defaultdict["3D axes"]
+			if axes_3d == "True":
+				axes_3d = True
+			if axes_3d == "False":
+				axes_3d = False		
+			msd_filter = defaultdict["MSD filter"]
+			if msd_filter == "True":
+				msd_filter = True
+			if msd_filter == "False":
+				msd_filter = False	
+			radius_thresh = defaultdict["Cluster size screen"]					
 			
 		except:
 			print ("Settings could not be loaded")
@@ -544,12 +562,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTYMAX-").update(plotymax)	
 		window.Element("-TMIN-").update(tmin)
 		window.Element("-TMAX-").update(tmax)			
-		window.Element("-BALANCE-").update(balance)			
+		window.Element("-BALANCE-").update(balance)	
+		window.Element("-AXES3D-").update(axes_3d)
+		window.Element("-MSDFILTER-").update(msd_filter)
+		window.Element("-RADIUSTHRESH-").update(radius_thresh)		
+	
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -685,7 +707,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if tmax < 0 or tmax > acq_time:
 				tmax = acq_time
 		except:
-			tmin = acq_time					
+			tmin = acq_time	
+
+		try:
+			radius_thresh = float(radius_thresh)
+			if radius_thresh < 0.001:
+				radius_thresh = 0.15
+		except:
+			radius_thresh = 0.15				
 				
 		return
 
@@ -1223,6 +1252,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		all_diffcoeffs = []
 		allpoints = [[trajdict[traj]["points"],minlength,trajdict[traj]["centroid"]] for traj in sel_traj]
 		allmetrics = multi(allpoints)
+		all_msds = []
 		for num,metrics in enumerate(allmetrics):
 			if num%10 == 0:
 				bar = 100*num/(len(allmetrics)-10)
@@ -1258,6 +1288,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				ct+=1
 			t2=time.time()
 		print ("{} segment bounding boxes generated in {} sec".format(len(segdict),round(t2-t1,3)))
+		
+		# Screen on MSD
+		if msd_filter:
+			print ("Calculating average MSD...")
+			#all_msds = [x if x == x else 0 for x in all_msds]
+			av_msd = np.average(all_msds)
+		else:
+			av_msd = 10000 # no molecule except in an intergalactic gas cloud has an MSD this big		
 		
 		# Determine overlapping segments
 		print ("Total segment overlap...")
@@ -1325,11 +1363,22 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			tmean = np.average(t)
 			clusterdict[num]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
 			clusterdict[num]["composition"] = float(len([x for x in clusterdict[num]["traj_list"] if x > indices1])/clusterdict[num]["traj_num"]) # composition 0 = 100% molecule 1, 1 = 100% molecule 2 			
+		# Screen out large clusters
 		allindices = range(len(seldict))
+		clustindices = []
+		tempclusterdict = {}
+		counter = 0	
+		for num in clusterdict:
+			if clusterdict[num]["radius"] < radius_thresh:
+				tempclusterdict[counter] = clusterdict[num]
+				[clustindices.append(i) for i in clusterdict[num]["indices"]]
+				counter +=1			
+		clusterdict = tempclusterdict.copy()
 		clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
-		unclustindices = [idx for idx in allindices if idx not in clustindices] 	
+		unclustindices = [idx for idx in allindices if idx not in clustindices] 		
 		window['-PROGBAR-'].update_bar(0)	
 		t2 = time.time()
+		
 		print ("{} unique spatiotemporal clusters identified in {} sec".format(len(clusterdict),round(t2-t1,3)))
 		window["-TABGROUP-"].Widget.select(3)
 		if autoplot and len(clusterdict)>0:
@@ -1480,8 +1529,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax0.set_xlim(xlims)
 			ax0.set_ylim(ylims)
 
-		# Colorbar
+		plt.tight_layout()
+		plt.show(block=False)
+
 		if plot_colorbar:
+			print ("Plotting colorbar...")
 			xlims = ax0.get_xlim()
 			ylims = ax0.get_ylim()
 			x_perc = (xlims[1] - xlims[0])/100
@@ -1491,9 +1543,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			cmap = twmap, 
 			interpolation = 'bicubic',
 			zorder=1000000
-			)
+			)		
 		plt.tight_layout()
 		plt.show(block=False)
+
+
 		try:
 			fig4.show(block=False)
 		except:
@@ -1511,7 +1565,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9, av_msd
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1521,9 +1575,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax1.cla()
 			
 			clustindices1 = [x for x in clustindices if x < indices1]
-			clustindices2 = [x for x in clustindices if x > indices1]
+			clustindices2 = [x for x in clustindices if x >= indices1]
 			unclustindices1 = [x for x in unclustindices if x < indices1]
-			unclustindices2 = [x for x in unclustindices if x > indices1]			
+			unclustindices2 = [x for x in unclustindices if x >= indices1]		
+
+
+			print (clustindices1,clustindices2)
 		
 			clust_msds1 = [seldict[x]["msds"] for x in clustindices1]
 			unclust_msds1 = [seldict[x]["msds"] for x in unclustindices1]			
@@ -1567,7 +1624,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.xlabel("Time (s)")
 			plt.ylabel(u"MSD (μm²)")
 			plt.tight_layout()
-			fig1.canvas.set_window_title('MSD Curves')
+			fig1.canvas.manager.set_window_title('MSD Curves')
 			plt.show(block=False)
 			
 			print(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times))
@@ -1689,7 +1746,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			#ax5.set_ylim(0,1)			
 			
 			plt.tight_layout()
-			fig2.canvas.set_window_title('Overlap metrics')
+			fig2.canvas.manager.set_window_title('Overlap metrics')
 			plt.show(block=False)
 			t2=time.time()
 			print ("Cluster probability plot completed in {} sec".format(round(t2-t1,3)))
@@ -1701,8 +1758,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		# Dimensionality reduction
 		if event == "-M3-":	
 			print ("Dimensionality reduction of cluster metrics...")
-
 			metrics_array = []
+			col_array = []
+			twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
 			for num in clusterdict:
 				seg_num=clusterdict[num]["seg_num"] # number of segments in this cluster
 				lifetime = clusterdict[num]["lifetime"]  # lifetime of this cluster (sec)
@@ -1711,9 +1769,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				radius = clusterdict[num]["radius"] # cluster radius um
 				density = clusterdict[num]["density"] # trajectories/um2
 				rate = clusterdict[num]["rate"] # accumulation rate (trajectories/sec)
+				composition = clusterdict[num]["composition"] # color composition
 				clustarray = [seg_num,lifetime,av_msd,area,radius,density,rate]	
 				metrics_array.append(clustarray)
-			
+				col_array.append(twmap(composition))
 			# Normalise each column	
 			metrics_array = list(zip(*metrics_array))
 			metrics_array = [normalize(x) for x in metrics_array]
@@ -1723,7 +1782,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			fig3 =plt.figure(3,figsize=(4,4))			
 			ax5 = plt.subplot(111,projection='3d')
 			ax5.cla()
-			ax5.scatter(mapdata[:, 0], mapdata[:, 1],mapdata[:, 2],c="royalblue")
+			ax5.scatter(mapdata[:, 0], mapdata[:, 1],mapdata[:, 2],c=col_array)
 			ax5.set_xticks([])
 			ax5.set_yticks([])
 			ax5.set_zticks([])
@@ -1731,7 +1790,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax5.set_ylabel('Dimension 2')
 			ax5.set_zlabel('Dimension 3')
 			plt.tight_layout()
-			fig3.canvas.set_window_title('PCA- all metrics')
+			fig3.canvas.manager.set_window_title('PCA- all metrics')
 			plt.show(block=False)	
 			# Pickle
 			buf3 = io.BytesIO()
@@ -1773,7 +1832,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			zorder=1000)
 			window['-PROGBAR-'].update_bar(0)
 			plt.tight_layout()
-			fig4.canvas.set_window_title('Segment overlap density plot')
+			fig4.canvas.manager.set_window_title('Segment overlap density plot')
 			ax6.set_xlabel("X")
 			ax6.set_ylabel("Y")
 			ax6.set_xlim(xlims)
@@ -1814,7 +1873,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		# 3D plot
 		if event == "-M5-":	
-			print ("3D [x,y,t] plot of trajectories...")
 			if cluster_colorby == "composition":
 				twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
 			else:
@@ -1822,10 +1880,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			
 			t1 = time.time()
 			fig6 =plt.figure(6,figsize=(8,8))
-			ax8 = plt.subplot(111,projection='3d')	
-			ax8.set_box_aspect(aspect = (1,1,1))
+			ax8 = plt.subplot(111,projection='3d')
 			ax8.cla()
-			#ax8.set_facecolor("k")	
+			xcent = []
+			ycent = []
+			tcent = []
 			xlims = ax0.get_xlim()
 			ylims = ax0.get_ylim()
 			for num,traj in enumerate(unclustindices):
@@ -1837,22 +1896,40 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				centt=seldict[traj]["centroid"][2]
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
-					tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
+					col = line_color
+					if traj > indices1:
+						col = line_color2
+
+					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
+
+					if plot_centroids:
+						xcent.append(centx)
+						ycent.append(centy)	
+						tcent.append(centt)	
 					ax8.add_artist(tr) 
+					
 			for num,traj in enumerate(clustindices):
 				if num%10 == 0:
 					bar = 100*num/(len(clustindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
 				centx=seldict[traj]["centroid"][0]
 				centy=seldict[traj]["centroid"][1]
-				centt=seldict[traj]["centroid"][2]
+				centt = seldict[traj]["centroid"][2]
 				if centx > xlims[0] and centx < xlims[1] and centy > ylims[0] and centy < ylims[1] and  centt>tmin and centt < tmax:
 					x,t,y=zip(*seldict[traj]["points"])
 					col = line_color
 					if traj > indices1:
 						col = line_color2
-					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
+						
+					tr = art3d.Line3D(x,y,t,c=col,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))		
+
+					if plot_centroids:
+						xcent.append(centx)
+						ycent.append(centy)	
+						tcent.append(centt)	
 					ax8.add_artist(tr) 	
+			ax8.scatter(xcent,tcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0,zorder=acq_time - np.average(y))		
+					
 			if plot_clusters:		
 				for cluster in clusterdict:
 					bar = 100*cluster/(len(clusterdict))
@@ -1870,12 +1947,20 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						bt = [ct for x in bx]
 						cl = art3d.Line3D(bx,bt,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=acq_time - ct)
 						ax8.add_artist(cl)
-					
-			ax8.set_xlabel("X")
-			ax8.set_ylabel("T")
-			ax8.set_zlabel("Y")
+
+			# Labels etc
+			if axes_3d:			
+				ax8.set_xlabel("X")
+				ax8.set_ylabel("T")
+				ax8.set_zlabel("Y")
+			else:		
+				ax8.set_facecolor(canvas_color)				
+				ax8.set_xticks([])
+				ax8.set_yticks([])
+				ax8.set_zticks([])
+				ax8.set_axis_off()		
 			ax8.set_xlim(xlims)
-			ax8.set_ylim(0,acq_time)
+			ax8.set_ylim(tmin,tmax)
 			ax8.set_zlim(ylims)
 			# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot
 			try:
@@ -1897,7 +1982,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-M6-":	
 			print ("2D Kernel density estimation of all detections...")
 			t1 = time.time()
-			fig5 =plt.figure(7,figsize=(8,8))
+			fig7 =plt.figure(7,figsize=(8,8))
 			ax9 = plt.subplot(111)				
 			ax9.cla()
 			ax9.set_facecolor("k")	
@@ -1938,7 +2023,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-M7-":	
 			print ("Instantaneous diffusion coefficient of trajectories...")
 			t1 = time.time()
-			fig6 =plt.figure(8,figsize=(8,8))
+			fig8 =plt.figure(8,figsize=(8,8))
 			ax10 = plt.subplot(111)	
 			ax10.cla()
 			ax10.set_facecolor("k")	
@@ -1994,7 +2079,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				comp = clusterdict[cluster]["composition"]
 				allcomp.append(comp)
 
-			fig7 =plt.figure(10,figsize=(4,4))
+			fig9 =plt.figure(9,figsize=(4,4))
 			ax11 = plt.subplot(111)
 
 			twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
@@ -2016,7 +2101,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			t2=time.time()
 			
 			buf9 = io.BytesIO()
-			pickle.dump(fig7, buf9)
+			pickle.dump(fig9, buf9)
 			buf9.seek(0)			
 			print ("Plot completed in {} sec".format(round(t2-t1,3)))				
 
@@ -2324,6 +2409,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.T('Time threshold (s):',tooltip = "Trajectories must be within this many\nseconds of each other to be considered as clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
 		[sg.T('Segment threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectory segments"),sg.InputText(segment_threshold,size="50",key="-SEGMENTTHRESHOLD-")],
 		[sg.T('Overlap threshold override:',tooltip = "Number of overlaps for a segment to be considered as potentially clustered\n 0 = use average of all segment overlaps as threshold"),sg.InputText(overlap_override,size="50",key="-OVERRIDE-")],
+		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+		[sg.Checkbox('MSD screen',tooltip = "Don't analyse trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 
@@ -2380,7 +2467,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.B("Hotspot",key="-M2-",disabled=True),sg.T("Plot cluster overlap data")],
 		[sg.B("PCA",key="-M3-",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
 		[sg.B("Segment",key="-M4-",disabled=True),sg.T("Pseudo density plot of segment overlap (slow!)")],
-		[sg.B("3D",key="-M5-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this")],
+		[sg.B("3D",key="-M5-",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this"),sg.Checkbox('Axes',tooltip = "Plot axes and grid",key = "-AXES3D-",default=axes_3d)],
 		[sg.B("KDE",key="-M6-",disabled=True),sg.T("2D kernel density estimation of all detections (very slow)")],	
 		[sg.B("Diffusion coefficient",key="-M7-",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories")],	
 		[sg.B("2 color metrics",key="-M8-",disabled=True),sg.T("Specific 2 color clustering metrics")],	
@@ -2431,7 +2518,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# Activate selection functions
 	cid = fig0.canvas.mpl_connect('draw_event', ondraw)
 	lasso = LassoSelector(ax0,onselect)	
-	fig0.canvas.set_window_title('Main display window - DO NOT CLOSE!')
+	fig0.canvas.manager.set_window_title('Main display window - DO NOT CLOSE!')
 
 	# MAIN LOOP
 	while True:
@@ -2485,7 +2572,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		hotspot_color = values["-HOTSPOTCOLOR-"]
 		plot_hotspots = values["-HOTSPOTS-"]		
 		cluster_colorby = values["-CLUSTERCOLORBY-"]			
-		balance = values["-BALANCE-"]			
+		balance = values["-BALANCE-"]	
+		axes_3d = values["-AXES3D-"]	
+		radius_thresh=values['-RADIUSTHRESH-']	
+		msd_filter = values['-MSDFILTER-']			
 
 		# Check variables
 		check_variables()
@@ -2503,7 +2593,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			# Activate selection functions
 			cid = fig0.canvas.mpl_connect('draw_event', ondraw)
 			lasso = LassoSelector(ax0,onselect)	
-			fig0.canvas.set_window_title('Main display window - DO NOT CLOSE!')
+			fig0.canvas.manager.set_window_title('Main display window - DO NOT CLOSE!')
 			
 			# Reset variables
 			all_selverts = [] # all ROI vertices
