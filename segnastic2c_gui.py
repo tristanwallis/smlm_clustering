@@ -1579,9 +1579,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			unclustindices1 = [x for x in unclustindices if x < indices1]
 			unclustindices2 = [x for x in unclustindices if x >= indices1]		
 
-
-			print (clustindices1,clustindices2)
-		
 			clust_msds1 = [seldict[x]["msds"] for x in clustindices1]
 			unclust_msds1 = [seldict[x]["msds"] for x in unclustindices1]			
 			clust_msds2 = [seldict[x]["msds"] for x in clustindices2]
