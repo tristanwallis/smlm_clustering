@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 '''
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA - 2 COLOUR VERSION
+PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA - 2 COLOR VERSION
 
 Design and coding: Tristan Wallis
-Additional coding: Alex McCann
-Debugging: Sophie Huiyi Hou
+Additional coding: Kyle Young, Alex McCann
+Debugging: Sophie Huiyi Hou, Kye Kudo, Alex McCann
 Queensland Brain Institute
 The University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib scikit-learn rtree pysimplegui
+python -m pip install scipy numpy matplotlib scikit-learn rtree pysimplegui colorama
 
 INPUT:
 TRXYT trajectory files from Matlab
@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230208"
+last_changed = "20230414"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -40,6 +40,7 @@ import numpy as np
 import warnings
 import math
 from math import dist
+
 warnings.filterwarnings("ignore")
 
 def metrics(data):
@@ -68,7 +69,16 @@ def multi(allpoints):
 if __name__ == "__main__": # has to be called this way for multiprocessing to work
 	# LOAD MODULES
 	import PySimpleGUI as sg
+	import os
+	from colorama import init as colorama_init
+	from colorama import Fore
+	from colorama import Style
 	sg.theme('DARKGREY11')
+	colorama_init()
+	os.system('cls' if os.name == 'nt' else 'clear')
+	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+	print(f'{Fore.GREEN}SEGNASTIC2C {last_changed} initialising...{Style.RESET_ALL}')
+	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
 	popup = sg.Window("Initialising...",[[sg.T("SEGNASTIC2C initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 	import random
@@ -90,7 +100,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from math import dist
 	import time
 	import datetime
-	import os
 	import sys
 	import pickle
 	import io
@@ -183,7 +192,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		graph.DrawText("S E G N A S T I C 2 C v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Design and coding: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Additional coding: Kyle Young, Alex McCann",(0,30),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo",(0,15),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo, Alex McCann",(0,15),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("The University of Queensland",(0,-15),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-30),color="white",font=("Any",10),text_location="center")	
@@ -257,7 +266,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmax,tmin,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter, pixel
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -305,6 +314,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		axes_3d = True
 		radius_thresh = 0.15
 		msd_filter = False
+		pixel = 0.106
+		
 		return 
 
 	# SAVE SETTINGS
@@ -353,13 +364,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Color balance",balance))	
 			outfile.write("{}\t{}\n".format("3D axes",axes_3d))
 			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))
-			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))				
+			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))
+			outfile.write("{}\t{}\n".format("Pixel size (um)",pixel))
+			
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter
-		try:
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,cluster_fill,auto_metric,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,balance,axes_3d,radius_thresh,msd_filter, pixel
+		try:	
 			with open ("segnastic2c_gui.defaults","r") as infile:
 				print ("Loading GUI settings from segnastic2c_gui.defaults...")
 				defaultdict = {}
@@ -464,7 +477,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				msd_filter = True
 			if msd_filter == "False":
 				msd_filter = False	
-			radius_thresh = defaultdict["Cluster size screen"]					
+			radius_thresh = defaultdict["Cluster size screen"]
+			pixel = defaultdict["Pixel size (um)"] 
 			
 		except:
 			print ("Settings could not be loaded")
@@ -566,12 +580,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-AXES3D-").update(axes_3d)
 		window.Element("-MSDFILTER-").update(msd_filter)
 		window.Element("-RADIUSTHRESH-").update(radius_thresh)		
-	
+		window.Element("-PIXEL-").update(pixel)
+		
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,line_color2,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,cluster_colorby,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh, pixel
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -597,6 +612,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			minlength = 8
 			maxlength = 100	
 		try:
+			pixel = float(pixel)
+			if pixel <= 0:
+				pixel = 0.106
+		except:
+			pixel = 0.106
+		try:
 			acq_time = int(acq_time)
 			if acq_time < 1:
 				acq_time = 1
@@ -604,7 +625,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			acq_time = 320
 		try:
 			frame_time = float(frame_time)
-			if frame_time < 0:
+			if frame_time <= 0:
 				frame_time = 0.02
 		except:
 			frame_time = 0.02			
@@ -749,32 +770,134 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plt.xlim(xlims)
 		plt.ylim(ylims)
 		plt.show(block=False)
+		
+		if len(roi_list) <= 1:
+			window.Element("-SEPARATE-").update(disabled = True)
+		elif len(roi_list) >1:
+			window.Element("-SEPARATE-").update(disabled = False)
+		
 		return
 		
 	# READ ROI DATA	
 	def read_roi():
-		roidict = {}
-		with open (roi_file,"r") as infile:
-			for line in infile:
-				spl = line.split("\t")
-				try:
-					roi = int(spl[0])
-					x = float(spl[1])
-					y = float(spl[2])
+
+		#Check for ROI file type
+		roi_file_split = roi_file.split(".")
+		if roi_file_split[-1] == "rgn":
+			#PalmTracer .RGN file
+			window.Element("-PIXEL_TEXT-").update(visible = True)
+			window.Element("-PIXEL-").update(visible = True)		
+			window.Element("-REPLOT_ROI-").update(visible = True)	
+			with open (roi_file, "r") as infilename:
+				RGN_data = infilename.read()
+				RGN_list = [x.split(", ") for x in RGN_data.split("\n")] #Info for each ROI is listed on a new line -> separate ROI info in list
+				ROI_n = 0
+				ROI_X_Y = np.array([[0,0,0],[0,0,0]])
+				for ROI in RGN_list:
+					
+					if ROI[0] != "":
+						ROI_n = ROI_n +1
+						col_6_data = ROI[6]
+						space2comma = col_6_data.split(" ") #Data in this column is separated by spaces
+						n_coord_pairs = space2comma[1] #This position contains the number of coordinate pairs
+						x_coord_pix = []
+						y_coord_pix = []
+						x_coord_pix.append(space2comma[2::2]) #File contains alternating x,y coordinates
+						x_coord_pix = x_coord_pix.pop()
+						x_coord_pix = ([int(x) for x in x_coord_pix])
+						y_coord_pix.append(space2comma[3::2])
+						y_coord_pix = y_coord_pix.pop()
+						y_coord_pix = ([int(y) for y in y_coord_pix])
+						
+						#Convert pixels to microns
+						x_coord_micron_list = []
+						y_coord_micron_list = []
+						ROI_list = []
+						for i in range(0, len(x_coord_pix)):
+							x_coord_micron_list.append(float(pixel)*x_coord_pix[i])
+							y_coord_micron_list.append(float(pixel)*y_coord_pix[i])
+							
+							ROI_list.append(0)
+						int_n_coord_pairs = int(n_coord_pairs)
+						output_file = np.zeros((int_n_coord_pairs+1, 3))
+						cnt = 0
+						while cnt < int_n_coord_pairs:
+							for r in output_file:
+								output_file[cnt,0] = int(ROI_n-1)
+								cnt+=1
+						if cnt == int_n_coord_pairs:
+							output_file[cnt,0] = int(ROI_n-1)
+						
+						cnt = 0
+						while cnt < len(x_coord_micron_list):
+							for x in x_coord_micron_list:
+								output_file[cnt,1] = x
+								cnt+=1
+						if cnt == int_n_coord_pairs:
+							output_file[cnt,1] = x_coord_micron_list[0]
+						cnt = 0 
+						while cnt < len(y_coord_micron_list):
+							for y in y_coord_micron_list:
+								output_file[cnt,2] = y
+								cnt+=1
+						if cnt == int_n_coord_pairs:
+							output_file[cnt,2] = y_coord_micron_list[0]						
+						
+						ROI_X_Y = np.append(ROI_X_Y, output_file, axis = 0)
+					else:
+						break
+				ROI_X_Y = np.delete(ROI_X_Y, 0, 0)
+				ROI_X_Y = np.delete(ROI_X_Y, 0, 0)
+				roidict = {}
+				spl = []
+				for line in ROI_X_Y:
 					try:
-						roidict[roi].append([x,y])
-					except:	
-						roidict[roi] = []
-						roidict[roi].append([x,y])
-				except:
-					pass
-		if len(roidict) == 0:
-			sg.popup("Alert","No ROIs found")
-		else:	
-			for roi in roidict:			
-				selverts =roidict[roi]	
-				use_roi(selverts,"orange")
-		return 
+						roi = int(float(line[0]))
+						x = float(line[1])
+						y = float(line[2])
+						try:
+							roidict[roi].append([x,y])
+						except:
+							roidict[roi] = []
+							roidict[roi].append([x,y])
+					except:
+						pass
+			if len(roidict) == 0:
+				sg.popup("Alert", "No ROIs found")
+			else:
+				for roi in roidict:
+					selverts = roidict[roi]
+					use_roi(selverts,"orange")
+				return
+			return
+		
+		else:
+			window.Element("-PIXEL_TEXT-").update(visible=False)
+			window.Element("-PIXEL-").update(visible=False)
+			window.Element("-REPLOT_ROI-").update(visible = False)
+			
+			roidict = {}
+			with open (roi_file,"r") as infile:
+				for line in infile:
+					spl = line.split("\t")
+					try:
+						roi = int(spl[0])
+						x = float(spl[1])
+						y = float(spl[2])
+						try:
+							roidict[roi].append([x,y])
+						except:	
+							roidict[roi] = []
+							roidict[roi].append([x,y])
+					except:
+						pass
+			if len(roidict) == 0:
+				sg.popup("Alert","No ROIs found")
+			else:	
+				for roi in roidict:			
+					selverts =roidict[roi]	
+					use_roi(selverts,"orange")
+			return 
 
 	# CONVEX HULL OF EXTERNAL POINTS, AND THEN INTERNAL POINTS
 	def double_hull(points):
@@ -832,23 +955,30 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			intree.append(idx)
 		# Query the r-tree
 		overlappers = []
-		for idx in intree:
-			if idx%10 == 0:
-				bar = 100*idx/(len(intree)-10)
-				window['-PROGBAR-'].update_bar(bar)
-			bbox = segdict[idx]["bbox"]
-			left,bottom,early,right,top,late = bbox[0],bbox[1],bbox[2]-time_threshold/2,bbox[3],bbox[4],bbox[5]+time_threshold/2
-			intersect = list(idx_3d.intersection([left,bottom,early,right,top,late]))
-			# Remove overlap with segments from same trajectory
-			segtraj = segdict[idx]["traj"]
-			intersect = [x for x in intersect if segdict[x]["traj"] != segtraj]
-			if len(intersect) > 0:
-				# Update overlap count for each segment
-				for x in intersect:
-					segdict[x]["overlap"] +=1 
-				# Add to the list of lists of overlapping segments
-				overlappers.append(intersect)
-		return overlappers		
+		if len(intree) == 0: 
+			return
+		else:
+			for idx in intree:
+				if idx%10 == 0:
+					try: 
+						bar = 100*idx/(len(intree)-10)
+						window['-PROGBAR-'].update_bar(bar)
+					except:
+						pass
+				bbox = segdict[idx]["bbox"]
+				left,bottom,early,right,top,late = bbox[0],bbox[1],bbox[2]-time_threshold/2,bbox[3],bbox[4],bbox[5]+time_threshold/2
+				intersect = list(idx_3d.intersection([left,bottom,early,right,top,late]))
+				# Remove overlap with segments from same trajectory
+				segtraj = segdict[idx]["traj"]
+				intersect = [x for x in intersect if segdict[x]["traj"] != segtraj]
+				if len(intersect) > 0:
+					# Update overlap count for each segment
+					for x in intersect:
+						segdict[x]["overlap"] +=1 
+					# Add to the list of lists of overlapping segments
+					overlappers.append(intersect)
+			window['-PROGBAR-'].update_bar(0)	
+			return overlappers		
 
 	# PROBABILITY OF CLUSTER OVERLAP AT A GIVEN DISTANCE	
 	def overlap_prob(clustpoints,epsilon):
@@ -861,11 +991,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# LOAD AND PLOT TRXYT TAB
 	def trxyt_tab():
 		# Reset variables
-		global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,lastfile2,seldict,clusterdict,x_plot,y_plot,xlims,ylims,savefolder,buf
+		global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,lastfile2,seldict,clusterdict,x_plot1,x_plot2,y_plot1,y_plot2,xlims,ylims,savefolder,buf #
 		all_selverts = [] # all ROI vertices
 		all_selareas = [] # all ROI areas
 		roi_list = [] # ROI artists
-		trajdict = {} # Dictionary holding raw trajectory info
+		trajdict1 = {} # Dictionary holding raw trajectory info 
 		trajdict2 = {} # Dictionary holding raw trajectory info
 		sel_traj = [] # Selected trajectory indices
 		lastfile = "" # Force the program to load a fresh TRXYT
@@ -941,7 +1071,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			lastfile=infilename
 			print("Loading raw trajectory data from {}...".format(infilename))
 			t1=time.time()
-			rawtrajdict = {}
+			rawtrajdict1 = {}
 			ct = 99999
 			x0 = -10000
 			y0 = -10000
@@ -956,24 +1086,24 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						t = float(spl[3])
 						if n > 99999:
 							if abs(x-x0) < 0.32 and abs(y-y0) < 0.32:
-								rawtrajdict[ct]["points"].append([x,y,t])
+								rawtrajdict1[ct]["points"].append([x,y,t])
 								x0 = x
 								y0= y
 							else:
 								ct += 1
-								rawtrajdict[ct]= {"points":[[x,y,t]]}	
+								rawtrajdict1[ct]= {"points":[[x,y,t]]}
 								x0 = x
 								y0=y
 						else:
 							try:
-								rawtrajdict[n]["points"].append([x,y,t])
+								rawtrajdict1[n]["points"].append([x,y,t])
 							except:
-								rawtrajdict[n]= {"points":[[x,y,t]]}
+								rawtrajdict1[n]= {"points":[[x,y,t]]}
 								
 					except:
 						pass
 			
-			print("{} trajectories in file 1".format(len(rawtrajdict)))	
+			print("{} trajectories in file 1".format(len(rawtrajdict1)))
 
 		if infilename2 != lastfile2:
 			# Read file into dictionary
@@ -1013,36 +1143,37 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print("{} trajectories in file 2".format(len(rawtrajdict2)))					
 		
 		# Don't bother with anything else if there's no trajectories				
-		if len(rawtrajdict) == 0 or len(rawtrajdict2) == 0:
+		if len(rawtrajdict1) == 0 or len(rawtrajdict2) == 0:
 			sg.popup("Alert","No trajectory information found in file 1 or file 2")
 		else:
 			
 			# Screen and display
-			for traj in rawtrajdict:
-				points = rawtrajdict[traj]["points"]
+			for traj1 in rawtrajdict1:
+				points = rawtrajdict1[traj1]["points"]
 				if len(points) >=minlength and len(points) <=maxlength:
-					trajdict[traj] = rawtrajdict[traj]
+					trajdict1[traj1] = rawtrajdict1[traj1]
 					
-			for traj in rawtrajdict2:
-				points = rawtrajdict2[traj]["points"]
+			for traj2 in rawtrajdict2:
+				points = rawtrajdict2[traj2]["points"]
 				if len(points) >=minlength and len(points) <=maxlength:
-					trajdict2[traj] = rawtrajdict2[traj]
+					trajdict2[traj2] = rawtrajdict2[traj2]
 
-			trajdict = {**trajdict,**trajdict2}			
+			trajdict = {**trajdict1,**trajdict2}		 
 
 		
 			print("Plotting detections...")
 			ct = 0
 			ax0.cla() # clear last plot if present
-			detpoints = []
-			for num,traj in enumerate(trajdict):
+			detpoints1 = []
+			for num,traj in enumerate(trajdict1):
 				if num%10 == 0:
-					bar = 100*num/(len(trajdict))
+					bar = 100*num/(len(trajdict1))
 					window['-PROGBAR-'].update_bar(bar)
 				
 				if random.random() <= traj_prob:
 					ct+=1
-					[detpoints.append(i) for i in trajdict[traj]["points"]]
+					[detpoints1.append(i) for i in trajdict1[traj]["points"]]
+			window['-PROGBAR-'].update_bar(0)
 			detpoints2 = []
 			for num,traj in enumerate(trajdict2):
 				if num%10 == 0:
@@ -1051,13 +1182,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				
 				if random.random() <= traj_prob:
 					ct+=1
-					[detpoints2.append(i) for i in trajdict2[traj]["points"]]					
+					[detpoints2.append(i) for i in trajdict2[traj]["points"]]	
+			window['-PROGBAR-'].update_bar(0)
 					
-			x_plot,y_plot,t_plot=zip(*detpoints)
-			ax0.scatter(x_plot,y_plot,c=line_color,s=3,linewidth=0,alpha=detection_alpha)	
+			x_plot1,y_plot1,t_plot1=zip(*detpoints1) 
+			ax0.scatter(x_plot1,y_plot1,c=line_color,s=3,linewidth=0,alpha=detection_alpha)
 
-			x_plot,y_plot,t_plot=zip(*detpoints2)
-			ax0.scatter(x_plot,y_plot,c=line_color2,s=3,linewidth=0,alpha=detection_alpha)			
+			x_plot2,y_plot2,t_plot2=zip(*detpoints2)
+			ax0.scatter(x_plot2,y_plot2,c=line_color2,s=3,linewidth=0,alpha=detection_alpha)	
 			
 			ax0.set_facecolor("k")
 			#ax0.set_title(infilename.split("/")[-1])		
@@ -1076,7 +1208,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.show(block=False)		
 			window['-PROGBAR-'].update_bar(0)
 			t2 = time.time()
-			print("{} detections from {} trajectories plotted in {} sec".format(len(x_plot),ct,round(t2-t1,3)))
+			print("{} detections from {} trajectories plotted in {} sec".format(len(x_plot1+x_plot2),ct,round(t2-t1,3)))
 			
 			# Pickle this raw image
 			buf = io.BytesIO()
@@ -1096,11 +1228,17 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		# Load and apply ROIs	
 		if event ==	"-R2-" and roi_file != "Load previously defined ROIs":
+			
+			if len(roi_list) <= 1:
+				window.Element('-SEPARATE-').update(disabled = True)
+			elif len(roi_list) > 1:
+				window.Element('-SEPARATE-').update(disabled = False)
+			
 			all_selverts_bak = [x for x in all_selverts]
 			roidict = read_roi()
 
 		# Clear all ROIs
-		if event ==	"-R3-" and len(roi_list) > 0:
+		if event ==	"-R3-" and len(roi_list) >0: 
 			all_selverts_bak = [x for x in all_selverts]
 			for roi in roi_list:
 				roi.remove()
@@ -1109,7 +1247,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			selverts = []
 			sel_traj = []
 			plt.show(block=False)
-
+			
+			window.Element("-SEPARATE-").update(disabled=True)
+			window.Element("-PIXEL_TEXT-").update(visible=False)
+			window.Element("-PIXEL-").update(visible=False)
+			window.Element("-REPLOT_ROI-").update(visible=False)
+			
 		# Remove last added ROI
 		if event ==	"-R6-" and len(roi_list) > 0:
 			all_selverts_bak = [x for x in all_selverts]
@@ -1117,7 +1260,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			roi_list.pop(-1)	
 			all_selverts.pop(-1)
 			selverts = []
-			plt.show(block=False)		
+			plt.show(block=False)
+			
+			if len(roi_list) <=1:
+				window.Element("-SEPARATE-").update(disabled=True)
 
 		# Add ROI encompassing all detections	
 		if event ==	"-R4-":
@@ -1125,11 +1271,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			for roi in roi_list:
 				roi.remove()
 			roi_list = list()
-			xmin = min(x_plot)
-			xmax = max(x_plot)
-			ymin = min(y_plot)
-			ymax = max(y_plot)
-			all_selverts = []
+			xmin = min(min(x_plot1),min(x_plot2)) 
+			xmax = max(max(x_plot1),max(x_plot2)) 
+			ymin = min(min(y_plot1),min(y_plot2)) 
+			ymax = max(max(y_plot1),max(y_plot2)) 
+			all_selverts = [] 
 			selverts = [[xmin,ymin],[xmax,ymin],[xmax,ymax],[xmin,ymax],[xmin,ymin]]
 			use_roi(selverts,"orange")
 			
@@ -1138,29 +1284,84 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			all_selverts_bak = [x for x in all_selverts]
 			if selverts[0][0] != xlims[0] and selverts[0][1] != ylims[0]: # don't add entire plot
 				use_roi(selverts,"orange")
+			
+			window.Element("-PIXEL_TEXT-").update(visible=False)
+			window.Element("-PIXEL-").update(visible=False)
+			window.Element("-REPLOT_ROI-").update(visible=False)
 				
 		# Undo last ROI change	
-		if event ==	"-R7-" and len(all_selverts_bak) > 0:
-			if len(roi_list) > 0:
-				for roi in roi_list:
-					roi.remove()
-			roi_list = list()
-			plt.show(block=False)	
-			all_selverts = []	
-			for selverts in all_selverts_bak:
-				use_roi(selverts,"orange")
-				
+		if event ==	"-R7-":
+			try: 
+				len(all_selverts_bak)
+				if len(all_selverts_bak) > 0:
+					if len(roi_list) > 0:
+						for roi in roi_list:
+							roi.remove()
+					roi_list = list()
+					plt.show(block=False)	
+					all_selverts = []	
+					for selverts in all_selverts_bak:
+						use_roi(selverts,"orange")
+					if len(roi_list) <1: 
+						window.Element("-RESET-").update(disabled=True) 
+			except:
+				pass
+		
+		# Reset view
+		if event == "-RESET-":
+			selverts_reset = [x for x in all_selverts_copy]
+			if len(selverts) >3:
+				if len(selverts_reset) == 0:
+					selverts_reset = [x for x in all_selverts]
+				trxyt_tab()
+				for selverts in selverts_reset:
+					use_roi(selverts,"orange")
+				window.Element('-RESET-').update(disabled = True)
+		
 		# Save current ROIs	
 		if event ==	"-R8-" and len(all_selverts) > 0:
 			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
-			roi_save = "{}_roi_coordinates.tsv".format(stamp)
-			with open(roi_save,"w") as outfile:
-				outfile.write("ROI\tx(um)\ty(um)\n")
+			
+			outpath = os.path.dirname(infilename)
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_SEGNASTIC2C_ROIs_{}".format(stamp))
+			try:
+				os.mkdir(outdir) 
+				roi_directory = outdir
+				os.makedirs(roi_directory,exist_ok = True)
+				os.chdir(roi_directory)
+			
+				roi_save = "{}_roi_coordinates.tsv".format(stamp)
+				with open(roi_save,"w") as outfile:
+					outfile.write("ROI\tx(um)\ty(um)\n")
+					for roi,selverts in enumerate(all_selverts):
+						for coord in selverts:
+							outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+				print ("Current ROIs saved as {}_roi_coordinates.tsv".format(stamp))			
+			except:
+				sg.Popup("Alert", "Error with saving ROIs", "Check whether ROIs are already saved")
+		
+		# Save current ROIs as separate files
+		if event == "-SEPARATE-":
+			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
+			
+			outpath = os.path.dirname(infilename)
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_SEGNASTIC2C_ROIs_{}".format(stamp))
+			try:
+				os.mkdir(outdir) 
+				roi_directory = outdir
+				os.makedirs(roi_directory,exist_ok = True)
+				os.chdir(roi_directory)
+			
 				for roi,selverts in enumerate(all_selverts):
-					for coord in selverts:
-						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
-			print ("Current ROIs saved as {}_roi_coordinates.tsv".format(stamp))			
-
+					roi_save = "{}_roi_coordinates{}.tsv".format(stamp, roi)
+					with open(roi_save,"w") as outfile:
+						outfile.write("ROI\tx(um)\ty(um)\n")			
+						for coord in selverts:
+							outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+					print ("ROI{} saved as {}_roi_coordinates{}.tsv".format(roi,stamp,roi))
+			except:
+				sg.Popup("Alert", "Error with saving ROIs", "Check whether ROIs are already saved")
+		
 		# Select trajectories within ROIs			
 		if event ==	"-SELECTBUTTON-" and len(roi_list) > 0:	
 			print ("Selecting trajectories within {} ROIs...".format(len(roi_list)))
@@ -1208,17 +1409,21 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			for roi in roi_list:
 				roi.remove()
 			roi_list = []
-			for selverts in all_selverts_copy:
-				use_roi(selverts,"green")
-			window['-PROGBAR-'].update_bar(0)	
-			t2=time.time()
-			print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),t2-t1))
-			density = float(len(sel_traj)/sum(all_selareas))		
-			print ("{} trajectories/um^2".format(round(density,2)))
-			window.Element("-DENSITY-").update(round(density,2))
-			window["-TABGROUP-"].Widget.select(2)
-			if autocluster:
-				cluster_tab()
+			
+			if len(sel_traj) == 0:
+				sg.Popup("Alert","No trajectories found in selected ROI", "Save ROIs that you want to keep before Removing")
+				for selverts in all_selverts_copy:
+					use_roi(selverts,"orange")
+				window['-PROGBAR-'].update_bar(0)
+			else:
+				window['-PROGBAR-'].update_bar(0)
+				t2=time.time()
+				print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),t2-t1))
+				density = float(len(sel_traj)/sum(all_selareas))		
+				print ("{} trajectories/um^2".format(round(density,2)))
+				window.Element("-DENSITY-").update(round(density,2))
+				if autocluster:
+					cluster_tab()
 		return
 		
 	# CLUSTERING TAB	
@@ -1234,14 +1439,38 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if balance:
 			print ("Balancing trajectory numbers between colors..")
 			col1 = [x for x in sel_traj if x < 10000000]
+			
+			if len(col1) == 0:
+				sg.Popup("Alert", "No trajectories from file 1 found in ROI")
+				for selverts in all_selverts_copy:
+					use_roi(selverts,"orange")
+				return
+			
 			col2 = [x for x in sel_traj if x > 10000000]
-			col_ratio = float(len(col1)/len(col2))	
+			
 
-			if col_ratio < 1:
-				col2 = [x for x in col2 if random.random() < col_ratio]
-			else:
-				col1 = [x for x in col1 if random.random() < (1/col_ratio)]
-				indices1 = len(col1)
+			if len(col2) == 0:
+				sg.Popup("Alert", "No trajectories from file 2 found in ROI")
+				for selverts in all_selverts_copy:
+					use_roi(selverts,"orange")
+				return
+
+			
+
+			try:
+				col_ratio = float(len(col1)/len(col2))	
+				if col_ratio < 1:
+					col2 = [x for x in col2 if random.random() < col_ratio]
+				else:
+					col1 = [x for x in col1 if random.random() < (1/col_ratio)]
+					indices1 = len(col1)
+				window["-TABGROUP-"].Widget.select(2) 
+			except:
+				sg.Popup("No trajectories found for both files within selected ROI")
+				for selverts in all_selverts_copy:
+					use_roi(selverts,"orange")
+				return
+				
 			print ("Balanced trajectory numbers within ROI: {} {}".format(len(col1),len(col2)))
 			sel_traj = col1 + col2		
 
@@ -1255,8 +1484,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		all_msds = []
 		for num,metrics in enumerate(allmetrics):
 			if num%10 == 0:
-				bar = 100*num/(len(allmetrics)-10)
-				window['-PROGBAR-'].update_bar(bar)
+				try: 
+					bar = 100*num/(len(allmetrics)-10)
+					window['-PROGBAR-'].update_bar(bar)
+				except:
+					pass
 			seldict[num]={}
 			points,msds,centroid,diffcoeff = metrics
 			seldict[num]["points"]=points
@@ -1317,8 +1549,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			if segdict[seg]["overlap"] > overlap_threshold:
 			#if segdict[seg]["overlap"] > 2:
 				thresh_segdict[seg]=segdict[seg]
-		raw_seg_clusters =  segment_overlap(thresh_segdict,time_threshold)
-		seg_clusters = distill_list(raw_seg_clusters)		
+		try: 			
+			raw_seg_clusters =  segment_overlap(thresh_segdict,time_threshold)
+			seg_clusters = distill_list(raw_seg_clusters)
+		except:
+			sg.Popup("Alert", "No clustered thresholded segments", "Please try adjusting the ROI or clustering parameters")
+			for selverts in all_selverts_copy:
+				use_roi(selverts,"orange")
+			return
+			
 		seg_clusters = [seg for seg in seg_clusters if len(seg) > segment_threshold]
 		t2 = time.time()
 		all_overlaps = [thresh_segdict[seg]["overlap"] for seg in thresh_segdict]
@@ -1345,7 +1584,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			diffcoeffs = [seldict[i]["diffcoeff"] for i in traj_list] # Instantaneous diffusion coefficients for each trajectory in this cluster
 			clusterdict[num]["av_diffcoeff"]= np.average(diffcoeffs) # average trajectory inst diff coeff in this cluster				
 			clusterpoints = [point[:2]  for i in cluster for point in segdict[i]["segment"]] # All segment points [x,y] in this cluster
-			ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area
+			try: 
+				ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area
+			except:
+				sg.popup("Alert","Clustering error","Please try different clustering metrics") 
+				return 
 			clusterdict[num]["area"] = int_area # internal hull area as cluster area (um2)
 			clusterdict[num]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster (um)
 			clusterdict[num]["area_xy"] = [int_x,int_y] # area border coordinates	
@@ -1374,15 +1617,25 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				[clustindices.append(i) for i in clusterdict[num]["indices"]]
 				counter +=1			
 		clusterdict = tempclusterdict.copy()
-		clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
-		unclustindices = [idx for idx in allindices if idx not in clustindices] 		
-		window['-PROGBAR-'].update_bar(0)	
-		t2 = time.time()
 		
-		print ("{} unique spatiotemporal clusters identified in {} sec".format(len(clusterdict),round(t2-t1,3)))
-		window["-TABGROUP-"].Widget.select(3)
-		if autoplot and len(clusterdict)>0:
-			display_tab(xlims,ylims)
+		if len(clusterdict) == 0:
+			sg.Popup("Alert","No unique spatiotemporal clusters containing trajectories found in the selected ROI","Please try adjusting the ROI or clustering parameters")
+			window.Element("-RESET-").update(disabled=False) 
+			for selverts in all_selverts_copy:
+				use_roi(selverts,"orange")
+		
+		else:
+			window.Element("-RESET-").update(disabled=False)
+			clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
+			unclustindices = [idx for idx in allindices if idx not in clustindices] 		
+			for selverts in all_selverts_copy:
+				use_roi(selverts,"green")
+			window['-PROGBAR-'].update_bar(0)	
+			t2 = time.time()
+			print ("{} unique spatiotemporal clusters identified in {} sec".format(len(clusterdict),round(t2-t1,3)))		
+			window["-TABGROUP-"].Widget.select(3)
+			if autoplot and len(clusterdict)>0:
+				display_tab(xlims,ylims)
 		return
 
 	# DISPLAY CLUSTERED DATA TAB
@@ -1399,8 +1652,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 		# Reset zoom	
 		if plotxmin ==0.0 and plotxmax ==0.0 and plotymin ==0.0 and plotymax ==0.0:	
-			xlims =	[min(x_plot),max(x_plot)]
-			ylims =	[min(y_plot),max(y_plot)]
+			xlims =	[min(min(x_plot1),min(x_plot2)),max(max(x_plot1),max(x_plot2))] 
+			ylims =	[min(min(y_plot1),min(y_plot2)),max(max(y_plot1),max(y_plot2))]
 		plotxmin,plotxmax,plotymin,plotymax="","","",""	
 		ax0.cla()
 		ax0.set_facecolor(canvas_color)
@@ -1808,8 +2061,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			min_overlap = min([segdict[seg]["overlap"] for seg in segdict])
 			for seg in segdict:
 				if seg%100 == 0:
-					bar = 100*seg/(len(segdict)-10)
-				window['-PROGBAR-'].update_bar(bar)
+					try: 
+						bar = 100*seg/(len(segdict)-10) 
+						window['-PROGBAR-'].update_bar(bar)
+					except:
+						pass
 				segment = segdict[seg]["segment"]
 				overlap = segdict[seg]["overlap"]	
 				centroid = segdict[seg]["centroid"]
@@ -1925,7 +2181,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						ycent.append(centy)	
 						tcent.append(centt)	
 					ax8.add_artist(tr) 	
-			ax8.scatter(xcent,tcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0,zorder=acq_time - np.average(y))		
+			ax8.scatter(xcent,tcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0)		
 					
 			if plot_clusters:		
 				for cluster in clusterdict:
@@ -2108,11 +2364,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outpath = os.path.dirname(infilename)
 			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","") + "_" + infilename2.split("/")[-1].replace(".trxyt","_SEGNASTIC2C_{}".format(stamp))
 			os.mkdir(outdir)
+			os.chdir(outdir)
+			
 			outfilename = "{}/metrics.tsv".format(outdir)
 			print ("Saving metrics, ROIs and all plots to {}...".format(outdir))
 			# Metrics
 			with open(outfilename,"w") as outfile:
-				outfile.write("SEGMENT NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n")
+				outfile.write("SEGNASTIC2C: SEGMENT NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING (2 COLOR) - Tristan Wallis t.wallis@uq.edu.au\n") 
 				outfile.write("TRAJECTORY FILE:\t{}\n".format(infilename))	
 				outfile.write("ANALYSED:\t{}\n".format(stamp))
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
@@ -2272,13 +2530,26 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outarray = ["SEM",np.std(trajnums)/math.sqrt(len(trajnums)),np.std(lifetimes)/math.sqrt(len(lifetimes)),np.std(av_msds)/math.sqrt(len(av_msds)),np.std(areas)/math.sqrt(len(areas)),np.std(radii)/math.sqrt(len(radii)),np.std(densities)/math.sqrt(len(densities)),np.std(rates)/math.sqrt(len(rates)),np.std(times)/math.sqrt(len(times)),np.std(compositions)/math.sqrt(len(compositions))]
 				outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 				outfile.write(outstring + "\n")		
-			# ROI
-			roi_file = "{}/roi_coordinates.tsv".format(outdir)
+			
+			# ALL ROIs 
+			roi_directory = outdir + "\\saved_ROIs"
+			os.makedirs(roi_directory, exist_ok = True) 
+			roi_file = "{}/{}_roi_coordinates.tsv".format(roi_directory,stamp) 
 			with open(roi_file,"w") as outfile:
 				outfile.write("ROI\tx(um)\ty(um)\n")
 				for roi,selverts in enumerate(all_selverts):
 					for coord in selverts:
 						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+			
+			# SEPARATE ROIs
+			if len(all_selverts) >1:
+				for roi,selverts in enumerate(all_selverts):
+					roi_save = "{}/{}_roi_coordinates{}.tsv".format(roi_directory,stamp, roi)
+					with open(roi_save,"w") as outfile:
+						outfile.write("ROI\tx(um)\ty(um)\n")			
+						for coord in selverts:
+							outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+			
 			# Plots	
 			buf.seek(0)		
 			fig10=pickle.load(buf)
@@ -2388,13 +2659,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab2_layout = [
-		[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv"),),key="-R1-",target="-R2-",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True)],
-		[sg.B("Save",key="-R8-",disabled=True),sg.T("Save currently defined ROIs")],
+		[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv *.rgn"),),key="-R1-",target="-R2-",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True, size = (30,1)),sg.T("Pixel(um):", key = '-PIXEL_TEXT-', tooltip = "Please select a conversion factor\nfor converting pixels to um", visible = False), sg.In(pixel, key = '-PIXEL-', visible = False, size = (6,1)),sg.B("Replot ROIs", key = "-REPLOT_ROI-", visible = False)],
+		[sg.B("Save",key="-R8-",disabled=True),sg.T("Save currently defined ROIs"), sg.B("Save Separately", key = "-SEPARATE-", disabled = True), sg.T("Save individual ROI files")],
 		[sg.B("Clear",key="-R3-",disabled=True),sg.T("Clear all ROIs")],	
 		[sg.B("All",key="-R4-",disabled=True),sg.T("ROI encompassing all detections")],
 		[sg.B("Add",key="-R5-",disabled=True),sg.T("Add selected ROI")],
 		[sg.B("Remove",key="-R6-",disabled=True),sg.T("Remove last added ROI")],
-		[sg.B("Undo",key="-R7-",disabled=True),sg.T("Undo last change")],
+		[sg.B("Undo",key="-R7-",disabled=True),sg.T("Undo last change"),sg.B("Reset",key="-RESET-",disabled=True),sg.T("Reset to original view with ROI")], 
 		[sg.T('Selection density:',tooltip = "Screen out random trajectories to maintain a \nfixed density of selected trajectories (traj/um^2)\n0 = do not adjust density"),sg.InputText(selection_density,size="50",key="-SELECTIONDENSITY-"),sg.T("",key = "-DENSITY-",size=(6,1))],
 		[sg.Checkbox("Balance colors",tooltip = "Screen out random trajectories to ensure that \nboth colors have the same number of trajectories",key = "-BALANCE-",default=balance)],
 		[sg.B('SELECT DATA IN ROIS',size=(25,2),button_color=("white","gray"),key ="-SELECTBUTTON-",disabled=True,tooltip = "Select trajectories whose detections lie within the yellow ROIs\nOnce selected the ROIs will turn green.\nSelected trajectories may then be clustered."),sg.Checkbox("Cluster immediately",key="-AUTOCLUSTER-",default=autocluster,tooltip="Switch to 'Clustering' tab and begin clustering automatically\nupon selection of data within ROIs")]
@@ -2446,7 +2717,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	]
 
 	tab4_layout = [
-		[sg.T('Canvas',tooltip = "Background colour of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Col.bar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
+		[sg.T('Canvas',tooltip = "Background color of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Col.bar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)], 
 		[sg.TabGroup([
 			[sg.Tab("Trajectory",trajectory_layout)],
 			[sg.Tab("Centroid",centroid_layout)],
@@ -2494,7 +2765,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	popup.close()
 
 	# VARS
-	cmap = matplotlib.cm.get_cmap('brg') # colormap for conditional colouring of clusters based on their average acquisition time
+	cmap = matplotlib.cm.get_cmap('brg') # colormap for conditional coloring of clusters based on their average acquisition time
 	all_selverts = [] # all ROI vertices
 	all_selareas = [] # all ROI areas
 	roi_list = [] # ROI artists
@@ -2573,7 +2844,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		axes_3d = values["-AXES3D-"]	
 		radius_thresh=values['-RADIUSTHRESH-']	
 		msd_filter = values['-MSDFILTER-']			
-
+		pixel = values['-PIXEL-']
+		
 		# Check variables
 		check_variables()
 
@@ -2658,9 +2930,27 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		# ROI stuff
 		if len(trajdict) > 0:
 			roi_tab()
+		if event == '-REPLOT_ROI-':
+			if len(roi_list) <= 1:
+				window.Element("-SEPARATE-").update(disabled=True)
+			elif len(roi_list) > 1:
+				window.Element("-SEPARATE-").update(disabled=False)
+			if len(roi_list) > 0:
+				all_selverts_bak = [x for x in all_selverts]
+				roi_list[-1].remove()
+				roi_list.pop(-1)	
+				all_selverts.pop(-1)
+				selverts = []
+				plt.show(block=False)
+			read_roi()
 
 		# Clustering
 		if event ==	"-CLUSTERBUTTON-" and len(sel_traj) > 0:
+			all_selverts_copy = [x for x in all_selverts]
+			all_selverts = []
+			for roi in roi_list: 
+				roi.remove()
+			roi_list = []
 			cluster_tab()
 
 		# Display
