@@ -20,6 +20,10 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * dbscan_wrangler.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
 
+* boosh_gui.py: cluster using 3D DBSCAN of trajectory detections (experimental)
+
+* boosh2c_gui.py: two color version of boosh (experimental)
+
 * synthetic_col1.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 
 * synthetic_col2.trxyt: synthetic trajectory data sharing some spatial and temporal clustering with synthetic_col1  
@@ -29,11 +33,11 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 Requires: Python 3.8+
 
-Modules: scipy, numpy, matplotlib, sklearn, rtree, pysimplegui, seaborn
+Modules: scipy, numpy, matplotlib, matplotlib-venn, scikit-learn, rtree, pysimplegui, seaborn, statsmodels, colorama
 
 Design and code: Tristan Wallis
 
-Debugging: Sophie Huiyi Hou
+Additional code and debugging: Alex McCann, Kyle Young, Sophie Huiyi Hou, Kye Kudo
 
 Queensland Brain Institute, University of Queensland
 
