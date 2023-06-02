@@ -1,8 +1,8 @@
 '''
 Analyse and visualise metrics produced by SpatioTemporal Indexing Clustering (NASTIC and segNASTIC)
-Tristan Wallis, Sophie Hou
+Tristan Wallis, Sophie Hou, Alex McCann
 '''
-last_changed = 20210802
+last_changed = 20230602
 
 import PySimpleGUI as sg
 sg.theme('DARKGREY11')
@@ -78,6 +78,7 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 		for val in cond2:
 			rows.append({"condition":shortname2,"val":val})
 		df = pd.DataFrame(rows)
+		print (cond1,cond2,df)
 		ax = sns.swarmplot(x="condition", y="val", data=df,alpha=0.9,size=5,order=bars,palette=["k","k"])
 	
 	#plt.title(title)
@@ -150,14 +151,14 @@ while True:
 		shortdir1 = dir1.split("/")[-1]
 		if shortdir1 !="":
 			window.Element("-T1-").update(shortdir1)
-			cond1files = glob.glob(dir1 + '/**/metrics.tsv')
+			cond1files = glob.glob(dir1 + '/**/metrics.tsv',recursive=True)
 			combolist1 = [""]+[x for x in range(1,len(cond1files)+1)]
 			window.Element("-C1-").update(values=combolist1)
 	if event == "-H2-":		
 		shortdir2 = dir2.split("/")[-1]
 		if shortdir2 !="":
 			window.Element("-T2-").update(shortdir2)
-			cond2files = glob.glob(dir2 + '/**/metrics.tsv')	
+			cond2files = glob.glob(dir2 + '/**/metrics.tsv',recursive=True)	
 			combolist2 = [""]+[x for x in range(1,len(cond2files)+1)]
 			window.Element("-C2-").update(values=combolist2)
 			
@@ -227,17 +228,17 @@ while True:
 		memb2,life2,msd2,area2,radius2,density2,rate2,time2 = aggregate_2			
 		fig1 = plt.figure(figsize=(10,10))
 		barplot(1,memb1,memb2,"Membership",u"Membership \n(traj/cluster)",False)		
-		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime \n(s)",False)
+		barplot(2,life1,life2,"Lifetime",u"Apparent cluster lifetime \n(s)",False)
 		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD \n(μm²)",False)
 		barplot(4,area1,area2,"Area",u"Cluster area \n(μm²)",False)
 		barplot(5,radius1,radius2,"Radius",u"Cluster radius \n(μm)",False)
 		barplot(6,density1,density2,"Density",u"Density in clusters \n(traj/μm²)",False)
 		barplot(7,rate1,rate2,"Rate",u"Rate \n(traj/s)",False)
-		fig1.canvas.set_window_title('Aggregate data')
+		fig1.canvas.manager.set_window_title('Aggregate data')
 		plt.show(block=False)
 		
 		print ("Samp1 {} Samp2 {}".format(len(aggregate_1[0]),len(aggregate_2[0])))
-
+		
 		print ("Plotting average data for all samples")
 		# Average cluster data for all samples
 		outlist.append(["\nAVERAGE CLUSTER DATA"])
@@ -283,7 +284,7 @@ while True:
 		memb2,life2,msd2,area2,radius2,density2,rate2,time2,perc2,cldensity2,clperhotspot2,percclusthotspot2 = average_2			
 		fig2 = plt.figure(figsize=(10,10))
 		barplot(1,memb1,memb2,"Membership",u"Membership \n(traj/cluster)",True)		
-		barplot(2,life1,life2,"Lifetime",u"Cluster lifetime \n(s)",True)
+		barplot(2,life1,life2,"Lifetime",u"Apparent cluster lifetime \n(s)",True)
 		barplot(3,msd1,msd2,"MSD",u"Cluster avg. MSD \n(μm²)",True)
 		barplot(4,area1,area2,"Area",u"Cluster area \n(μm²)",True)
 		barplot(5,radius1,radius2,"Radius",u"Cluster radius \n(μm)",True)
@@ -293,7 +294,7 @@ while True:
 		barplot(9,cldensity1,cldensity2,"Cluster density",u"Cluster density \n(clusters/μm²)",True)				
 		barplot(10,percclusthotspot1,percclusthotspot2,"Hotspots",u"Clusters in hotspots \n(%)",True)	
 		barplot(11,clperhotspot1,clperhotspot2,"Hotspot membership",u"Hotspot membership \n(clusters/hotspot)",True)	
-		fig2.canvas.set_window_title('Average data')
+		fig2.canvas.manager.set_window_title('Average data')
 		plt.show(block=False)
 		
 		# PCA
@@ -319,7 +320,7 @@ while True:
 		ax1.set_ylabel('Dimension 2')
 		ax1.set_zlabel('Dimension 3')
 		plt.tight_layout()
-		fig3.canvas.set_window_title('PCA- all metrics')
+		fig3.canvas.manager.set_window_title('PCA- all metrics')
 		plt.show(block=False)
 		
 		# WRITE OUTPUT FILE
