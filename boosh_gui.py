@@ -32,7 +32,7 @@ This script has been tested and will run as intended on Windows 7/10/11, with mi
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230414"
+last_changed = "20230602"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -2695,10 +2695,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	tab3_layout = [
 		[sg.T('Acquisition time (s):',tooltip = "Length of the acquisition (s)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
 		[sg.T('Frame time (s):',tooltip = "Time between frames (s)"),sg.InputText(frame_time,size="50",key="-FRAMETIME-")],
-		[sg.T('Epsilon (um):',tooltip = "Spatial radius around each centroid\n to check for other centroids"),sg.InputText(epsilon,size="50",key="-EPSILON-")],	
-		[sg.T('MinPts:',tooltip = "Clusters must contain at least this\n many centroids within Epsilon"),sg.InputText(minpts,size="50",key="-MINPTS-")],
-		[sg.T('Time window (s):',tooltip = "Temporal radius (s) around each centroid\n to check for other centroids"),sg.InputText(timewindow,size="50",key="-TIMEWINDOW-")],	
-		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+		[sg.T(u'Epsilon (µm):',tooltip = "Spatial radius around each detection\n to check for other detections"),sg.InputText(epsilon,size="50",key="-EPSILON-")],	
+		[sg.T('MinPts:',tooltip = "Clusters must contain at least this\n many detections (from different trajectories) within Epsilon"),sg.InputText(minpts,size="50",key="-MINPTS-")],
+		[sg.T('Time window (s):',tooltip = "Temporal radius (s) around each detection\n to check for other detections"),sg.InputText(timewindow,size="50",key="-TIMEWINDOW-")],	
+		[sg.T(u'Cluster size screen (µm):',tooltip = "Clusters with a radius larger than this (µm)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
 			[sg.Checkbox('MSD screen',tooltip = "Don't analyse trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]

@@ -36,7 +36,7 @@ Feedback, suggestions and improvements are welcome. Sanctimonious critiques on t
 
 
 
-last_changed = 20230608
+last_changed = 20230615
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 			[graph],
 			[sg.Button("OK",key="-OK-")]
 		]
-		splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c")
+		splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c", keep_on_top = True)
 		obj_list=initialise_particles(graph)
 		graph.DrawText("N A S T I C  W R A N G L E R",(0,130),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("v{}".format(last_changed),(0,100),color="white",font=("Any",16),text_location="center")
@@ -281,7 +281,7 @@ if __name__ == "__main__":
 			else:
 				pca_check = False
 		except:
-			print ("Settings could not be loaded")
+			print ("\nSettings could not be loaded")
 		return
 		
 	# UPDATE GUI BUTTONS
@@ -300,19 +300,15 @@ if __name__ == "__main__":
 			window.Element('-FIND2-').update(disabled = True)
 		
 		# Toggle LOAD DATA button
-		if load_data_button == True:
+		if load_data_button == True and files_loaded1 == True and files_loaded2 == True:
 			window.Element("-LOAD-").update(disabled = False)
 		else:
 			window.Element("-LOAD-").update(disabled = True)
 			window.Element("-PLOT_DATA-").update(disabled = True)
 		
 		# Toggle PLOT DATA button
-		if agg_check == True or avg_check == True or pca_check == True:
-			if find_files1 == True and find_files2 == True:
-				if load_data_button == True:
-					if len(datadict1) >0 and len(datadict2) > 0:
-						if files_loaded == True:
-							window.Element("-PLOT_DATA-").update(disabled = False)
+		if cond1 != "" and cond2 != "" and find_files1 == True and find_files2 == True and load_data_button == True and len(datadict1) >0 and len(datadict2) > 0 and files_loaded == True and files_loaded1 == True and files_loaded2 == True:
+			window.Element("-PLOT_DATA-").update(disabled = False)
 		else:
 			window.Element("-PLOT_DATA-").update(disabled = True)
 		
@@ -342,7 +338,7 @@ if __name__ == "__main__":
 	
 	# CHECK VARIABLES
 	def check_variables():
-		global cond1, cond2, col1, col2, avg_check, agg_check, out_check, pca_check
+		global col1, col2, cond1, cond2
 		
 		# Try to reset color for condition 1
 		if col1 == "None":
@@ -357,15 +353,16 @@ if __name__ == "__main__":
 				col2 = defaultdict["Color condition 2"]
 			except:
 				col2 = "orange"
-		return
 
+		return
+		
 	# VALS
 	cond1 = "Cond1" # short name for condition 1
 	cond2 = "Cond2" # short name for condition 2
 	dir1 = "" # directory for condition 1
 	dir2 = "" # directory for condition 2
-	find_files1 = False # used to enable/disabled Find files button for condition 1
-	find_files2 = False # used to enable/disabled Find files button for condition 2
+	find_files1 = False # used to enable/disable Find files button for condition 1
+	find_files2 = False # used to enable/disable Find files button for condition 2
 	load_data_button = False # used to enable/disable LOAD DATA button
 	tree_icon_dict = {} # dictionary keeping track of which condition 1 files have been ticked/unticked
 	tree_icon_dict2 = {} # dictionary keeping track of which condition 2 files have been ticked/unticked
@@ -375,7 +372,9 @@ if __name__ == "__main__":
 	col2 = "orange" # colour for condition 2 plot
 	stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 	metrics_dict = {} 
-	files_loaded = False # used to enable/disabled PLOT DATA button
+	files_loaded = False # used to enable/disable PLOT DATA button
+	files_loaded1 = False # used to enable/disable PLOT DATA button
+	files_loaded2 = False # used to enable/disable PLOT DATA button
 
 
 	# FUNCTIONS		
@@ -402,6 +401,11 @@ if __name__ == "__main__":
 							# GRAB GENERAL INFO
 							if len(spl)>1:
 								datadict1[ct][spl[0].replace(":","")] = spl[1:]
+								# GRAB AVERAGE METRICS FOR EACH SAMPLE
+								if spl[0] == "AVG":
+									avdata= spl[1:]
+									for n,metric in enumerate(["AVERAGE MEMBERSHIP (traj/cluster)","AVERAGE LIFETIME (s)","AVERAGE MSD (um^2/s)","AVERAGE AREA (um^2)","AVERAGE RADIUS (um)","AVERAGE DENSITY (traj/um^2)","AVERAGE RATE (traj/sec)","AVERAGE TIME (s)"]):
+										datadict1[ct][metric] = [float(avdata[n])]
 							
 				# ALL CLUSTER METRICS				
 				clustzip = list(zip(*datadict1[ct]["CLUSTERS"])) # convert from 1 cluster per line to 1 cluster per column
@@ -438,6 +442,11 @@ if __name__ == "__main__":
 							# GRAB GENERAL INFO
 							if len(spl)>1:
 								datadict2[ct][spl[0].replace(":","")] = spl[1:]
+								# GRAB AVERAGE METRICS FOR EACH SAMPLE
+								if spl[0] == "AVG":
+									avdata= spl[1:]
+									for n,metric in enumerate(["AVERAGE MEMBERSHIP (traj/cluster)","AVERAGE LIFETIME (s)","AVERAGE MSD (um^2/s)","AVERAGE AREA (um^2)","AVERAGE RADIUS (um)","AVERAGE DENSITY (traj/um^2)","AVERAGE RATE (traj/sec)","AVERAGE TIME (s)"]):
+										datadict2[ct][metric] = [float(avdata[n])]
 								
 				# ALL CLUSTER METRICS				
 				clustzip = list(zip(*datadict2[ct]["CLUSTERS"])) # convert from 1 cluster per line to 1 cluster per column
@@ -474,7 +483,16 @@ if __name__ == "__main__":
 		"HOTSPOTS (CLUSTER SPATIAL OVERLAP AT 1/2 AVERAGE RADIUS)",
 		"TOTAL CLUSTERS IN HOTSPOTS",
 		"AVERAGE CLUSTERS PER HOTSPOT",
-		"PERCENTAGE OF CLUSTERS IN HOTSPOTS"]:
+		"PERCENTAGE OF CLUSTERS IN HOTSPOTS",
+		"AVERAGE MEMBERSHIP (traj/cluster)",
+		"AVERAGE LIFETIME (s)",
+		"AVERAGE MSD (um^2/s)",
+		"AVERAGE AREA (um^2)",
+		"AVERAGE RADIUS (um)",
+		"AVERAGE DENSITY (traj/um^2)",
+		"AVERAGE RATE (traj/sec)",
+		"AVERAGE TIME (s)"
+		]:
 			c1,c2,p = average_data(metric)
 			if c1[1] != 0:
 				metrics_dict[metric] = {cond1:c1,cond2:c2,"p":p}
@@ -642,7 +660,16 @@ if __name__ == "__main__":
 			"TOTAL CLUSTERS IN HOTSPOTS",
 			"AVERAGE CLUSTERS PER HOTSPOT",
 			"PERCENTAGE OF CLUSTERS IN HOTSPOTS",
-			"CLUSTER DENSITY (clusters/um^2)"]:
+			"CLUSTER DENSITY (clusters/um^2)",
+			"AVERAGE MEMBERSHIP (traj/cluster)",
+			"AVERAGE LIFETIME (s)",
+			"AVERAGE MSD (um^2/s)",
+			"AVERAGE AREA (um^2)",
+			"AVERAGE RADIUS (um)",
+			"AVERAGE DENSITY (traj/um^2)",
+			"AVERAGE RATE (traj/sec)",
+			"AVERAGE TIME (s)"
+			]:
 				try:
 					c1,c2,p = metrics_dict[metric][cond1],metrics_dict[metric][cond2],metrics_dict[metric]["p"]
 					c1 = reduce(lambda x, y: str(x) + "\t" + str(y), c1)
@@ -708,7 +735,15 @@ if __name__ == "__main__":
 		["TOTAL CLUSTERS IN HOTSPOTS","Total clusters in hotspots","Total clusters in hotspots"],
 		["AVERAGE CLUSTERS PER HOTSPOT","Average clusters per hotspot","Average clusters/hotspot"],
 		["PERCENTAGE OF CLUSTERS IN HOTSPOTS","Percentage clusters in hotspots","% clusters in hotspots"],
-		["CLUSTER DENSITY (clusters/um^2)","Cluster density",u"Cluster density (clusters/μm²)"]
+		["CLUSTER DENSITY (clusters/um^2)","Cluster density",u"Cluster density (clusters/μm²)"],
+		["AVERAGE MEMBERSHIP (traj/cluster)","Average cluster membership","Cluster membership (traj/cluster)"],
+		["AVERAGE LIFETIME (s)","Average cluster lifetime","Average cluster lifetime","Cluster lifetime (s)"],
+		["AVERAGE MSD (um^2/s)","Average MSD of clustered trajectories","Clustered traj MSD (μm²)"],
+		["AVERAGE AREA (um^2)","Average cluster area","Cluster area (μm²)"],
+		["AVERAGE RADIUS (um)","Average cluster radius","Cluster radius (μm)"],
+		["AVERAGE DENSITY (traj/um^2)","Average density of clustered trajectories","Clustered traj density (traj/μm²)"],
+		["AVERAGE RATE (traj/sec)","Average cluster rate","Rate (traj/sec)"],
+		["AVERAGE TIME (s)","Average cluster time centroid","Acquisition time (s)"]
 		]:
 			try:
 				met,title,label = metric[0],metric[1],metric[2]
@@ -825,7 +860,16 @@ if __name__ == "__main__":
 		"UNCLUSTERED TRAJECTORIES AVERAGE INSTANTANEOUS DIFFUSION COEFFICIENT (um^2/s)",
 		"AVERAGE CLUSTERS PER HOTSPOT",
 		"PERCENTAGE OF CLUSTERS IN HOTSPOTS",
-		"CLUSTER DENSITY (clusters/um^2)",]:
+		"CLUSTER DENSITY (clusters/um^2)",
+		"AVERAGE MEMBERSHIP (traj/cluster)",
+		"AVERAGE LIFETIME (s)",
+		"AVERAGE MSD (um^2/s)",
+		"AVERAGE AREA (um^2)",
+		"AVERAGE RADIUS (um)",
+		"AVERAGE DENSITY (traj/um^2)",
+		"AVERAGE RATE (traj/sec)",
+		"AVERAGE TIME (s)"
+		]:
 			try:
 				print (metric)
 				c1,c2 = metrics_dict[metric][cond1],metrics_dict[metric][cond2]
@@ -929,7 +973,7 @@ if __name__ == "__main__":
 	
 	# Condition 1 frame
 	directory1_frame_layout = [
-		[sg.FolderBrowse("Browse",key="-BROWSE_DIR1-",target="-DIRECTORYNAME1-", tooltip = "Select directory containing metrics.tsv files", initial_folder=initialdir),sg.In("Select condition 1 directory", key = '-DIRECTORYNAME1-', size = (33,1))],
+		[sg.FolderBrowse("Browse",key="-BROWSE_DIR1-",target="-DIRECTORYNAME1-", tooltip = "Select directory containing metrics.tsv files", initial_folder=initialdir),sg.In("Select condition 1 directory", key = '-DIRECTORYNAME1-', size = (33,1), enable_events = True)],
 		[sg.B("Find files", key = '-FIND1-', tooltip = "Recursively search selected directory for metrics.tsv files", disabled = True),sg.T("Files to include:")],
 		[sg.Tree(data=treedata1, headings = headings1, row_height=25, num_rows = 7,select_mode = sg.TABLE_SELECT_MODE_BROWSE,key = '-TREE-', tooltip = "Untick files to exclude them from analysis\nUse ~1s delay between clicks", metadata = [],vertical_scroll_only=True, justification='left', enable_events=True, auto_size_columns = True, expand_x = True, col0_width = 1)],
 	]
@@ -1026,6 +1070,9 @@ if __name__ == "__main__":
 		agg_check = values['-AGG_CHECKBOX-']
 		out_check = values['-OUT_CHECKBOX-']
 		pca_check = values['-PCA_CHECKBOX-']
+		
+		# Check variables
+		check_variables()
 
 		# Toggle Find files button for condition 1
 		if dir1 != "" and dir1 != "Select condition 1 directory":
@@ -1043,6 +1090,19 @@ if __name__ == "__main__":
 			find_files2 = False
 			update_buttons()
 		
+		# Toggle LOAD DATA button
+		if event == '-DIRECTORYNAME1-':
+			load_data_button = False
+			files_loaded1 = False
+			files_loaded = False
+			update_buttons()
+		
+		if event == '-DIRECTORYNAME2-':
+			load_data_button = False
+			files_loaded2 = False
+			files_loaded = False
+			update_buttons()
+			
 		# RECURSIVELY SEARCH FOR METRICS.TSV FILES FOR EACH CONDITION
 		
 		# Condition 1
@@ -1074,9 +1134,11 @@ if __name__ == "__main__":
 					ct +=1
 				if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
 					load_data_button = True
+					files_loaded1 = True
 					update_buttons()
 				else:
 					load_data_button = False
+					files_loaded1 = True
 					update_buttons()					
 						
 		# Condition 2
@@ -1108,53 +1170,61 @@ if __name__ == "__main__":
 					ct +=1
 				if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
 					load_data_button = True
+					files_loaded2 = True
 					update_buttons()
 				else:
 					load_data_button = False
+					files_loaded2 = True
 					update_buttons()					
 		
 		# Tree that shows files found for condition 1
 		if event == '-TREE-':
-			filenumber = values['-TREE-'][0]
-			ct = filenumber
-			if filenumber in tree.metadata:
-				tree.metadata.remove(filenumber)
-				tree_icon_dict.update({ct:"False"})
-				tree.update(key=filenumber, icon=check[0])		
-			else:
-				tree.metadata.append(filenumber)
-				tree_icon_dict.update({ct:"True"})
-				tree.update(key=filenumber, icon=check[1])
-			if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
-				load_data_button = True
-				files_loaded = False
-				update_buttons()
-			else:
-				load_data_button = False
-				files_loaded = False
-				update_buttons()							
+			try:
+				filenumber = values['-TREE-'][0]
+				ct = filenumber
+				if filenumber in tree.metadata:
+					tree.metadata.remove(filenumber)
+					tree_icon_dict.update({ct:"False"})
+					tree.update(key=filenumber, icon=check[0])		
+				else:
+					tree.metadata.append(filenumber)
+					tree_icon_dict.update({ct:"True"})
+					tree.update(key=filenumber, icon=check[1])
+				if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
+					load_data_button = True
+					files_loaded = False
+					update_buttons()
+				else:
+					load_data_button = False
+					files_loaded = False
+					update_buttons()
+			except:
+				pass
 		
 		# Tree that shows files found for condition 2
 		if event == '-TREE2-':
-			filenumber = values['-TREE2-'][0]
-			ct = filenumber
-			if filenumber in tree2.metadata:
-				tree2.metadata.remove(filenumber)
-				tree2.update(key=filenumber, icon=check[0])
-				tree_icon_dict2.update({ct:"False"})
-			else:
-				tree2.metadata.append(filenumber)
-				tree2.update(key=filenumber, icon=check[1])
-				tree_icon_dict2.update({ct:"True"})
-			if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
-				load_data_button = True
-				files_loaded = False
-				update_buttons()
-			else:
-				load_data_button = False
-				files_loaded = False
-				update_buttons()					
-		
+			try:
+				filenumber = values['-TREE2-'][0]
+				ct = filenumber
+				if filenumber in tree2.metadata:
+					tree2.metadata.remove(filenumber)
+					tree2.update(key=filenumber, icon=check[0])
+					tree_icon_dict2.update({ct:"False"})
+				else:
+					tree2.metadata.append(filenumber)
+					tree2.update(key=filenumber, icon=check[1])
+					tree_icon_dict2.update({ct:"True"})
+				if "True" in tree_icon_dict.values() and "True" in tree_icon_dict2.values():
+					load_data_button = True
+					files_loaded = False
+					update_buttons()
+				else:
+					load_data_button = False
+					files_loaded = False
+					update_buttons()					
+			except:
+				pass
+				
 		# LOAD DATA
 		if event == '-LOAD-':
 			load_data(files1,files2)
@@ -1175,21 +1245,24 @@ if __name__ == "__main__":
 		
 		# PLOT DATA
 		if event == '-PLOT_DATA-':
-			print("\n\nAveraging metrics...")
-			compare_average_metrics(datadict1,datadict2)
-			higher_order_average(metrics_dict)		
-			print("\n\nAggregating metrics...")
-			compare_aggregate_metrics(datadict1,datadict2)		
-			plotting()
-			write_output_file()	
-			if avg_check == True:
-				average_metrics()
-			if agg_check == True:
-				aggregate_metrics()	
-			if pca_check == True:
-				PCA_metrics()
-			print("\n\nAll plots and metrics have been saved to: {}".format(cwd) + "\\nastic_wrangler_output_{}".format(stamp) + "\n")
-			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
+			if cond1 == cond2:
+				print("\nPlease use different shorthand names for condition 1 and 2.")
+			else:
+				print("\n\nAveraging metrics...")
+				compare_average_metrics(datadict1,datadict2)
+				higher_order_average(metrics_dict)		
+				print("\n\nAggregating metrics...")
+				compare_aggregate_metrics(datadict1,datadict2)		
+				plotting()
+				write_output_file()	
+				if avg_check == True:
+					average_metrics()
+				if agg_check == True:
+					aggregate_metrics()	
+				if pca_check == True:
+					PCA_metrics()
+				print("\n\nAll plots and metrics have been saved to: {}".format(cwd) + "\\nastic_wrangler_output_{}".format(stamp) + "\n")
+				stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 
 		# Reset to hard coded default values
 		if event == 'Default settings':
@@ -1231,6 +1304,7 @@ if __name__ == "__main__":
 				"Tristan Wallis, Alex McCann {}".format(last_changed),
 				no_titlebar = True,
 				grab_anywhere = True,
+				keep_on_top = True,
 				)	
 
 		# Licence	
@@ -1240,7 +1314,8 @@ if __name__ == "__main__":
 				"Creative Commons CC BY 4.0",
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
-				grab_anywhere = True	
+				grab_anywhere = True,
+				keep_on_top = True,
 				)					
 				
 	print ("\nExiting...")
