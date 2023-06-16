@@ -62,6 +62,7 @@ if __name__ == "__main__":
 
 	import random
 	from scipy.stats import ttest_ind, ttest_ind_from_stats
+	from scipy.spatial import ConvexHull
 	from sklearn.cluster import DBSCAN
 	from sklearn import manifold, datasets, decomposition, ensemble, random_projection
 	import numpy as np
