@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230414"
+last_changed = "20230623"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -2886,7 +2886,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		# Clustering
 		if event ==	"-CLUSTERBUTTON-" and len(sel_traj) > 0:
-			all_selverts_copy = [x for x in all_selverts]
+			if len(all_selverts) != 0: 
+				all_selverts_copy = [x for x in all_selverts]
 			all_selverts = []
 			for roi in roi_list:
 				roi.remove()
