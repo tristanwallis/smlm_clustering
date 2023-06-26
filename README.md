@@ -28,6 +28,7 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * synthetic_col2.trxyt: synthetic trajectory data sharing some spatial and temporal clustering with synthetic_col1  
 
+* synthetic_data_generate_gui.py: generate synthetic data using multiple parameters
 
 ### About
 
