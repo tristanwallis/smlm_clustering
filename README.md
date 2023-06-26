@@ -12,7 +12,9 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * nastic_user_manual.pdf: detailed instructions for nastic_gui.py and derivatives
 
-* nastic_wrangler_gui.py: meta analysis of output from nastic_gui.py and segnastic_gui.py
+* nastic_wrangler_gui.py: detailed instructions for nastic_wrangler_gui.py
+
+* nastic_wrangler_manual.pdf: meta analysis of output from nastic_gui.py and segnastic_gui.py
 
 * dbscan_gui.py: cluster using DBSCAN of trajectory centroids
 
