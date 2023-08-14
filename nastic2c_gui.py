@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230623"
+last_changed = "20230714"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -2304,6 +2304,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("TRAJECTORY FILE 1:\t{}\n".format(infilename))	
 				outfile.write("TRAJECTORY FILE 2:\t{}\n".format(infilename2))	
 				outfile.write("ANALYSED:\t{}\n".format(stamp))
+				outfile.write("ACQUISITION TIME (s):\t{}\n".format(acq_time))
+				outfile.write("FRAME TIME (s):\t{}\n".format(frame_time))
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
 				outfile.write("TIME THRESHOLD (s):\t{}\n".format(time_threshold))
 				outfile.write("CLUSTER THRESHOLD:\t{}\n".format(cluster_threshold))			

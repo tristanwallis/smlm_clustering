@@ -32,7 +32,7 @@ This script has been tested and will run as intended on Windows 7/10/11, with mi
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230623"
+last_changed = "20230811"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -670,6 +670,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-MSDFILTER-").update(msd_filter)
 		window.Element("-VARCOLOR-").update(var_color)
 		window.Element("-MSDCOLOR-").update(msd_color)
+		window.Element("-CLUSTCOLOR-").update(clust_color)
 		window.Element("-TMIN-").update(tmin)
 		window.Element("-TMAX-").update(tmax)	
 		window.Element("-AXES3D-").update(axes_3d)
@@ -834,6 +835,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if var_color:
 			msd_color=False
 			clust_color = False
+		if clust_color:
+			msd_color = False
+			var_color = False
 
 		if var_color1 == "None":
 			try:
@@ -1651,7 +1655,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					x,y,t=zip(*seldict[traj]["points"])
 					tr = []
 					if var_color:
-						tr = matplotlib.lines.Line2D(x,y,c=var_cols[seldict[traj]["kmeans_group"]],alpha=line_alpha,linewidth="dotted")
+						tr = matplotlib.lines.Line2D(x,y,c=var_cols[seldict[traj]["kmeans_group"]],alpha=line_alpha,linewidth=line_width)
 					if msd_color:	
 						if seldict[traj]["msds"][0] < av_msd:
 							tr = matplotlib.lines.Line2D(x,y,c=msd_color1,alpha=line_alpha,linewidth=line_width)

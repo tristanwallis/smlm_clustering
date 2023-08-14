@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230623"
+last_changed = "20230811"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -667,6 +667,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-TMIN-").update(tmin)
 		window.Element("-TMAX-").update(tmax)
 		window.Element("-MSDFILTER-").update(msd_filter)	
+		window.Element("-MSDCOLOR-").update(msd_color)
+		window.Element("-VARCOLOR-").update(var_color)
+		window.Element("-CLUSTCOLOR-").update(clust_color)
 		window.Element("-RADIUSTHRESH-").update(radius_thresh)		
 		window.Element("-AXES3D-").update(axes_3d)	
 		window.Element("-VARCOLOR1CHOOSE-").update(" < ",button_color=("gray",var_color1))		
@@ -679,7 +682,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh,var_color1,var_color2,msd_color1,msd_color2, pixel
+		global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,segment_threshold,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,overlap_override,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,radius_thresh,msd_color, var_color, clust_color, var_color1,var_color2,msd_color1,msd_color2, pixel
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -818,7 +821,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				radius_thresh = 0.15
 		except:
 			radius_thresh = 0.15					
-		return
 		
 		if msd_color:
 			var_color=False
@@ -826,6 +828,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if var_color:
 			msd_color=False
 			clust_color = False		
+		if clust_color:
+			msd_color = False
+			var_color = False
 			
 		if var_color1 == "None":
 			try:

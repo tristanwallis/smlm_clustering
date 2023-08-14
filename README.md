@@ -4,11 +4,19 @@ Python GUI scripts for molecular trajectory clustering analysis.
 ### Files
 * nastic_gui.py: cluster using R-tree based spatio-temporal indexing of trajectory bounding boxes
 
+* nastic_st_gui.py: compilable single threaded version of nastic_gui.py for virtual machines
+
 * nastic2c_gui.py: two color version of nastic
+
+* nastic2c_st_gui.py: compilable single threaded version of nastic2c_gui.py for virtual machines
 
 * segnastic_gui.py: cluster using R-tree based spatio-temporal indexing of all trajectory segment bounding boxes
 
+* segnastic_st_gui.py: compilable single threaded version of segnastic_gui.py for virtual machines
+
 * segnastic2c_gui.py: two color version of segnastic
+
+* segnastic2c_st_gui.py: compilable single threaded version of segnastic2c_gui.py for virtual machines
 
 * nastic_user_manual.pdf: detailed instructions for nastic_gui.py and derivatives
 
@@ -24,7 +32,11 @@ Python GUI scripts for molecular trajectory clustering analysis.
 
 * boosh_gui.py: cluster using 3D DBSCAN of trajectory detections (experimental)
 
+* boosh_st_gui.py: compilable single threaded version of boosh_gui.py for virtual machines
+
 * boosh2c_gui.py: two color version of boosh (experimental)
+
+* boosh2c_st_gui.py: compilable single threaded version of boosh2c_gui.py for virtual machines
 
 * synthetic_col1.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters
 

@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230623"
+last_changed = "20230811"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -486,7 +486,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# UPDATE GUI BUTTONS
 	def update_buttons():
-		if len(infilename) > 0:  
+		if len(infilename) > 0 and len(infilename2) > 0:  
 			window.Element("-PLOTBUTTON-").update(button_color=("white","#111111"),disabled=False)
 			window.Element("-INFILE-").InitialFolder = os.path.dirname(infilename)	
 			window.Element("-INFILE2-").InitialFolder = os.path.dirname(infilename2)			
