@@ -22,6 +22,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from sklearn import manifold, datasets, decomposition, ensemble, random_projection
 from functools import reduce
 import datetime
+import webbrowser
 
 # INITIAL SETUP
 cwd = os.path.dirname(os.path.abspath(__file__))

@@ -92,6 +92,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from functools import reduce
 	import collections
 	import warnings
+	import webbrowser
 
 	warnings.filterwarnings("ignore")
 
@@ -221,7 +222,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					clusters = []
 
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts*1.5)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -1259,7 +1260,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.xlabel("Time (s)")
 			plt.ylabel(u"MSD (μm²)")
 			plt.tight_layout()
-			fig1.canvas.set_window_title('MSD Curves')
+			fig1.canvas.manager.set_window_title('MSD Curves')
 			plt.show(block=False)
 			t2=time.time()
 			print ("MSD plot completed in {} sec".format(round(t2-t1,3)))
@@ -1293,7 +1294,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax2.imshow([[0,0], [0,0]],alpha=0)
 			window['-PROGBAR-'].update_bar(0)	
 			plt.tight_layout()
-			fig2.canvas.set_window_title('Voronoi polygons')
+			fig2.canvas.manager.set_window_title('Voronoi polygons')
 			plt.show(block=False)
 			t2=time.time()
 			print ("Polygon plot completed in {} sec".format(round(t2-t1,3)))
@@ -1532,9 +1533,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help' ,'&Licence']],
+		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
 	]
-
+	
 	layout = [
 		[sg.Menu(menu_def)],
 		[sg.T('VORONOI Clustering',font="Any 20")],
@@ -1573,7 +1574,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# Activate selection functions
 	cid = fig0.canvas.mpl_connect('draw_event', ondraw)
 	lasso = LassoSelector(ax0,onselect)	
-	fig0.canvas.set_window_title('Main display window - DO NOT CLOSE!')
+	fig0.canvas.manager.set_window_title('Main display window - DO NOT CLOSE!')
 
 
 	# MAIN LOOP
@@ -1633,7 +1634,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			# Activate selection functions
 			cid = fig0.canvas.mpl_connect('draw_event', ondraw)
 			lasso = LassoSelector(ax0,onselect)	
-			fig0.canvas.set_window_title('Main display window - DO NOT CLOSE!')
+			fig0.canvas.manager.set_window_title('Main display window - DO NOT CLOSE!')
 			
 			# Reset variables
 			all_selverts = [] # all ROI vertices
@@ -1687,7 +1688,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True	
-				)					
+				)	
+
+		# Check for updates
+		if event == 'Updates':
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)				
 
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':

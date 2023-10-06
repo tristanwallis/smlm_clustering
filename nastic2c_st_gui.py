@@ -33,7 +33,7 @@ NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230810"
+last_changed = "20231003"
 
 # LOAD MODULES
 import PySimpleGUI as sg
@@ -73,6 +73,7 @@ import pickle
 import io
 from functools import reduce
 import warnings
+import webbrowser
 warnings.filterwarnings("ignore")
 
 # NORMALIZE
@@ -2672,7 +2673,7 @@ tab5_layout = [
 
 menu_def = [
 	['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-	['&Info', ['&About', '&Help','&Licence' ]],
+	['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
 ]
 
 layout = [
@@ -2860,7 +2861,11 @@ while True:
 			"https://creativecommons.org/licenses/by/4.0/legalcode", 
 			no_titlebar = True,
 			grab_anywhere = True	
-			)					
+			)
+
+	# Check for updates
+	if event == 'Updates':
+		webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)			
 
 	# Read and plot input file	
 	if event == '-PLOTBUTTON-':

@@ -31,7 +31,7 @@ This script has been tested and will run as intended on Windows 7/10, with minor
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
 '''
-last_changed = "20230811"
+last_changed = "20231003"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -109,6 +109,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from functools import reduce
 	import warnings
 	import multiprocessing
+	import webbrowser
 	warnings.filterwarnings("ignore")
 	
 	# VAR stuff
@@ -2873,7 +2874,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence' ]],
+		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
 	]
 
 	layout = [
@@ -3051,6 +3052,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				no_titlebar = True,
 				grab_anywhere = True	
 				)					
+
+		# Check for updates
+		if event == 'Updates':
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
 
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':

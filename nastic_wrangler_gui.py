@@ -79,6 +79,7 @@ if __name__ == "__main__":
 	from io import BytesIO
 	from PIL import Image, ImageDraw
 	import warnings
+	import webbrowser	
 	
 	warnings.filterwarnings("ignore")
 	
@@ -1317,7 +1318,7 @@ if __name__ == "__main__":
 				no_titlebar = True,
 				grab_anywhere = True,
 				keep_on_top = True,
-				)					
+				)	
 				
 	print ("\nExiting...")
 	plt.close('all')
