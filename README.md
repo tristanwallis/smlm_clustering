@@ -46,7 +46,7 @@ Miscellaneous utilities
 
 * synthetic_data_generate_gui.py: generate synthetic data using multiple parameters
 
-* dbscan_wrangler.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
+* dbscan_wrangler_gui.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
 
 User manuals
 * nastic_user_manual.pdf: detailed instructions for nastic_gui.py and derivatives
