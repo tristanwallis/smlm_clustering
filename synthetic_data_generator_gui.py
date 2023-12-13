@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 '''
-SYNTHETIC DATA GENERATOR 
+SYNTHETIC_DATA_GENERATOR_GUI 
 PYSIMPLEGUI BASED GUI TO GENERATE SYNTHETIC TRXYT FILES USED FOR NANOSCALE SPATIOTEMPORAL INDEXING CLUSTERING (NASTIC AND SEGNASTIC) OR 3D DBSCAN (BOOSH). 
 
 Design and coding: Tristan Wallis and Alex McCann
@@ -12,7 +13,7 @@ Python 3.8 or greater
 python -m pip install colorama numpy scipy pysimplegui scikit-learn
 
 OUTPUT:
-[1] .trxyt files - used as input files in NASTIC/segNASTIC/BOOSH
+[1] .trxyt files - used as input files for NASTIC/segNASTIC/BOOSH
 File naming format: synthetic_YYYYMMDD-HHMMSS_file#_.trxyt
 Space separated: Trajectory X(um) Y(um) T(sec)  
 No headers
@@ -52,7 +53,7 @@ MAX CLUSTERS PER HOTSPOT: 3
 CLUSTER TRAJ ORBIT: True
 
 GENERATED METRICS:
-===============
+=================
 TOTAL TRAJECTORIES: 1895
 CLUSTERED TRAJECTORIES: 895
 UNCLUSTERED TRAJECTORIES: 1000
@@ -61,17 +62,17 @@ SINGLETON CLUSTERS: 80
 AVERAGE TRAJECTORIES PER CLUSTER: 8.136363636363637 +/- 0.2358306132306391
 AVERAGE CLUSTER RADIUS: 0.08004795415240253 +/- 0.0009018811959358476
 
-Generated .trxyt files [1] and corresponding metrics.tsv files [2] are saved within the same directory as the  synthetic_gui.py script, in a folder that is generated with the naming format: synthetic_data_output_YYYYMMDD-HHMMSS
+Generated .trxyt files [1] and corresponding metrics.tsv files [2] are saved within the same directory as the  synthetic_data_generator_gui.py script, in a folder that is created with the naming format: synthetic_data_output_YYYYMMDD-HHMMSS
 
 NOTES: 
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-
-
-last_changed = 20230623
-
+last_changed = "20231211"
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
@@ -258,7 +259,7 @@ if __name__ == "__main__":
 		max_traj_length = 30
 		steplength = 0.1
 		noise = 1000
-		unconst = 2
+		unconst = 2.0
 		hotspotprobability = 0.2
 		hotspotmax = 3
 		trxyt_num = 1
@@ -266,8 +267,8 @@ if __name__ == "__main__":
 	
 	# SAVE SETTINGS
 	def save_defaults():
-		print ("\nSaving GUI settings to synthetic_gui.defaults...")
-		with open("synthetic_gui.defaults","w") as outfile:
+		print ("\nSaving GUI settings to synthetic_data_generator_gui.defaults...")
+		with open("synthetic_data_generator_gui.defaults","w") as outfile:
 			outfile.write("{}\t{}\n".format("Acquisition time (s)",acquisition_time))
 			outfile.write("{}\t{}\n".format("Frame time (s)",frame_time))
 			outfile.write("{}\t{}\n".format("x-axis size (um)",x_size))
@@ -291,8 +292,8 @@ if __name__ == "__main__":
 	def load_defaults():
 		global acquisition_time, frame_time, x_size, y_size, seed_num, radius, min_traj_num, max_traj_num, orbit, min_traj_length, max_traj_length, steplength, noise, unconst, hotspotprobability, hotspotmax, trxyt_num
 		try:
-			with open ("synthetic_gui.defaults","r") as infile:
-				print ("\nLoading GUI settings from synthetic_gui.defaults...")
+			with open ("synthetic_data_generator_gui.defaults","r") as infile:
+				print ("\nLoading GUI settings from synthetic_data_generator_gui.defaults...")
 				defaultdict = {}
 				for line in infile:
 					spl = line.split("\t")
@@ -310,8 +311,8 @@ if __name__ == "__main__":
 			max_traj_length = int(defaultdict["Maximum trajectory length"])
 			steplength = float(defaultdict["Clustered step length (um)"])
 			noise = int(defaultdict["Unclustered trajectory number"])
-			unconst = int(defaultdict["Step length multiplier"]) ###AM - check if int or float
-			hotspotprobability = float(defaultdict["Hotspot probability"]) ###AM - check if int or float
+			unconst = float(defaultdict["Step length multiplier"])
+			hotspotprobability = float(defaultdict["Hotspot probability"])
 			hotspotmax = int(defaultdict["Maximum hotspot trajectory number"])
 			trxyt_num = int(defaultdict["Number of trxyt files to generate"])
 		except:
@@ -432,11 +433,11 @@ if __name__ == "__main__":
 			noise = 1000
 		
 		try:
-			unconst = int(unconst)
-			if unconst < 1:
-				unconst = 1
+			unconst = float(unconst)
+			if unconst < 1.0:
+				unconst = 1.0
 		except:
-			unconst = 2
+			unconst = 2.0
 			
 		try:
 			hotspotprobability = float(hotspotprobability)
@@ -615,7 +616,7 @@ if __name__ == "__main__":
 	# Output
 	def output(traj_num_ct, stamp):
 		print ("Writing TRXYT...")
-		with open("synthetic_data_output_{}/synthetic_data_{}_{}_.trxyt".format(stamp, stamp,traj_num_ct+1),"w") as outfile: 
+		with open("synthetic_data_output_{}/synthetic_data_{}_{}.trxyt".format(stamp, stamp,traj_num_ct+1),"w") as outfile: 
 			for tr,traj in enumerate(trajectories,start=1):
 				for seg in traj:
 					x,y,t = seg
@@ -641,7 +642,7 @@ if __name__ == "__main__":
 			outfile.write("MAX CLUSTERS PER HOTSPOT: {}\n".format(hotspotmax))	
 			outfile.write("CLUSTER TRAJ ORBIT: {}\n".format(orbit))	
 
-			outfile.write("\nGENERATED METRICS:\n===============\n")
+			outfile.write("\nGENERATED METRICS:\n=================\n")
 			outfile.write("TOTAL TRAJECTORIES: {}\n".format(clusttrajcounter + noise))
 			outfile.write("CLUSTERED TRAJECTORIES: {}\n".format(clusttrajcounter))	
 			outfile.write("UNCLUSTERED TRAJECTORIES: {}\n".format(noise))	
@@ -655,7 +656,7 @@ if __name__ == "__main__":
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
 	initialdir = cwd
-	if os.path.isfile("synthetic_gui.defaults"):
+	if os.path.isfile("synthetic_data_generator_gui.defaults"):
 		load_defaults()
 	else:
 		reset_defaults()
@@ -669,7 +670,7 @@ if __name__ == "__main__":
 	# Menu
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence']],
+		['&Info', ['&About', '&Help','&Licence','&Updates']],
 		]
 		
 	syn_acq_layout = [
@@ -763,18 +764,21 @@ if __name__ == "__main__":
 		if event == 'Help':
 			sg.Popup(
 				"Help",
-				"This program generates synthetic .trxyt files based on parameters defined by the user, for use in nanoscale spatiotemporal indexing clustering (NASTIC and SEGNASTIC) or 3D DBSCAN (BOOSH).",
+				"This program generates synthetic .trxyt files based on parameters defined by the user, for use in nanoscale spatiotemporal indexing clustering (NASTIC and segNASTIC) or 3D DBSCAN (BOOSH).",
 				"ACQUSITION - parameters defining the dimensions of the \n     pretend acquisition data.",
 				"CLUSTERED TRAJECTORIES - parameters defining the behaviour \n     of clustered trajectories. \n     Seed = point at which a single cluster will form. \n     Step length = step size within a clustered trajectory.",
 				"UNCLUSTERED TRAJECTORIES - parameters defining the behaviour \n     of unclustered trajectories. \n     Step length multiplier = value multiplied by the \n     clustered trajectory step length to obtain the \n     step size within unclustered trajectories.",
 				"HOTSPOTS - parameters defining the behaviour of hotspots. \n     Hotspot = point at which multiple spatially overlapping \n     but temporally distinct clusters form.",
-				"GENERATE TRXYT - generates synthetic .trxyt files based on \n     the selected parameters, and a corresponding \n     metrics.tsv file containing the parameters that were \n     selected, and the metrics which they generated. Both \n     file types are saved in the same directory as the \n     synthetic_gui.py python script, in a folder that is \n     generated with the naming format \n     'synthetic_data_output_YYYYMMDD-HHMMSS'.",
+				"GENERATE TRXYT - generates synthetic .trxyt files based on \n     the selected parameters, and a corresponding \n     metrics.tsv file containing the parameters that were \n     selected, and the metrics which they generated. Both \n     file types are saved in the same directory as the \n     synthetic_data_generator_gui.py python script, in a \n     folder that is generated with the naming format \n     'synthetic_data_output_YYYYMMDD-HHMMSS'.",
 				"Tristan Wallis, Alex McCann {}".format(last_changed),
 				no_titlebar = True,
 				grab_anywhere = True,
 				keep_on_top = True,
 				)	
-		
+		# Check for updates
+		if event == 'Updates':
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
+			
 		# Licence	
 		if event == 'Licence':
 			sg.Popup(

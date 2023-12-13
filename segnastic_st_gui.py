@@ -18,7 +18,7 @@ python -m pip install scipy numpy matplotlib scikit-learn rtree pysimplegui colo
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -32,8 +32,12 @@ etc
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
-last_changed = "20231003"
+
+last_changed = "20231212"
 
 # LOAD MODULES
 import PySimpleGUI as sg
@@ -70,8 +74,9 @@ import sys
 import pickle
 import io
 from functools import reduce
-import warnings
 import webbrowser
+import warnings
+
 warnings.filterwarnings("ignore")
 
 # VAR stuff
@@ -1162,7 +1167,10 @@ def trxyt_tab():
 		buf10.close()
 	except:
 		pass				
-							
+	try:
+		buf11.close()
+	except:
+		pass							
 			
 	'''
 	IMPORTANT: It appears that some matlab processing of trajectory data converts trajectory numbers > 99999 into scientific notation with insufficient decimal points. eg 102103 to 1.0210e+05, 102104 to 1.0210e+05. This can cause multiple trajectories to be incorrectly merged into a  single trajectory.
@@ -2037,21 +2045,21 @@ def metrics_tab():
 		mapdata = decomposition.TruncatedSVD(n_components=3).fit_transform(np.array(metrics_array)) 
 		#mapdata = manifold.Isomap(len(metrics_array)-1,3).fit_transform(np.array(metrics_array))
 		fig3 =plt.figure(3,figsize=(4,4))			
-		ax5 = plt.subplot(111,projection='3d')
-		ax5.cla()
-		ax5.scatter(mapdata[:, 0], mapdata[:, 1],mapdata[:, 2],c=col_array)
-		ax5.set_xticks([])
-		ax5.set_yticks([])
-		ax5.set_zticks([])
-		ax5.set_xlabel('Dimension 1')
-		ax5.set_ylabel('Dimension 2')
-		ax5.set_zlabel('Dimension 3')
+		ax6 = plt.subplot(111,projection='3d')
+		ax6.cla()
+		ax6.scatter(mapdata[:, 0], mapdata[:, 1],mapdata[:, 2],c=col_array)
+		ax6.set_xticks([])
+		ax6.set_yticks([])
+		ax6.set_zticks([])
+		ax6.set_xlabel('Dimension 1')
+		ax6.set_ylabel('Dimension 2')
+		ax6.set_zlabel('Dimension 3')
 		plt.tight_layout()
-		fig3.canvas.manager.set_window_title('PCA- all metrics')
+		fig3.canvas.manager.set_window_title('PCA - all metrics')
 		plt.show(block=False)	
 		# Pickle
 		buf3 = io.BytesIO()
-		pickle.dump(ax5, buf3)
+		pickle.dump(ax6, buf3)
 		buf3.seek(0)
 
 	if event == "-M4-":
@@ -2060,9 +2068,9 @@ def metrics_tab():
 		cmap2 = matplotlib.cm.get_cmap('inferno')
 		fig4 =plt.figure(4,figsize=(8,8))
 		#ax6 = plt.subplot(111,sharex=ax0,sharey=ax0)	
-		ax6 = plt.subplot(111)	
-		ax6.cla()
-		ax6.set_facecolor("k")	
+		ax7 = plt.subplot(111)	
+		ax7.cla()
+		ax7.set_facecolor("k")	
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
 		max_overlap = max([segdict[seg]["overlap"] for seg in segdict])
@@ -2083,53 +2091,53 @@ def metrics_tab():
 				col = cmap2(val)
 				alpha=0.5
 				seg = matplotlib.lines.Line2D(segx,segy,c=col,alpha=line_alpha,linewidth=line_width,zorder=overlap)
-				ax6.add_artist(seg)	
+				ax7.add_artist(seg)	
 		x_perc = (xlims[1] - xlims[0])/100
 		y_perc = (ylims[1] - ylims[0])/100
-		ax6.imshow([[0,1], [0,1]], 
+		ax7.imshow([[0,1], [0,1]], 
 		extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
 		cmap = cmap2, 
 		interpolation = 'bicubic',
 		zorder=1000)
 		window['-PROGBAR-'].update_bar(0)
-		plt.tight_layout()
 		fig4.canvas.manager.set_window_title('Segment overlap density plot')
-		ax6.set_xlabel("X")
-		ax6.set_ylabel("Y")
-		ax6.set_xlim(xlims)
-		ax6.set_ylim(ylims)
+		ax7.set_xlabel("X")
+		ax7.set_ylabel("Y")
+		ax7.set_xlim(xlims)
+		ax7.set_ylim(ylims)
+		plt.tight_layout()
 		plt.show(block=False)
 		t2=time.time()
 		print ("Minimum log2 overlap:{} maximum log2 overlap:{}".format(math.log(min_overlap,2),math.log(max_overlap,2)))
 		print ("Segment overlap plot completed in {} sec".format(round(t2-t1,3)))			
 		# Pickle
 		buf4 = io.BytesIO()
-		pickle.dump(ax6, buf4)
+		pickle.dump(ax7, buf4)
 		buf4.seek(0)
 		
 		print ("Plotting histogram of segment overlap...")
 		t1 = time.time()
 		fig5 =plt.figure(5,figsize=(4,4))
-		ax7 = plt.subplot(111)
+		ax8 = plt.subplot(111)
 		all_overlap = [segdict[seg]["overlap"] for seg in segdict]
 		all_overlap = [x if x < 100 else 100 for x in all_overlap] # lump all overlaps > 100 together
 		bin_edges = np.histogram_bin_edges(all_overlap,bins=101) # use these bins for all samples
 		dist,bins =np.histogram(all_overlap,bin_edges)
 		dist = [float(x)/sum(dist) for x in dist]
 		bin_centers = 0.5*(bins[1:]+bins[:-1])
-		ax7.plot(bin_centers,dist,c="royalblue")
+		ax8.plot(bin_centers,dist,c="royalblue")
 		plt.ylabel("Frequency")
 		plt.xlabel("Overlap/segment")
 		plt.title("Segment overlap distribution")
 		plt.axvline(x=overlap_threshold,color="r",linewidth=0.5,alpha=1)
-		
+		fig5.canvas.manager.set_window_title('Segment overlap distribution')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
 		print ("Segment histogram completed in {} sec".format(round(t2-t1,3)))	
 		# Pickle
 		buf5 = io.BytesIO()
-		pickle.dump(ax7, buf5)
+		pickle.dump(ax8, buf5)
 		buf5.seek(0)	
 
 
@@ -2138,8 +2146,8 @@ def metrics_tab():
 		print ("3D [x,y,t] plot of trajectories...")
 		t1 = time.time()
 		fig6 =plt.figure(6,figsize=(8,8))
-		ax8 = plt.subplot(111,projection='3d')
-		ax8.cla()
+		ax9 = plt.subplot(111,projection='3d')
+		ax9.cla()
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
 		xcent = []
@@ -2182,7 +2190,7 @@ def metrics_tab():
 							tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 						else:	
 							tr = art3d.Line3D(x,y,t,c=line_color,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))	
-					ax8.add_artist(tr) 
+					ax9.add_artist(tr) 
 
 				if plot_centroids:
 					xcent.append(centx)
@@ -2218,13 +2226,13 @@ def metrics_tab():
 							tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 						else:	
 							tr = art3d.Line3D(x,y,t,c=line_color,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))	
-					ax8.add_artist(tr) 	
+					ax9.add_artist(tr) 	
 				
 				if plot_centroids:
 					xcent.append(centx)
 					ycent.append(centy)	
 					tcent.append(centt)			
-		ax8.scatter(xcent,tcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0)						
+		ax9.scatter(xcent,tcent,ycent,c=centroid_color,alpha=centroid_alpha,s=centroid_size,linewidth=0)						
 		window['-PROGBAR-'].update_bar(0)			
 		
 		# Plot clusters	
@@ -2241,39 +2249,39 @@ def metrics_tab():
 					bx,by = clusterdict[cluster]["area_xy"]
 					bt = [ct for x in bx]
 					cl = art3d.Line3D(bx,bt,by,c=col,alpha=cluster_alpha,linewidth=cluster_width,linestyle=cluster_linetype,zorder=acq_time - ct)
-					ax8.add_artist(cl)	
+					ax9.add_artist(cl)	
 			window['-PROGBAR-'].update_bar(0)			
 		# Labels etc
 		if axes_3d:			
-			ax8.set_xlabel("X")
-			ax8.set_ylabel("T")
-			ax8.set_zlabel("Y")
+			ax9.set_xlabel("X")
+			ax9.set_ylabel("T")
+			ax9.set_zlabel("Y")
 		else:		
-			ax8.set_facecolor(canvas_color)				
-			ax8.set_xticks([])
-			ax8.set_yticks([])
-			ax8.set_zticks([])
-			ax8.set_axis_off()			
+			ax9.set_facecolor(canvas_color)				
+			ax9.set_xticks([])
+			ax9.set_yticks([])
+			ax9.set_zticks([])
+			ax9.set_axis_off()			
 
-		ax8.set_xlim(xlims)
-		ax8.set_ylim(tmin,tmax)
-		ax8.set_zlim(ylims)
+		ax9.set_xlim(xlims)
+		ax9.set_ylim(tmin,tmax)
+		ax9.set_zlim(ylims)
 		
 		# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot
 		try:
 			xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
-			ax8.set_box_aspect(aspect=(xy_ratio,1,1))
+			ax9.set_box_aspect(aspect=(xy_ratio,1,1))
 		except:
 			pass
 		
-		#plt.title("3D plot")
+		fig6.canvas.manager.set_window_title('3D plot')
 		plt.tight_layout()	
 		plt.show(block=False)
 		window['-PROGBAR-'].update_bar(0)
 		t2=time.time()
 		# Pickle
 		buf6 = io.BytesIO()
-		pickle.dump(ax8, buf6)
+		pickle.dump(ax9, buf6)
 		buf6.seek(0)
 		print ("Plot completed in {} sec".format(round(t2-t1,3)))			
 
@@ -2282,10 +2290,10 @@ def metrics_tab():
 	if event == "-M6-":	
 		print ("2D Kernel density estimation of all detections...")
 		t1 = time.time()
-		fig5 =plt.figure(7,figsize=(8,8))
-		ax9 = plt.subplot(111)				
-		ax9.cla()
-		ax9.set_facecolor("k")	
+		fig7 =plt.figure(7,figsize=(8,8))
+		ax10 = plt.subplot(111)				
+		ax10.cla()
+		ax10.set_facecolor("k")	
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
 		allpoints = [point[:2]  for i in seldict for point in seldict[i]["points"]] # All detection points 
@@ -2297,25 +2305,25 @@ def metrics_tab():
 		k = gaussian_kde(np.vstack([x, y]),bw_method=kde_method)
 		xi, yi = np.mgrid[x.min():x.max():x.size**kde_res*1j,y.min():y.max():y.size**kde_res*1j]
 		zi = k(np.vstack([xi.flatten(), yi.flatten()]))
-		ax9.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=1,cmap="inferno",zorder=-100)
-		ax9.set_xlabel("X")
-		ax9.set_ylabel("Y")
+		ax10.pcolormesh(xi, yi, zi.reshape(xi.shape), alpha=1,cmap="inferno",zorder=-100)
+		ax10.set_xlabel("X")
+		ax10.set_ylabel("Y")
 		x_perc = (xlims[1] - xlims[0])/100
 		y_perc = (ylims[1] - ylims[0])/100
-		ax9.imshow([[0,1], [0,1]], 
+		ax10.imshow([[0,1], [0,1]], 
 		extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
 		cmap = "inferno", 
 		interpolation = 'bicubic',
 		zorder=1000)
-		ax9.set_xlim(xlims)
-		ax9.set_ylim(ylims)
-		#plt.title("2D KDE")
+		ax10.set_xlim(xlims)
+		ax10.set_ylim(ylims)
+		fig7.canvas.manager.set_window_title('2D KDE')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
 		# Pickle
 		buf7 = io.BytesIO()
-		pickle.dump(ax9, buf7)
+		pickle.dump(ax10, buf7)
 		buf7.seek(0)
 		print ("Plot completed in {} sec".format(round(t2-t1,3)))	
 
@@ -2323,10 +2331,10 @@ def metrics_tab():
 	if event == "-M7-":	
 		print ("Instantaneous diffusion coefficient of trajectories...")
 		t1 = time.time()
-		fig6 =plt.figure(8,figsize=(8,8))
-		ax10 = plt.subplot(111)	
-		ax10.cla()
-		ax10.set_facecolor("k")	
+		fig8 =plt.figure(8,figsize=(8,8))
+		ax11 = plt.subplot(111)	
+		ax11.cla()
+		ax11.set_facecolor("k")	
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
 		maxdiffcoeff = math.log(max(all_diffcoeffs)/(3*frame_time),10)
@@ -2347,32 +2355,32 @@ def metrics_tab():
 				dcnorm = (math.log(diffcoeff,10)-mindiffcoeff)/dcrange # normalise color 0-1  
 				col = cmap3(dcnorm)
 				tr = matplotlib.lines.Line2D(x,y,c=col,alpha=0.75,linewidth=line_width,zorder=1-dcnorm)
-				ax10.add_artist(tr) 
+				ax11.add_artist(tr) 
 		window['-PROGBAR-'].update_bar(0)			
-		ax10.set_xlabel("X")
-		ax10.set_ylabel("Y")
-		ax10.set_xlim(xlims)
-		ax10.set_ylim(ylims)
+		ax11.set_xlabel("X")
+		ax11.set_ylabel("Y")
+		ax11.set_xlim(xlims)
+		ax11.set_ylim(ylims)
 		x_perc = (xlims[1] - xlims[0])/100
 		y_perc = (ylims[1] - ylims[0])/100
-		ax10.imshow([[0,1], [0,1]], 
+		ax11.imshow([[0,1], [0,1]], 
 		extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
 		cmap = "viridis_r", 
 		interpolation = 'bicubic',
 		zorder=1000)	
 		
-		#plt.title("Diffusion coefficient")			
+		fig8.canvas.manager.set_window_title('Diffusion coefficient')		
 		plt.tight_layout()	
 		plt.show(block=False)
 
 		# DIFF COEFF TIME PLOT		
-		fig7 =plt.figure(9,figsize=(6,3))
-		ax11 = plt.subplot(211)
-		ax12 = plt.subplot(212,sharex=ax11,sharey=ax11)	
-		ax11.cla()
-		ax11.set_facecolor("k")	
+		fig9 =plt.figure(9,figsize=(6,3))
+		ax12 = plt.subplot(211)
+		ax13 = plt.subplot(212,sharex=ax12,sharey=ax12)	
 		ax12.cla()
-		ax12.set_facecolor("k")		
+		ax12.set_facecolor("k")	
+		ax13.cla()
+		ax13.set_facecolor("k")		
 		clustcols = []
 		diffcols = []
 		times = []
@@ -2409,25 +2417,26 @@ def metrics_tab():
 				diffcols.append(diffcol)	
 		window['-PROGBAR-'].update_bar(0)	
 		for i,t in enumerate(times):
-			ax11.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75)
-			ax12.axvline(t,linewidth=1.5,c=diffcols[i],alpha = 0.75)
+			ax12.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75)
+			ax13.axvline(t,linewidth=1.5,c=diffcols[i],alpha = 0.75)
 
-		ax11.set_ylabel("Cluster")
-		ax12.set_ylabel("D Coeff")				
-		ax12.set_xlabel("time (s)")	
-		ax11.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
-		ax12.tick_params(axis = "both",left = False, labelleft = False)			
+		ax12.set_ylabel("Cluster")
+		ax13.set_ylabel("D Coeff")				
+		ax13.set_xlabel("time (s)")	
+		ax12.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
+		ax13.tick_params(axis = "both",left = False, labelleft = False)			
+		fig9.canvas.manager.set_window_title('Diffusion coefficient time plot')
 		plt.tight_layout()	
 		plt.show(block=False)	
 
 		t2=time.time()
 		# Pickle
 		buf8 = io.BytesIO()
-		pickle.dump(ax10, buf8)
+		pickle.dump(ax11, buf8)
 		buf8.seek(0)
 
 		buf9 = io.BytesIO()
-		pickle.dump(fig7, buf9)
+		pickle.dump(fig9, buf9)
 		buf9.seek(0)			
 
 		print ("Plot completed in {} sec".format(round(t2-t1,3)))		
@@ -2444,21 +2453,22 @@ def metrics_tab():
 			points=seldict[traj]["points"]
 			[alltimes.append(x[2]) for x in points]
 		window['-PROGBAR-'].update_bar(0)	
-		fig8 =plt.figure(10,figsize=(4,4))
-		ax13 = plt.subplot(111)
+		fig10 =plt.figure(10,figsize=(4,4))
+		ax14 = plt.subplot(111)
 		bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time/2)) # Sort into 2 second bins
 		dist,bins =np.histogram(alltimes,bin_edges)
 		dist = [float(x)/sum(dist) for x in dist]
 		bin_centers = 0.5*(bins[1:]+bins[:-1])
-		ax13.plot(bin_centers,dist,c="royalblue")
+		ax14.plot(bin_centers,dist,c="royalblue")
 		plt.ylabel("Frequency")
 		plt.xlabel("Acquisition time (s)")
+		fig10.canvas.manager.set_window_title('Density')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
 		
 		buf10 = io.BytesIO()
-		pickle.dump(fig8, buf10)
+		pickle.dump(fig10, buf10)
 		buf10.seek(0)			
 		print ("Plot completed in {} sec".format(round(t2-t1,3)))	
 
@@ -2477,16 +2487,17 @@ def metrics_tab():
 		print ("Confined intersect", len(confinedintersect))
 		print ("Unconfined intersect", len(unconfinedintersect))
 		
-		fig9 =plt.figure(11,figsize=(6,6))
-		ax14 = plt.subplot(211)
+		fig11 =plt.figure(11,figsize=(6,6))
+		ax15 = plt.subplot(211)
 		venn2(subsets=(len(clustindices)-len(confinedintersect), len(confinedindices)-len(confinedintersect),len(confinedintersect)),set_labels=('', ''),set_colors=("green","orange"),alpha=0.9)
 		
-		ax15 = plt.subplot(212)
+		ax16 = plt.subplot(212)
 		venn2(subsets=(len(unclustindices)-len(unconfinedintersect), len(unconfinedindices)-len(unconfinedintersect),len(unconfinedintersect)),set_labels=('', ''),set_colors=("red","blue"),alpha=0.9)
+		fig11.canvas.manager.set_window_title('Vector autoregression')
 		plt.show(block = False)
 	
 		buf11 = io.BytesIO()
-		pickle.dump(fig9, buf11)
+		pickle.dump(fig11, buf11)
 		buf11.seek(0)			
 		t2=time.time()
 		print ("Plots completed in {} sec".format(round(t2-t1,3)))	
@@ -2670,7 +2681,7 @@ def metrics_tab():
 		
 		# Plots	
 		buf.seek(0)
-		fig10=pickle.load(buf)
+		fig100=pickle.load(buf)
 		for selverts in all_selverts:			
 			vx,vy = list(zip(*selverts))
 			plt.plot(vx,vy,linewidth=2,c="orange",alpha=1)
@@ -2678,84 +2689,84 @@ def metrics_tab():
 		plt.close()
 		try:
 			buf0.seek(0)
-			fig10=pickle.load(buf0)
+			fig100=pickle.load(buf0)
 			plt.savefig("{}/main_plot.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass		
 		try:
 			buf1.seek(0)
-			fig10=pickle.load(buf1)
+			fig100=pickle.load(buf1)
 			plt.savefig("{}/MSD.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf2.seek(0)
-			fig10=pickle.load(buf2)
+			fig100=pickle.load(buf2)
 			plt.savefig("{}/overlap.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf3.seek(0)
-			fig10=pickle.load(buf3)
+			fig100=pickle.load(buf3)
 			plt.savefig("{}/pca.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf4.seek(0)
-			fig10=pickle.load(buf4)
+			fig100=pickle.load(buf4)
 			plt.savefig("{}/overlap_density.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf5.seek(0)
-			fig10=pickle.load(buf5)
+			fig100=pickle.load(buf5)
 			plt.savefig("{}/overlap_histogram.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf6.seek(0)
-			fig10=pickle.load(buf6)
+			fig100=pickle.load(buf6)
 			plt.savefig("{}/3d_trajectories.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf7.seek(0)
-			fig10=pickle.load(buf7)
+			fig100=pickle.load(buf7)
 			plt.savefig("{}/KDE.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf8.seek(0)
-			fig10=pickle.load(buf8)
+			fig100=pickle.load(buf8)
 			plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf9.seek(0)
-			fig10=pickle.load(buf9)
+			fig100=pickle.load(buf9)
 			plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf10.seek(0)
-			fig10=pickle.load(buf10)
+			fig100=pickle.load(buf10)
 			plt.savefig("{}/density_vs_time.png".format(outdir),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf11.seek(0)
-			fig10=pickle.load(buf11)
+			fig100=pickle.load(buf11)
 			plt.savefig("{}/var_kmeans.png".format(outdir),dpi=300)
 			plt.close()
 		except:
@@ -2876,7 +2887,7 @@ tab5_layout = [
 
 menu_def = [
 	['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-	['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+	['&Info', ['&About', '&Help','&Licence','&Updates' ]],
 ]
 
 layout = [

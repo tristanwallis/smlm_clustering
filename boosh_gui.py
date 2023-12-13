@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z 
-THIS VERSION CLUSTERS THE INDIVIDUAL DETECTIONS RATHER THAN TRAJECTORY CENTROIDS
+BOOSH_GUI
+PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z. THIS VERSION CLUSTERS THE INDIVIDUAL DETECTIONS RATHER THAN TRAJECTORY CENTROIDS.
 
 Design and coding: Tristan Wallis
 Additional coding: Kyle Young, Alex McCann
@@ -16,7 +16,7 @@ python -m pip install scipy numpy matplotlib matplotlib-venn pysimplegui scikit-
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -31,16 +31,21 @@ NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
-last_changed = "20231003"
+
+last_changed = "20231212"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
 import multiprocessing
 import numpy as np
-import warnings
 import math
 from math import dist
+import webbrowser
+import warnings
 
 warnings.filterwarnings("ignore")
 
@@ -91,6 +96,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	import random
 	from scipy.spatial import ConvexHull
 	from scipy.stats import gaussian_kde
+	from scipy.stats import variation
 	from sklearn.cluster import DBSCAN
 	from sklearn import manifold, datasets, decomposition, ensemble, random_projection	
 	import numpy as np
@@ -110,7 +116,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	import collections
 	import warnings
 	import multiprocessing
-	import webbrowser
 	
 	# VAR stuff
 	from scipy.optimize import curve_fit
@@ -1133,12 +1138,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		try:
 			buf9.close()
 		except:
-			pass	
-		try:
-			buf10.close()
-		except:
-			pass				
-				
+			pass							
 		try:	
 			ax0.unshare_x_axes(ax8)	
 			ax0.unshare_y_axes(ax8)	
@@ -1195,7 +1195,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			# Screen and display
 			for traj in rawtrajdict:
 				points = rawtrajdict[traj]["points"]
-				if len(points) >=minlength and len(points) <=maxlength:
+				x,y,t = zip(*points)
+				if len(points) >=minlength and len(points) <=maxlength and variation(x) > 0.0001 and variation(y) > 0.0001:
 					trajdict[traj] = rawtrajdict[traj]
 			print("Plotting detections...")
 			ct = 0
@@ -1820,7 +1821,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,buf10,av_msd,all_msds,confinedindices,unconfinedindices,allindices
+		global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,av_msd,all_msds,confinedindices,unconfinedindices,allindices
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -2032,7 +2033,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax6.set_ylabel('Dimension 2')
 			ax6.set_zlabel('Dimension 3')
 			plt.tight_layout()
-			fig3.canvas.manager.set_window_title('PCA- all metrics')
+			fig3.canvas.manager.set_window_title('PCA - all metrics')
 			plt.show(block=False)	
 			# Pickle
 			buf3 = io.BytesIO()
@@ -2043,7 +2044,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-M4-":	
 			print ("3D [x,y,t] plot of trajectories...")
 			t1 = time.time()
-			fig4 =plt.figure(6,figsize=(8,8))
+			fig4 =plt.figure(4,figsize=(8,8))
 			ax7 = plt.subplot(111,projection='3d')
 			ax7.cla()
 			xlims = ax0.get_xlim()
@@ -2170,7 +2171,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			except:
 				pass
 			
-			#plt.title("3D plot")
+			fig4.canvas.manager.set_window_title('3D plot')
 			plt.tight_layout()	
 			plt.show(block=False)
 			window['-PROGBAR-'].update_bar(0)
@@ -2186,7 +2187,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == "-M5-":	
 			print ("2D Kernel density estimation of all detections...")
 			t1 = time.time()
-			fig5 =plt.figure(7,figsize=(8,8))
+			fig5 =plt.figure(5,figsize=(8,8))
 			#ax8 = plt.subplot(111,sharex=ax0,sharey=ax0)
 			ax8 = plt.subplot(111)				
 			ax8.cla()
@@ -2214,6 +2215,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			zorder=1000)
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(ylims)
+			fig5.canvas.manager.set_window_title('2D KDE')
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -2228,7 +2230,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print ("Instantaneous diffusion coefficient of trajectories...")
 			allindices = range(len(seldict))
 			t1 = time.time()
-			fig6 =plt.figure(8,figsize=(8,8))
+			fig6 =plt.figure(6,figsize=(8,8))
 			#ax9 = plt.subplot(111,sharex=ax0,sharey=ax0)	
 			ax9 = plt.subplot(111)
 			ax9.cla()
@@ -2266,11 +2268,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			cmap = "viridis_r", 
 			interpolation = 'bicubic',
 			zorder=1000)	
+			fig6.canvas.manager.set_window_title('Diffusion coefficient')
 			plt.tight_layout()	
 			plt.show(block=False)	
 
 			# DIFF COEFF TIME PLOT		
-			fig7 =plt.figure(9,figsize=(6,3))
+			fig7 =plt.figure(7,figsize=(6,3))
 			ax10 = plt.subplot(211)
 			ax11 = plt.subplot(212,sharex=ax10,sharey=ax10)	
 			ax10.cla()
@@ -2321,6 +2324,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax11.set_xlabel("time (s)")	
 			ax10.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 			ax11.tick_params(axis = "both",left = False, labelleft = False)			
+			fig7.canvas.manager.set_window_title('Diffusion coefficient time plot')
 			plt.tight_layout()	
 			plt.show(block=False)	
 
@@ -2348,7 +2352,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				[alltimes.append(x[2]) for x in points]
 			window['-PROGBAR-'].update_bar(0)	
 			window['-PROGBAR-'].update_bar(0)	
-			fig8 =plt.figure(10,figsize=(4,4))
+			fig8 =plt.figure(8,figsize=(4,4))
 			ax12 = plt.subplot(111)
 			bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time/2)) # Sort into 2 second bins
 			dist,bins =np.histogram(alltimes,bin_edges)
@@ -2357,6 +2361,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax12.plot(bin_centers,dist,c="royalblue")
 			plt.ylabel("Frequency")
 			plt.xlabel("Acquisition time (s)")
+			fig8.canvas.manager.set_window_title('Density')
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -2381,12 +2386,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print ("Confined intersect", len(confinedintersect))
 			print ("Unconfined intersect", len(unconfinedintersect))
 			
-			fig9 =plt.figure(11,figsize=(6,6))
+			fig9 =plt.figure(9,figsize=(6,6))
 			ax13 = plt.subplot(211)
 			venn2(subsets=(len(clustindices)-len(confinedintersect), len(confinedindices)-len(confinedintersect),len(confinedintersect)),set_labels=('', ''),set_colors=("green","orange"),alpha=0.9)
 			
 			ax14 = plt.subplot(212)
 			venn2(subsets=(len(unclustindices)-len(unconfinedintersect), len(unconfinedindices)-len(unconfinedintersect),len(unconfinedintersect)),set_labels=('', ''),set_colors=("red","blue"),alpha=0.9)
+			fig9.canvas.manager.set_window_title('Vector autoregression')
 			plt.show(block = False)
 		
 			buf9 = io.BytesIO()
@@ -2649,13 +2655,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				plt.savefig("{}/var_kmeans.png".format(outdir),dpi=300)
 				plt.close()
 			except:
-				pass	
-			try:
-				buf10.seek(0)
-				fig100=pickle.load(buf10)
-				plt.savefig("{}/var_1d.png".format(outdir),dpi=300)
-				plt.close()
-			except:
 				pass					
 			print ("All data saved")	
 		return
@@ -2770,7 +2769,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+		['&Info', ['&About', '&Help','&Licence','&Updates' ]],
 	]
 
 	layout = [
@@ -2951,10 +2950,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				grab_anywhere = True	
 				)	
 
-		# Check for updates
-		if event == 'Updates':
-			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
-			
 		# Licence	
 		if event == 'Licence':
 			sg.Popup(
@@ -2964,6 +2959,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				no_titlebar = True,
 				grab_anywhere = True	
 				)					
+
+		# Check for updates
+		if event == 'Updates':
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
 
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
+VORONOI_GUI
 PYSIMPLEGUI BASED GUI FOR VORONOI CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
 Design and code: Tristan Wallis
@@ -10,11 +11,11 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib scikit-learn pysimplegui
+python -m pip install scipy numpy matplotlib scikit-learn pysimplegui colorama
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -29,9 +30,12 @@ NOTES:
 This script has been tested and will run as intended on Windows 7/10, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20210721"
+last_changed = "20231212"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -67,8 +71,20 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# LOAD MODULES
 	import PySimpleGUI as sg
-
+	import os
+	from colorama import init as colorama_init
+	from colorama import Fore
+	from colorama import Style
+	
 	sg.theme('DARKGREY11')
+	colorama_init()
+	os.system('cls' if os.name == 'nt' else 'clear')
+	
+	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+	print(f'{Fore.GREEN}VORONOI {last_changed} initialising...{Style.RESET_ALL}')
+	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+	
+	# POPUP WINDOW
 	popup = sg.Window("Initialising...",[[sg.T("VORONOI initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 	import random
@@ -91,11 +107,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	import io
 	from functools import reduce
 	import collections
-	import warnings
 	import webbrowser
+	import warnings
 
 	warnings.filterwarnings("ignore")
-
+	
+	# FUNCTIONS
+	
 	# SIMPLE CONVEX HULL AROUND SPLASH CLUSTERS
 	def hull(points):
 		points = np.array(points)
@@ -222,7 +240,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					clusters = []
 
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,int(minpts))	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -1238,8 +1256,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clust_msds = [seldict[x]["msds"] for x in clustindices]
 			unclust_msds = [seldict[x]["msds"] for x in unclustindices]
 			
-			print (clust_msds)
-			
 			clust_vals = []
 			unclust_vals = []
 			for i in range(minlength-1):
@@ -1300,11 +1316,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			print ("Polygon plot completed in {} sec".format(round(t2-t1,3)))
 			# Pickle
 			buf2 = io.BytesIO()
-			pickle.dump(ax2, buf2)
+			pickle.dump(fig2, buf2)
 			buf2.seek(0)	
 
 		# KDE
-		if event == "-M2-":	
+		if event == "-M3-":	
 			print ("2D Kernel density estimation of all detections...")
 			t1 = time.time()
 			fig3 =plt.figure(3,figsize=(8,8))
@@ -1407,7 +1423,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
 			# Plots
 			buf.seek(0)
-			fig10=pickle.load(buf)
+			fig100=pickle.load(buf)
 			for selverts in all_selverts:			
 				vx,vy = list(zip(*selverts))
 				plt.plot(vx,vy,linewidth=2,c="orange",alpha=1)
@@ -1415,28 +1431,28 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.close()
 			try:
 				buf.seek(0)
-				fig10=pickle.load(buf0)
+				fig100=pickle.load(buf0)
 				plt.savefig("{}/main_plot.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass		
 			try:
 				buf1.seek(0)
-				fig10=pickle.load(buf1)
+				fig100=pickle.load(buf1)
 				plt.savefig("{}/MSD.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf2.seek(0)
-				fig10=pickle.load(buf2)
+				fig100=pickle.load(buf2)
 				plt.savefig("{}/voronoi.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf3.seek(0)
-				fig10=pickle.load(buf3)
+				fig100=pickle.load(buf3)
 				plt.savefig("{}/KDE.png".format(outdir),dpi=300)
 				plt.close()
 			except:
@@ -1533,9 +1549,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+		['&Info', ['&About', '&Help' ,'&Licence','&Updates']],
 	]
-	
+
 	layout = [
 		[sg.Menu(menu_def)],
 		[sg.T('VORONOI Clustering',font="Any 20")],
@@ -1688,12 +1704,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True	
-				)	
+				)					
 
 		# Check for updates
 		if event == 'Updates':
-			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)				
-
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
+			
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':
 			trxyt_tab()

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
+NASTIC2C_GUI
 PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA - 2 COLOR VERSION
 
 Design and coding: Tristan Wallis
@@ -30,16 +31,21 @@ NOTES:
 This script has been tested and will run as intended on Windows 7/10, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
-last_changed = "20231003"
+
+last_changed = "20231212"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
 import multiprocessing
 import numpy as np
-import warnings
 import math
 from math import dist
+import webbrowser
+import warnings
 warnings.filterwarnings("ignore")
 
 def metrics(data):
@@ -114,7 +120,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from functools import reduce
 	import warnings
 	import multiprocessing
-	import webbrowser
 	warnings.filterwarnings("ignore")
 
 	# NORMALIZE
@@ -1039,14 +1044,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			buf8.close()
 		except:
 			pass
-		try:
-			buf9.close()
-		except:
-			pass	
-		try:
-			buf10.close()
-		except:
-			pass				
+				
 				
 		try:	
 			ax0.unshare_x_axes(ax8)	
@@ -1140,14 +1138,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		else:
 			
 			# Screen and display
-			for traj1 in rawtrajdict1: 
+			for traj1 in rawtrajdict1:
 				points = rawtrajdict1[traj1]["points"]
 				if len(points) >=minlength and len(points) <=maxlength:
-					trajdict1[traj1] = rawtrajdict1[traj1]
-					
-			for traj2 in rawtrajdict2: 
-				points = rawtrajdict2[traj2]["points"] 
-				if len(points) >=minlength and len(points) <=maxlength:
+					trajdict[traj] = rawtrajdict[traj]
+			for traj2 in rawtrajdict2:
+				points = rawtrajdict2[traj2]["points"]
+				if len(points) >=minlength and len(points) <=maxlength :
 					trajdict2[traj2] = rawtrajdict2[traj2]
 
 			trajdict = {**trajdict1,**trajdict2}; 		
@@ -1967,7 +1964,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax6.set_ylabel('Dimension 2')
 			ax6.set_zlabel('Dimension 3')
 			plt.tight_layout()
-			fig3.canvas.manager.set_window_title('PCA- all metrics')
+			fig3.canvas.manager.set_window_title('PCA - all metrics')
 			plt.show(block=False)	
 			# Pickle
 			buf3 = io.BytesIO()
@@ -2072,7 +2069,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				ax7.set_box_aspect(aspect=(xy_ratio,1,1))
 			except:
 				pass
-			#plt.title("3D plot")
+			fig4.canvas.manager.set_window_title('3D plot')
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -2114,7 +2111,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			zorder=1000)
 			ax8.set_xlim(xlims)
 			ax8.set_ylim(ylims)
-			#plt.title("2D KDE")
+			fig5.canvas.manager.set_window_title('2D KDE')
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -2165,6 +2162,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			cmap = "viridis_r", 
 			interpolation = 'bicubic',
 			zorder=1000)	
+			fig6.canvas.manager.set_window_title('Diffusion coefficient')
 			plt.tight_layout()	
 			plt.show(block=False)	
 
@@ -2238,10 +2236,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			ax10.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 			ax11.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 			ax12.tick_params(axis = "both",left = False, labelleft = False)			
+			fig7.canvas.manager.set_window_title('Diffusion coefficient time plot')
 			plt.tight_layout()	
 			plt.show(block=False)	
-			
-			#plt.title("Diffusion coefficient")			
 
 			t2=time.time()
 			# Pickle
@@ -2265,7 +2262,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				allcomp.append(comp)
 
 			fig8 =plt.figure(8,figsize=(4,4))
-			ax12 = plt.subplot(111)
+			ax13 = plt.subplot(111)
 
 			twmap,twmap_s = custom_colormap([line_color,"orange",line_color2],9)
 
@@ -2275,12 +2272,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			bin_centers = 0.5*(bins[1:]+bins[:-1])
 	
 			for i in range(len(dist)-1):
-				ax12.plot((bin_centers[i],bin_centers[i+1]),(dist[i],dist[i+1]),c = twmap(bin_centers[i]))	
+				ax13.plot((bin_centers[i],bin_centers[i+1]),(dist[i],dist[i+1]),c = twmap(bin_centers[i]))	
 				
 			#ax12.plot(bin_centers,dist,c="royalblue")
 			plt.ylabel("Frequency")
 			plt.xlabel("Proportion of col 2")
-			#plt.title("Detection density over time")
+			fig8.canvas.manager.set_window_title('2 color metrics')
 			plt.tight_layout()	
 			plt.show(block=False)
 			t2=time.time()
@@ -2429,7 +2426,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 				# INDIVIDUAL CLUSTER METRICS
 				outfile.write("\nINDIVIDUAL CLUSTER METRICS:\n")
-				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\tCOL 2\n")
+				outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\tCOMPOSITION (#COL 2/TOTAL)\n")
 				trajnums = []
 				lifetimes = []
 				times = []
@@ -2492,7 +2489,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			
 			# Plots	
 			buf.seek(0)		
-			fig10=pickle.load(buf)
+			fig100=pickle.load(buf)
 			for selverts in all_selverts:			
 				vx,vy = list(zip(*selverts))
 				plt.plot(vx,vy,linewidth=2,c="orange",alpha=1)
@@ -2500,63 +2497,63 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plt.close()
 			try:
 				buf0.seek(0)
-				fig10=pickle.load(buf0)
+				fig100=pickle.load(buf0)
 				plt.savefig("{}/main_plot.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass		
 			try:
 				buf1.seek(0)
-				fig10=pickle.load(buf1)
+				fig100=pickle.load(buf1)
 				plt.savefig("{}/MSD.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf2.seek(0)
-				fig10=pickle.load(buf2)
+				fig100=pickle.load(buf2)
 				plt.savefig("{}/overlap.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass	
 			try:
 				buf3.seek(0)
-				fig10=pickle.load(buf3)
+				fig100=pickle.load(buf3)
 				plt.savefig("{}/pca.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf4.seek(0)
-				fig10=pickle.load(buf4)
+				fig100=pickle.load(buf4)
 				plt.savefig("{}/3d_trajectories.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass	
 			try:
 				buf5.seek(0)
-				fig10=pickle.load(buf5)
+				fig100=pickle.load(buf5)
 				plt.savefig("{}/KDE.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass	
 			try:
 				buf6.seek(0)
-				fig10=pickle.load(buf6)
+				fig100=pickle.load(buf6)
 				plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass	
 			try:
 				buf7.seek(0)
-				fig10=pickle.load(buf7)
+				fig100=pickle.load(buf7)
 				plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
 				plt.close()
 			except:
 				pass		
 			try:
 				buf8.seek(0)
-				fig10=pickle.load(buf8)
+				fig100=pickle.load(buf8)
 				plt.savefig("{}/2col_proportion.png".format(outdir),dpi=300)
 				plt.close()
 			except:
@@ -2676,7 +2673,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+		['&Info', ['&About', '&Help','&Licence','&Updates']],
 	]
 
 	layout = [
@@ -2864,12 +2861,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True	
-				)	
+				)					
 
 		# Check for updates
 		if event == 'Updates':
-			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)				
-
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
+		
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':
 			trxyt_tab()

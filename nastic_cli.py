@@ -1,6 +1,7 @@
+# -*- coding: utf-8 -*-
 '''
 NASTIC_CLI
-SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
+COMMAND LINE (CLI) VERSION FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
 Design and coding: Tristan Wallis
 Additional coding: Kyle Young, Alex McCann
@@ -8,10 +9,6 @@ Debugging: Sophie Huiyi Hou, Kye Kudo, Alex McCann
 Queensland Brain Institute
 The University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
-
-USAGE:
-Parameters are adjusted in the PARAMETERS section below
-python nastic_cli.py inputfilename.trxyt
 
 REQUIRED:
 Python 3.8 or greater
@@ -30,19 +27,24 @@ No headers
 2 8.9266 39.915 0.12
 etc
 
-OUTPUT:
-inputfilename_YYYYMMDD-HHMMSS_nastic_metrics.tsv --> clustering metrics 
+USAGE:
+Parameters are adjusted in the # PARAMETERS section below
+python nastic_cli.py inputfilename.trxyt
 
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, Linux, and MacOS.
 The script is single threaded and should run on virtual CPUs without issues.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-lastchanged = 20230714
+lastchanged = "20231212"
 
 # LOAD MODULES
 from argparse import ArgumentParser
+import os
 from scipy.spatial import ConvexHull
 from sklearn.cluster import DBSCAN
 import numpy as np
@@ -68,10 +70,6 @@ time_threshold = 20 # Trajectories must be within this many seconds of another t
 cluster_threshold = 3 # This many overlapping trajectories will be considered a cluster (default 3)
 radius_thresh = 0.25 # um  - clusters will be excluded if bigger than this. Set to a large number to include all clusters (default 0.25)
 msd_filter = True # Trajectories whose MSD at time point 1 are greater than the average will be excluded (default True)
-
-
-# Timestamp
-stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
 
 # MSD
 all_msds = []
@@ -187,8 +185,14 @@ parser.add_argument("infilename")
 args = parser.parse_args()
 infilename = args.infilename
 
+# Initial directory
+cwd = os.path.dirname(os.path.abspath(__file__))
+os.chdir(cwd)
+initialdir = cwd
+
 # Header (console)
-print("\n\n--------------------------------------\nNASTIC CLI - Tristan Wallis - {}\n--------------------------------------".format(lastchanged))
+os.system('cls' if os.name == 'nt' else 'clear')
+print ("NASTIC CLI - Tristan Wallis {}\n-----------------------------------------------------".format(lastchanged))
 print("\nInput file selected: {}\n".format(infilename))
 
 # Variables
@@ -232,10 +236,11 @@ with open (infilename,"r") as infile:
 		
 print ("Filtering based on trajectory length...")
 trajdict = {}
-for traj in rawtrajdict:	
+for traj in rawtrajdict:
 	points = rawtrajdict[traj]["points"]
 	if len(points) >=minlength and len(points) <=maxlength:
-		trajdict[traj] = rawtrajdict[traj]	
+		trajdict[traj] = rawtrajdict[traj]
+
 print ("{} raw trajectories, {} trajectories with step >{} and <{}".format(len(rawtrajdict),len(trajdict),minlength,maxlength))		
 
 # Generate centroids and MSDs
@@ -336,8 +341,15 @@ unclustindices = [idx for idx in allindices if idx not in clustindices]
 print ("{} clusters containing {} trajectories".format(len(clusterdict),len(clustindices)))
 	
 # Save metrics
-outfilename = infilename.replace(".trxyt" ,"_{}_nastic_metrics.tsv".format(stamp))
-print ("Saving metrics...")
+stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
+outpath = os.getcwd()
+outpath = outpath.split("\\")
+outpath = "/".join(outpath)
+outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_NASTIC_{}".format(stamp))
+os.mkdir(outdir)
+os.chdir(outdir)
+outfilename = "{}/metrics.tsv".format(outdir)
+print ("Saving metrics to {}...".format(outdir))
 with open(outfilename,"w") as outfile:
 	outfile.write("NASTIC: NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n") 
 	outfile.write("TRAJECTORY FILE:\t{}\n".format(infilename))	
@@ -489,5 +501,4 @@ with open(outfilename,"w") as outfile:
 	outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 	outfile.write(outstring + "\n")	
 	
-print ("Done. Metrics saved to: {}.".format(outfilename))
-	
+print ("Done. Metrics saved to: {}.".format(outdir))

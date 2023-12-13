@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 BOOSH2C_ST_GUI 
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN - 2 COLOR VERSION
+PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z. - 2 COLOR VERSION.
 THIS IS A SINGLE THREADED VERSION WHICH WILL RUN ON VIRTUAL MACHINES, AT THE EXPENSE OF SLOWER TRAJECTORY PREPROCESSING
 THIS VERSION MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF boosh2c_st_gui.py
 
@@ -18,7 +18,7 @@ python -m pip install scipy numpy matplotlib scikit-learn pysimplegui colorama
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -32,8 +32,12 @@ etc
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
-last_changed = "20231003"
+
+last_changed = "20231212"
 
 # LOAD MODULES
 import PySimpleGUI as sg
@@ -72,8 +76,9 @@ import pickle
 import io
 from functools import reduce
 import collections
-import warnings
 import webbrowser
+import warnings
+
 warnings.filterwarnings("ignore")
 
 # NORMALIZE
@@ -1111,15 +1116,20 @@ def trxyt_tab():
 	else:
 		
 		# Screen and display
-		for traj1 in rawtrajdict1: 
-			points = rawtrajdict1[traj1]["points"] 
-			if len(points) >=minlength and len(points) <=maxlength:
-				trajdict1[traj1] = rawtrajdict1[traj1] 
-				
+		for traj1 in rawtrajdict1:
+			points = rawtrajdict1[traj1]["points"]
+			try:
+				if len(points) >=minlength and len(points) <=maxlength and double_hull(points)[2] > 0:
+					trajdict1[traj1] = rawtrajdict1[traj1]
+			except:
+				pass
 		for traj2 in rawtrajdict2:
 			points = rawtrajdict2[traj2]["points"]
-			if len(points) >=minlength and len(points) <=maxlength:
-				trajdict2[traj2] = rawtrajdict2[traj2] 
+			try:
+				if len(points) >=minlength and len(points) <=maxlength and double_hull(points)[2] > 0:
+					trajdict2[traj2] = rawtrajdict2[traj2]
+			except:
+				pass 
 
 		trajdict = {**trajdict1,**trajdict2}; 
 
@@ -2001,7 +2011,7 @@ def metrics_tab():
 		ax6.set_ylabel('Dimension 2')
 		ax6.set_zlabel('Dimension 3')
 		plt.tight_layout()
-		fig3.canvas.manager.set_window_title('PCA- all metrics')
+		fig3.canvas.manager.set_window_title('PCA - all metrics')
 		plt.show(block=False)	
 		# Pickle
 		buf3 = io.BytesIO()
@@ -2106,7 +2116,7 @@ def metrics_tab():
 			ax7.set_box_aspect(aspect=(xy_ratio,1,1))
 		except:
 			pass
-		#plt.title("3D plot")
+		fig4.canvas.manager.set_window_title('3D plot')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
@@ -2148,7 +2158,7 @@ def metrics_tab():
 		zorder=1000)
 		ax8.set_xlim(xlims)
 		ax8.set_ylim(ylims)
-		#plt.title("2D KDE")
+		fig5.canvas.manager.set_window_title('2D KDE')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
@@ -2199,6 +2209,7 @@ def metrics_tab():
 		cmap = "viridis_r", 
 		interpolation = 'bicubic',
 		zorder=1000)	
+		fig6.canvas.manager.set_window_title('Diffusion coefficient')
 		plt.tight_layout()	
 		plt.show(block=False)	
 
@@ -2272,6 +2283,7 @@ def metrics_tab():
 		ax10.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 		ax11.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 		ax12.tick_params(axis = "both",left = False, labelleft = False)			
+		fig7.canvas.manager.set_window_title('Diffusion coefficient time plot')
 		plt.tight_layout()	
 		plt.show(block=False)	
 		
@@ -2314,7 +2326,7 @@ def metrics_tab():
 		#ax12.plot(bin_centers,dist,c="royalblue")
 		plt.ylabel("Frequency")
 		plt.xlabel("Proportion of col 2")
-		#plt.title("Detection density over time")
+		fig8.canvas.manager.set_window_title('2 color metrics')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
@@ -2462,7 +2474,7 @@ def metrics_tab():
 
 			# INDIVIDUAL CLUSTER METRICS
 			outfile.write("\nINDIVIDUAL CLUSTER METRICS:\n")
-			outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\tCOL 2\n")
+			outfile.write("CLUSTER\tMEMBERSHIP\tLIFETIME (s)\tAVG MSD (um^2)\tAREA (um^2)\tRADIUS (um)\tDENSITY (traj/um^2)\tRATE (traj/sec)\tAVG TIME (s)\tCOMPOSITION (#COL2/TOTAL)\n")
 			trajnums = []
 			lifetimes = []
 			times = []
@@ -2709,7 +2721,7 @@ tab5_layout = [
 
 menu_def = [
 	['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-	['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+	['&Info', ['&About', '&Help','&Licence', '&Updates' ]],
 ]
 
 layout = [
@@ -2902,7 +2914,7 @@ while True:
 	# Check for updates
 	if event == 'Updates':
 		webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
-
+	
 	# Read and plot input file	
 	if event == '-PLOTBUTTON-':
 		trxyt_tab()

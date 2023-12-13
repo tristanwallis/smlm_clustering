@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 '''
+DBSCAN_GUI
 PYSIMPLEGUI BASED GUI FOR DBSCAN CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
 Design and code: Tristan Wallis
-Debugging: Sophie Huiyi Hou
+Debugging: Sophie Huiyi Hou and Alex McCann
 Queensland Brain Institute
 University of Queensland
 Fred Meunier: f.meunier@uq.edu.au
@@ -14,7 +15,7 @@ python -m pip install scipy numpy matplotlib scikit-learn pysimplegui
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -29,18 +30,37 @@ NOTES:
 This script has been tested and will run as intended on Windows 7/10, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 The script will fork to multiple CPU cores for the heavy number crunching routines (this also prevents it from being packaged as an exe using pyinstaller).
 Feedback, suggestions and improvements are welcome. Sanctimonious pythonic critiques on the inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20220823"
+last_changed = "20231207"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
 import multiprocessing
 import numpy as np
-import warnings
 import math
 from math import dist
+import webbrowser
+import warnings
+
 warnings.filterwarnings("ignore")
+
+# LOAD MODULES
+import PySimpleGUI as sg
+import os
+from colorama import init as colorama_init
+from colorama import Fore
+from colorama import Style
+sg.theme('DARKGREY11')
+colorama_init()
+os.system('cls' if os.name == 'nt' else 'clear')
+print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+print(f'{Fore.GREEN}DBSCAN {last_changed} initialising...{Style.RESET_ALL}')
+print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+popup = sg.Window("Initialising...",[[sg.T("DBSCAN initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 def metrics(data):
 	points,minlength,centroid=data
@@ -91,7 +111,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	from functools import reduce
 	import collections
 	import warnings
-	import webbrowser
 
 	warnings.filterwarnings("ignore")
 
@@ -161,7 +180,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 		graph.DrawText("D B S C A N v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 		graph.DrawText("Code and design: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
-		graph.DrawText("Debugging: Sophie Huiyi Hou",(0,30),color="white",font=("Any",10),text_location="center")
+		graph.DrawText("Debugging: Sophie Huiyi Hou and Alex McCann",(0,30),color="white",font=("Any",10),text_location="center")
 		graph.DrawText("Queensland Brain Institute",(0,15),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
@@ -221,7 +240,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					clusters = []
 
 				allpoints = [i[1] for i in obj_list]
-				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)	
+				labels,clusterlist = dbscan(allpoints,epsilon*1.5,minpts)#*1.5	
 				clusterdict = {i:[] for i in clusterlist}
 				clust_traj = [i for i in labels if i > -1]
 				clust_radii = []	
@@ -242,7 +261,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	# USE HARD CODED DEFAULTS
 	def reset_defaults():
 		print ("Using default GUI settings...")
-		global traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
+		global traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
 		traj_prob = 1
 		detection_alpha = 0.1
 		selection_density = 0
@@ -276,7 +295,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmax=""
 		plotymin=""
 		plotymax=""		
-		msd_filter = False
 		return 
 
 	# SAVE SETTINGS
@@ -312,12 +330,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))
 			outfile.write("{}\t{}\n".format("Cluster fill",cluster_fill))
 			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))
-			outfile.write("{}\t{}\n".format("MSD filter",msd_filter))
 		return
 		
 	# LOAD DEFAULTS
 	def load_defaults():
-		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter
+		global defaultdict,traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax
 		try:
 			with open ("dbscan_gui.defaults","r") as infile:
 				print ("Loading GUI settings from dbscan_gui.defaults...")
@@ -390,12 +407,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			plotxmin=""
 			plotxmax=""
 			plotymin=""
-			plotymax=""	
-			msd_filter = defaultdict["MSD filter"]
-			if msd_filter == "True":
-				msd_filter = True
-			if msd_filter == "False":
-				msd_filter = False				
+			plotymax=""				
 		except:
 			print ("Settings could not be loaded")
 		return
@@ -480,13 +492,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		window.Element("-PLOTXMIN-").update(plotxmin)
 		window.Element("-PLOTXMAX-").update(plotxmax)
 		window.Element("-PLOTYMIN-").update(plotymin)
-		window.Element("-PLOTYMAX-").update(plotymax)	
-		window.Element("-MSDFILTER-").update(msd_filter)		
+		window.Element("-PLOTYMAX-").update(plotymax)		
 		return	
 		
 	# CHECK VARIABLES
 	def check_variables():
-		global traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,plotxmin,plotxmax,plotymin,plotymax,msd_filter
+		global traj_prob,detection_alpha,minlength,maxlength,epsilon,minpts,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,cluster_color,saveformat,savedpi,savetransparency,savefolder,selection_density,plotxmin,plotxmax,plotymin,plotymax
 
 		if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 			traj_prob = 1.0
@@ -982,7 +993,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		
 	# CLUSTERING TAB	
 	def cluster_tab():
-		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,av_msd
+		global seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters
 		
 		# Dictionary of selected trajectories
 		print ("Generating metrics of selected trajectories...")	
@@ -991,7 +1002,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		t1=time.time()
 		allpoints = [[trajdict[traj]["points"],minlength,trajdict[traj]["centroid"]] for traj in sel_traj]
 		allmetrics = multi(allpoints)
-		all_msds = []
 		for num,metrics in enumerate(allmetrics):
 			if num%10 == 0:
 				bar = 100*num/(len(allmetrics)-10)
@@ -1001,33 +1011,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			seldict[num]["points"]=points
 			seldict[num]["msds"]=msds
 			seldict[num]["centroid"]=centroid
-			all_msds.append(msds[0])
-			#sel_centroids.append(centroid)
-			
-		# Screen on MSD
-		if msd_filter:
-			print ("Calculating average MSD...")
-			av_msd = np.average(all_msds)
-		else:
-			av_msd = 10000 # no molecule except in an intergalactic gas cloud has an MSD this big	
-		
-		filt_indices = []
-		for num in seldict:
-			if seldict[num]["msds"][0] < av_msd:
-				filt_indices.append(num)
-				sel_centroids.append(seldict[num]["centroid"])
-		print ("{} trajectories passed MSD filter".format(len(filt_indices)))
-				
+			sel_centroids.append(centroid)
 		t2=time.time()
 		print ("{} metrics generated in {} sec".format(len(allmetrics),round(t2-t1,3)))
 		print ("Clustering selected trajectories...")	
 		t1 = time.time()
 		pointarray = [x[:2] for x in sel_centroids]
 		labels,clusterlist = dbscan(pointarray,epsilon,minpts)
-
 		trajcount = collections.Counter(labels)
 		t2 = time.time()
-		print ("{} trajectories analysed in {} sec".format(len(sel_centroids),round(t2-t1,3)))
+		print ("{} trajectories clustered in {} sec".format(len(seldict),round(t2-t1,3)))
 		# Cluster metrics
 		print ("Generating metrics of clustered trajectories...")
 		t1 = time.time()
@@ -1038,7 +1031,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			clusterdict[cluster]["indices"]=[]
 
 		for num,label in enumerate(labels):
-			clusterdict[label]["indices"].append(filt_indices[num])
+			clusterdict[label]["indices"].append(num)
 			
 		for cluster in clusterlist:
 			if cluster > -1:
@@ -1086,7 +1079,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# DISPLAY CLUSTERED DATA TAB
 	def	display_tab(xlims,ylims):
-		global buf0,plotflag,plotxmin,plotymin,plotxmax,plotymax,av_msd
+		global buf0,plotflag,plotxmin,plotymin,plotxmax,plotymax
 		print ("Plotting all selected trajectories...")	
 		t1 = time.time()
 		xlims = ax0.get_xlim()
@@ -1184,7 +1177,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	# METRICS TAB
 	def metrics_tab():
-		global buf0,buf1,buf2,av_msd
+		global buf0,buf1,buf2
 		# MSD for clustered and unclustered detections
 		if event == "-M1-":
 			print ("Plotting MSD curves...")
@@ -1280,11 +1273,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
 				outfile.write("DBSCAN EPSILON (um):\t{}\n".format(epsilon))
 				outfile.write("DBSCAN MINPTS:\t{}\n".format(minpts))
-				outfile.write("CLUSTER MAX RADIUS (um):\t{}\n".format(radius_thresh))	
-				if msd_filter:
-					outfile.write("MSD FILTER THRESHOLD (um^2):\t{}\n".format(av_msd))
-				else:
-					outfile.write("MSD FILTER THRESHOLD (um^2):\tNone\n")				
+				outfile.write("CLUSTER MAX RADIUS (um):\t{}\n".format(radius_thresh))			
 				outfile.write("SELECTION AREA (um^2):\t{}\n".format(sum(all_selareas)))
 				outfile.write("SELECTED TRAJECTORIES:\t{}\n".format(len(allindices)))
 				outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
@@ -1400,7 +1389,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.T(u'Epsilon (μm):',tooltip = "Radius around each centroid\n to check for other centroids"),sg.InputText(epsilon,size="50",key="-EPSILON-")],	
 		[sg.T('MinPts:',tooltip = "Clusters must contain at least this\n many centroids within Epsilon"),sg.InputText(minpts,size="50",key="-MINPTS-")],
 		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
-		[sg.Checkbox('MSD screen',tooltip = "Don't analyse centroids of trajectories with MSD > \nthe average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform DBSCAN clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 
@@ -1450,7 +1438,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+		['&Info', ['&About', '&Help','&Licence','&Updates']],
 	]
 
 	layout = [
@@ -1534,7 +1522,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		plotxmax = values['-PLOTXMAX-']
 		plotymin = values['-PLOTYMIN-']
 		plotymax = values['-PLOTYMAX-']	
-		msd_filter = values['-MSDFILTER-']	
 
 		# Check variables
 		check_variables()
@@ -1606,12 +1593,12 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True	
-				)	
+				)					
 
 		# Check for updates
 		if event == 'Updates':
-			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)				
-
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
+		
 		# Read and plot input file	
 		if event == '-PLOTBUTTON-':
 			trxyt_tab()

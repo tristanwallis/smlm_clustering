@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 BOOSH_ST_GUI
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z 
-THIS VERSION CLUSTERS THE INDIVIDUAL DETECTIONS RATHER THAN TRAJECTORY CENTROIDS
+PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z. THIS VERSION CLUSTERS THE INDIVIDUAL DETECTIONS RATHER THAN TRAJECTORY CENTROIDS.
 THIS IS A SINGLE THREADED VERSION WHICH WILL RUN ON VIRTUAL MACHINES, AT THE EXPENSE OF SLOWER TRAJECTORY PREPROCESSING
 THIS VERSION MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF boosh_st_gui.py
 
@@ -19,7 +18,7 @@ python -m pip install scipy numpy matplotlib matplotlib-venn pysimplegui scikit-
 
 INPUT:
 TRXYT trajectory files from Matlab
-Space separated: Trajectory X(um) Y(um) T(sec)  
+Space separated: TRajectory X-position(um) Y-position(um) Time(sec)  
 No headers
 
 1 9.0117 39.86 0.02
@@ -33,8 +32,12 @@ etc
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
-last_changed = "20231003"
+
+last_changed = "20231212"
 
 # LOAD MODULES
 import PySimpleGUI as sg
@@ -71,8 +74,10 @@ import pickle
 import io
 from functools import reduce
 import collections
-import warnings
 import webbrowser
+import warnings
+
+warnings.filterwarnings("ignore")
 
 # VAR stuff
 from scipy.optimize import curve_fit
@@ -81,7 +86,7 @@ from sklearn.cluster import KMeans
 from sklearn import preprocessing
 from matplotlib_venn import venn2, venn2_circles	
 
-warnings.filterwarnings("ignore")
+
 
 # ALPHA COEFFICIENT FOR SINGLE TRAJECTORY	
 def anom_diff_f(x, alpha):
@@ -1123,10 +1128,6 @@ def trxyt_tab():
 	try:
 		buf9.close()
 	except:
-		pass	
-	try:
-		buf10.close()
-	except:
 		pass				
 			
 	try:	
@@ -1818,7 +1819,7 @@ def	display_tab(xlims,ylims):
 
 # METRICS TAB
 def metrics_tab():
-	global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,buf10,av_msd,all_msds,confinedindices,unconfinedindices,allindices
+	global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,av_msd,all_msds,confinedindices,unconfinedindices,allindices
 	# MSD for clustered and unclustered detections
 	if event == "-M1-":
 		print ("Plotting MSD curves...")
@@ -2030,7 +2031,7 @@ def metrics_tab():
 		ax6.set_ylabel('Dimension 2')
 		ax6.set_zlabel('Dimension 3')
 		plt.tight_layout()
-		fig3.canvas.manager.set_window_title('PCA- all metrics')
+		fig3.canvas.manager.set_window_title('PCA - all metrics')
 		plt.show(block=False)	
 		# Pickle
 		buf3 = io.BytesIO()
@@ -2041,7 +2042,7 @@ def metrics_tab():
 	if event == "-M4-":	
 		print ("3D [x,y,t] plot of trajectories...")
 		t1 = time.time()
-		fig4 =plt.figure(6,figsize=(8,8))
+		fig4 =plt.figure(4,figsize=(8,8))
 		ax7 = plt.subplot(111,projection='3d')
 		ax7.cla()
 		xlims = ax0.get_xlim()
@@ -2168,7 +2169,7 @@ def metrics_tab():
 		except:
 			pass
 		
-		#plt.title("3D plot")
+		fig4.canvas.manager.set_window_title('3D plot')
 		plt.tight_layout()	
 		plt.show(block=False)
 		window['-PROGBAR-'].update_bar(0)
@@ -2184,7 +2185,7 @@ def metrics_tab():
 	if event == "-M5-":	
 		print ("2D Kernel density estimation of all detections...")
 		t1 = time.time()
-		fig5 =plt.figure(7,figsize=(8,8))
+		fig5 =plt.figure(5,figsize=(8,8))
 		#ax8 = plt.subplot(111,sharex=ax0,sharey=ax0)
 		ax8 = plt.subplot(111)				
 		ax8.cla()
@@ -2212,6 +2213,7 @@ def metrics_tab():
 		zorder=1000)
 		ax8.set_xlim(xlims)
 		ax8.set_ylim(ylims)
+		fig5.canvas.manager.set_window_title('2D KDE')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
@@ -2226,7 +2228,7 @@ def metrics_tab():
 		print ("Instantaneous diffusion coefficient of trajectories...")
 		allindices = range(len(seldict))
 		t1 = time.time()
-		fig6 =plt.figure(8,figsize=(8,8))
+		fig6 =plt.figure(6,figsize=(8,8))
 		#ax9 = plt.subplot(111,sharex=ax0,sharey=ax0)	
 		ax9 = plt.subplot(111)
 		ax9.cla()
@@ -2264,11 +2266,12 @@ def metrics_tab():
 		cmap = "viridis_r", 
 		interpolation = 'bicubic',
 		zorder=1000)	
+		fig6.canvas.manager.set_window_title('Diffusion coefficient')
 		plt.tight_layout()	
 		plt.show(block=False)	
 
 		# DIFF COEFF TIME PLOT		
-		fig7 =plt.figure(9,figsize=(6,3))
+		fig7 =plt.figure(7,figsize=(6,3))
 		ax10 = plt.subplot(211)
 		ax11 = plt.subplot(212,sharex=ax10,sharey=ax10)	
 		ax10.cla()
@@ -2319,6 +2322,7 @@ def metrics_tab():
 		ax11.set_xlabel("time (s)")	
 		ax10.tick_params(axis = "both",left = False, labelleft = False,bottom=False,labelbottom=False)
 		ax11.tick_params(axis = "both",left = False, labelleft = False)			
+		fig7.canvas.manager.set_window_title('Diffusion coefficient time plot')
 		plt.tight_layout()	
 		plt.show(block=False)	
 
@@ -2346,7 +2350,7 @@ def metrics_tab():
 			[alltimes.append(x[2]) for x in points]
 		window['-PROGBAR-'].update_bar(0)	
 		window['-PROGBAR-'].update_bar(0)	
-		fig8 =plt.figure(10,figsize=(4,4))
+		fig8 =plt.figure(8,figsize=(4,4))
 		ax12 = plt.subplot(111)
 		bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time/2)) # Sort into 2 second bins
 		dist,bins =np.histogram(alltimes,bin_edges)
@@ -2355,6 +2359,7 @@ def metrics_tab():
 		ax12.plot(bin_centers,dist,c="royalblue")
 		plt.ylabel("Frequency")
 		plt.xlabel("Acquisition time (s)")
+		fig8.canvas.manager.set_window_title('Density')
 		plt.tight_layout()	
 		plt.show(block=False)
 		t2=time.time()
@@ -2379,12 +2384,13 @@ def metrics_tab():
 		print ("Confined intersect", len(confinedintersect))
 		print ("Unconfined intersect", len(unconfinedintersect))
 		
-		fig9 =plt.figure(11,figsize=(6,6))
+		fig9 =plt.figure(9,figsize=(6,6))
 		ax13 = plt.subplot(211)
 		venn2(subsets=(len(clustindices)-len(confinedintersect), len(confinedindices)-len(confinedintersect),len(confinedintersect)),set_labels=('', ''),set_colors=("green","orange"),alpha=0.9)
 		
 		ax14 = plt.subplot(212)
 		venn2(subsets=(len(unclustindices)-len(unconfinedintersect), len(unconfinedindices)-len(unconfinedintersect),len(unconfinedintersect)),set_labels=('', ''),set_colors=("red","blue"),alpha=0.9)
+		fig9.canvas.manager.set_window_title('Vector autoregression')
 		plt.show(block = False)
 	
 		buf9 = io.BytesIO()
@@ -2647,13 +2653,6 @@ def metrics_tab():
 			plt.savefig("{}/var_kmeans.png".format(outdir),dpi=300)
 			plt.close()
 		except:
-			pass	
-		try:
-			buf10.seek(0)
-			fig100=pickle.load(buf10)
-			plt.savefig("{}/var_1d.png".format(outdir),dpi=300)
-			plt.close()
-		except:
 			pass					
 		print ("All data saved")	
 	return
@@ -2768,7 +2767,7 @@ tab5_layout = [
 
 menu_def = [
 	['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-	['&Info', ['&About', '&Help','&Licence','&Updates'  ]],
+	['&Info', ['&About', '&Help','&Licence', '&Updates' ]],
 ]
 
 layout = [

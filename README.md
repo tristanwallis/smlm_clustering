@@ -44,7 +44,11 @@ Miscellaneous utilities
 
 * super_res_data_wrangler_gui.py: convert between super resolution trajectory filetypes
 
-* synthetic_data_generate_gui.py: generate synthetic data using multiple parameters
+* super_res_data_wrangler_cli.py: command line batch convert between super resolution trajectory filetypes
+
+* synthetic_data_generator_gui.py: generate synthetic data using multiple parameters
+
+* synthetic_data_generator_cli.py: command line version of synthetic_data_generator_gui.py
 
 * dbscan_wrangler_gui.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
 
@@ -68,7 +72,7 @@ Design and code: Tristan Wallis
 
 Additional code and debugging: Alex McCann, Kyle Young, Sophie Huiyi Hou, Kye Kudo
 
-Queensland Brain Institute, University of Queensland
+Queensland Brain Institute, The University of Queensland
 
 Fred Meunier: f.meunier@uq.edu.au
 

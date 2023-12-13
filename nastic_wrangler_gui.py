@@ -1,5 +1,6 @@
+# -*- coding: utf-8 -*-
 '''
-NASTIC WRANGLER
+NASTIC_WRANGLER_GUI
 PYSIMPLEGUI BASED GUI TO PERFORM META ANALYSIS OF METRICS PRODUCED BY NANOSCALE SPATIOTEMPORAL INDEXING CLUSTERING (NASTIC AND SEGNASTIC) OR 3D DBSCAN (BOOSH)
 
 Design and coding: Tristan Wallis
@@ -32,11 +33,12 @@ The program will recursively search through all directories and subdirectories i
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS. If GUI display issues are encountered, changing screen resolution may resolve these issues. If there are issues with clicking on the tick boxes in the 'Files to include' list, adding a short delay (~1s) between clicks should resolve this issue.  
 Feedback, suggestions and improvements are welcome. Sanctimonious critiques on the pythonic inelegance of the coding are not.
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-
-
-last_changed = 20230615
+last_changed = '20231208'
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
@@ -78,8 +80,8 @@ if __name__ == "__main__":
 	import pandas as pd
 	from io import BytesIO
 	from PIL import Image, ImageDraw
+	import webbrowser
 	import warnings
-	import webbrowser	
 	
 	warnings.filterwarnings("ignore")
 	
@@ -384,13 +386,13 @@ if __name__ == "__main__":
 	# READ DATA IN FROM EACH METRICS.TSV FILE
 	def load_data(files1,files2):
 		global datadict1, datadict2
-		print("\n\nReading Condition 1 files...")
+		print("\n\n\nReading Condition 1 files...")
 		datadict1  = {} # dictionary holding all data for condition 1
 		print("\nCondition 1 files selected for analysis:\n----------------------------------------")
 		for ct,infilename in enumerate(files1,start=1):
 			if tree_icon_dict[ct] == "True":	
 				datadict1[ct] = {"CLUSTERS":[]}
-				print ("\nFile 1.",ct,infilename)
+				print ("\nFile 1.{}".format(ct),infilename)
 				with open (infilename,"r") as infile:
 					for line in infile:
 						line = line.strip()
@@ -431,7 +433,7 @@ if __name__ == "__main__":
 		for ct,infilename in enumerate(files2,start=1):
 			if tree_icon_dict2[ct] == "True":
 				datadict2[ct] = {"CLUSTERS":[]}
-				print ("\nFile 2.",ct,infilename)
+				print ("\nFile 2.{}".format(ct),infilename)
 				with open (infilename,"r") as infile:
 					for line in infile:
 						line = line.strip()
@@ -462,7 +464,7 @@ if __name__ == "__main__":
 				datadict2[ct]["rate"] = list(clustzip[7])	
 				datadict2[ct]["avtime"] = list(clustzip[8])	
 		if len(datadict2) == 1:
-			print("\nCondition 2 files read (1 file)")
+			print("\nCondition 2 files read (1 file)\n")
 		else:
 			print("\nCondition 2 files read ({} files)".format(len(datadict2)))
 		window["-TABGROUP-"].Widget.select(1)
@@ -714,7 +716,7 @@ if __name__ == "__main__":
 
 	# PLOTTING	
 	def plotting():
-		print ("\n\nPlotting graphs...")
+		print ("\n\n\nPlotting graphs...")
 		font = {"family" : "Arial","size": 16} 
 		matplotlib.rc('font', **font)
 			
@@ -883,7 +885,16 @@ if __name__ == "__main__":
 		c2data = [normalize(x) for x in c2data]
 		c1data = list(zip(*c1data))
 		c2data = list(zip(*c2data))
-		alldata = c1data+c2data
+		alldata_temp = c1data+c2data
+		alldata = []
+		for row in alldata_temp:
+			temprow = []
+			for val in row:
+				if val == val:
+					temprow.append(val)
+				else:
+					temprow.append(0)
+			alldata.append(temprow)		
 		
 		colors = []
 		[colors.append(col1) for x in datadict1]
@@ -961,7 +972,7 @@ if __name__ == "__main__":
 	# Menu
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help','&Licence' ]],
+		['&Info', ['&About', '&Help','&Licence','&Updates']],
 		]
 
 	# LOAD FILES TAB
@@ -975,7 +986,7 @@ if __name__ == "__main__":
 	
 	# Condition 1 frame
 	directory1_frame_layout = [
-		[sg.FolderBrowse("Browse",key="-BROWSE_DIR1-",target="-DIRECTORYNAME1-", tooltip = "Select directory containing metrics.tsv files", initial_folder=initialdir),sg.In("Select condition 1 directory", key = '-DIRECTORYNAME1-', size = (33,1), enable_events = True)],
+		[sg.FolderBrowse("Browse",key="-BROWSE_DIR1-",target="-DIRECTORYNAME1-", tooltip = "Select directory (folder) containing metrics.tsv files", initial_folder=initialdir),sg.In("Select condition 1 directory", key = '-DIRECTORYNAME1-', size = (33,1), enable_events = True)],
 		[sg.B("Find files", key = '-FIND1-', tooltip = "Recursively search selected directory for metrics.tsv files", disabled = True),sg.T("Files to include:")],
 		[sg.Tree(data=treedata1, headings = headings1, row_height=25, num_rows = 7,select_mode = sg.TABLE_SELECT_MODE_BROWSE,key = '-TREE-', tooltip = "Untick files to exclude them from analysis\nUse ~1s delay between clicks", metadata = [],vertical_scroll_only=True, justification='left', enable_events=True, auto_size_columns = True, expand_x = True, col0_width = 1)],
 	]
@@ -986,7 +997,7 @@ if __name__ == "__main__":
 	
 	# Condition 2 frame
 	directory2_frame_layout = [
-		[sg.FolderBrowse("Browse",key="-BROWSE_DIR2-", target = "-DIRECTORYNAME2-", tooltip = "Select directory containing metrics.tsv files", initial_folder=initialdir), sg.In("Select condition 2 directory", size = (33,1), key = '-DIRECTORYNAME2-', enable_events = True)],
+		[sg.FolderBrowse("Browse",key="-BROWSE_DIR2-", target = "-DIRECTORYNAME2-", tooltip = "Select directory (folder) containing metrics.tsv files", initial_folder=initialdir), sg.In("Select condition 2 directory", size = (33,1), key = '-DIRECTORYNAME2-', enable_events = True)],
 		[sg.B("Find files", key = '-FIND2-', tooltip = "Recursively search selected directory for metrics.tsv files", disabled = True), sg.T("Files to include:")],
 		[sg.Tree(data=treedata2, headings = headings2, num_rows=7, row_height=25, select_mode = sg.TABLE_SELECT_MODE_BROWSE, key = '-TREE2-', tooltip = "Untick files to exclude them from analysis\nUse ~1s delay between clicks", metadata = [],vertical_scroll_only=True,justification='left', enable_events=True, auto_size_columns = True, expand_x = True, col0_width = 1)],
 	]
@@ -1062,8 +1073,6 @@ if __name__ == "__main__":
 		# Values
 		dir1 = values["-DIRECTORYNAME1-"]
 		dir2 = values["-DIRECTORYNAME2-"]
-		tree_vals = values["-TREE-"]
-		tree2_vals = values["-TREE2-"]
 		cond1 = values["-SHORTNAME_COND1-"]
 		cond2 = values["-SHORTNAME_COND2-"]
 		col1 = values["-COLOR1-"]
@@ -1130,7 +1139,7 @@ if __name__ == "__main__":
 					print("\n\nCondition 1 files found: ({} files)\n----------------------------------".format(len(files1)))
 				for selectedfile in split_files1_list:
 					treedata1.insert("",combolist1[ct], combolist1[ct],values = [selectedfile], icon = check[1])
-					print("\nFile 1.", combolist1[ct],files1_list[ct-1])
+					print("\nFile 1.{}".format(combolist1[ct]),files1_list[ct-1])
 					tree.update(treedata1)
 					tree_icon_dict.update({ct:"True"})
 					ct +=1
@@ -1166,7 +1175,7 @@ if __name__ == "__main__":
 					print("\n\nCondition 2 files found: ({} files)\n----------------------------------".format(len(files2)))
 				for selectedfile in split_files2_list:
 					treedata2.insert("",combolist2[ct], combolist2[ct],values = [selectedfile], icon = check[1])
-					print("\nFile 2.", combolist2[ct],files2_list[ct-1])
+					print("\nFile 2.{}".format(combolist2[ct]),files2_list[ct-1])
 					tree2.update(treedata2)
 					tree_icon_dict2.update({ct:"True"})
 					ct +=1
@@ -1250,10 +1259,10 @@ if __name__ == "__main__":
 			if cond1 == cond2:
 				print("\nPlease use different shorthand names for condition 1 and 2.")
 			else:
-				print("\n\nAveraging metrics...")
+				print("\n\n\nAveraging metrics...")
 				compare_average_metrics(datadict1,datadict2)
 				higher_order_average(metrics_dict)		
-				print("\n\nAggregating metrics...")
+				print("\n\n\nAggregating metrics...")
 				compare_aggregate_metrics(datadict1,datadict2)		
 				plotting()
 				write_output_file()	
@@ -1318,8 +1327,12 @@ if __name__ == "__main__":
 				no_titlebar = True,
 				grab_anywhere = True,
 				keep_on_top = True,
-				)	
-				
+				)					
+		
+		# Check for updates
+		if event == 'Updates':
+			webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
+
 	print ("\nExiting...")
 	plt.close('all')
 	window.close()	

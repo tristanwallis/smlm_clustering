@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 '''
-SUPER RES DATA WRANGLER - PYSIMPLEGUI BASED GUI FOR THE CONVERSION OF TRAJECTORY FILES
-CONVERT BETWEEN MUTLIPLE FILE FORMATS FROM THE METAMORPH --> PALMTRACER --> SHARP VISU SUPER RESOLUTION DATA PROCESSING PIPELINE
-THIS SCRIPT MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF super_res_data_wrangler_gui.py
+SUPER_RES_DATA_WRANGLER_GUI
+PYSIMPLEGUI BASED GUI FOR THE CONVERSION OF TRAJECTORY FILES
+CONVERT BETWEEN MUTLIPLE FILE FORMATS FROM THE PALMTRACER (METAMORPH PLUGIN)/TRACKMATE (IMAGEJ PLUGIN)--> SHARP VISU --> NASTIC/segNASTIC/BOOSH --> NASTIC WRANGLER SUPER RESOLUTION DATA PROCESSING PIPELINE
 
 Design and coding: Tristan Wallis and Alex McCann
 Queensland Brain Institute
@@ -21,26 +21,32 @@ Any of the below formats can be interchanged with any other:
 .ascii (drift corrected)
 .trxyt
 
+Additionally, the below format can be converted into any of the above filetypes:
+.csv (TrackMate)
+
 NOTES:
-When writing .ascii files, a trajectory .id file containing the Trajectory# of each .ascii data line(row) is generated, which is then used to convert back from .ascii to other formats.
+When writing .ascii files, a trajectory .id file containing the Trajectory ID (Trajectory#) of each .ascii data line (row) is generated, which is then used to convert back from .ascii to other formats.
 
 Depending on the file conversion, intensity information is lost. This intensity information is not relevant to subsequent analyses, so no big deal.
 
-Internally the system works in microns, so .trc and .txt formats need to be converted from pixels to microns (usually by using a Pixel size of 0.106um/px as the conversion factor). Drift corrected .ascii files are in nanometers whereas uncorrected .ascii files are in microns. This difference is accounted for in the file converter by selecting ".ascii (drift corrected)" for files in nm, and ".ascii" for files in um. 
+Internally the system works in microns, so .trc and .txt formats need to be converted from pixels to microns (usually by using a Pixel size of 0.106um/px as the conversion factor). TrackMate .csv files are in microns. Drift corrected .ascii files are in nanometers whereas uncorrected .ascii files are in microns - this difference is accounted for in the file converter by selecting ".ascii (drift corrected)" for files in nm, and ".ascii" for files in um. 
 
-The time information for each acquired frame in .trxyt files is in seconds, and needs to be converted to Frame# when converting to other filetypes. This is done using the Acquisition frequency (Hz) parameter (usually 50Hz). To find the Acquisition frequency of a file, divide 1 by the frame acquisition time in seconds: e.g., for a file where a frame is acquired every 0.02 seconds, 1/0.02 = 50Hz.    
+The time information for each acquired frame in .trxyt files is in seconds, and needs to be converted to Frame# when converting to other filetypes. This is done using the Acquisition frequency (Hz) parameter (usually 50Hz). To find the Acquisition frequency of a file, divide 1 by the frame time (seconds): e.g., for a file where a frame is acquired every 0.02 seconds, 1/0.02 = 50Hz.    
 
-Check for updates 
 USAGE: 
-1 - Copy this script to the top level directory containing the files you are interested in, and run it
-2 - Specify the file type you want to convert FROM
-3 - Specify the file type you want to convert TO
-4 - If applicable (.txt and .trc files) type the Pixel size (um/px) and hit enter
-5 - If applicable (.trxyt files) type the Acquisition Freq (Hz) and hit enter
-5 - Files will be converted and saved to the same place as the original file, with the appropriate suffix and a date stamp
+1 - Run the script (either by double clicking or navigating to the location of the script in the terminal and using the command 'python super_res_data_wrangler_GUI.py')
+2 - Specify the file type you want to convert FROM using the dropdown box
+3 - Specify the file type you want to convert TO using the dropdown box
+4 - Browse for the file that you wish to convert using the 'Browse' button
+5 - txt and trc files: specify the Pixel size in um/px
+6 - trxyt files: specify the Acquisition frequency in Hz
+7 - Press the "CONVERT FILE" button - files will be converted and saved to the same place as the original file, with the appropriate suffix and a date stamp
+
+CHECK FOR UPDATES:
+https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20231005"
+last_changed = "20231212"
 
 # LOAD MODULES (Functions)
 import random
@@ -49,8 +55,9 @@ from sklearn.cluster import DBSCAN
 from scipy.spatial import ConvexHull
 from functools import reduce
 import datetime
-import warnings
 import webbrowser
+import warnings
+
 warnings.filterwarnings("ignore")
 
 # MAIN PROG AND FUNCTIONS
@@ -76,7 +83,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	acqfreq = 50.0 #Hz
 	pix2um = 0.106 # microns per pixel
 
-	# FUNCS
+	# FUNCTIONS
 	
 	# DBSCAN
 	def dbscan(points,epsilon,minpts):
@@ -142,7 +149,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			event, values = splash.read(timeout=timeout) 
 			ct += timeout
 			# Exit	
-			if event in (sg.WIN_CLOSED, '-OK-'): 
+			if event in (sg.WIN_CLOSED, 'Exit'): 
 				break
 			# UPDATE EACH PARTICLE
 			dists = [] # distances travelled by all particles	
@@ -333,9 +340,13 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					y = spl[3]*pix2um
 					i = spl[5]
 					rawdata.append([tr,fr,x,y,i])
-		print ("{} lines read".format(ct-3))				
-		return rawdata		
-
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct-3))				
+			return rawdata		
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
 	# Read palmtracer trc
 	def read_trc(infilename):
 		'''
@@ -378,10 +389,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					i = spl[5]
 					rawdata.append([tr,fr,x,y,i])
 					ct += 1
-		print ("{} lines read".format(ct))			
-		return rawdata
-		
-	# Read trxyt	
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct))			
+			return rawdata
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Read NASTIC/segNASTIC trxyt	
 	def read_trxyt(infilename):
 		'''
 		Measurements are in microns
@@ -422,10 +437,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					i = -1
 					rawdata.append([tr,fr,x,y,i])
 					ct += 1
-		print ("{} lines read".format(ct))			
-		return rawdata	
-	
-	# Read ascii	
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct))			
+			return rawdata	
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Read SharpViSu ascii (not drift corrected)
 	def read_ascii(infilename,ids):
 		'''
 		Measurements in microns
@@ -465,34 +484,14 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					i = spl[5]
 					rawdata.append([tr,fr,x,y,i])
 					ct +=1
-		print ("{} lines read".format(ct))			
-		return rawdata
-
-	# Read idfile	
-	def read_ids(id_infilename):
-		'''
-		1,
-		2,
-		3,
-		4,
-		1,
-		2,
-		etc
-		'''
-
-		prefix = file_name(id_infilename)
-		id_infilename = prefix + ".id"
-		print ("\nReading {}...".format(id_infilename))
-		ct = 0
-		ids = []
-		with open(id_infilename,"r") as infile:
-			for line in infile:
-				ids.append(float(line))
-				ct += 1
-		print ("{} lines read".format(ct))			
-		return ids		
-
-	# Read drift corrected ascii	
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct))			
+			return rawdata
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Read SharpViSu ascii (drift corrected)	
 	def read_dcascii(infilename,ids):
 		'''
 		Measurements in nanometres
@@ -532,10 +531,98 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 					i = spl[5]
 					rawdata.append([tr,fr,x,y,i])
 					ct +=1
-		print ("{} lines read".format(ct))			
-		return rawdata
-
-	# Write txt
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct))			
+			return rawdata
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Read idfile (contains trajectory IDs of ascii file)
+	def read_ids(infilename):
+		'''
+		1,
+		2,
+		3,
+		4,
+		1,
+		2,
+		 etc
+		'''
+		prefix = file_name(infilename)
+		infilename = prefix + ".id"
+		print ("\nReading {}...".format(infilename))
+		ct = 0
+		ids = []
+		with open(infilename,"r") as infile:
+			for line in infile:
+				ids.append(float(line))
+				ct += 1
+		if len(ids) != 0:
+			print ("{} lines read".format(ct))			
+			return ids		
+		elif len(ids) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Read Trackmate .csv
+	def read_csv(infilename):
+		'''
+		Measurements in microns
+		LABEL,ID,TRACK_ID,QUALITY,POSITION_X,POSITION_Y,POSITION_Z,POSITION_T,FRAME,RADIUS,VISIBILITY,MANUAL_SPOT_COLOR,MEAN_INTENSITY_CH1,MEDIAN_INTENSITY_CH1,MIN_INTENSITY_CH1,MAX_INTENSITY_CH1,TOTAL_INTENSITY_CH1	STD_INTENSITY_CH1,CONTRAST_CH1,SNR_CH1
+		Label,Spot ID,Track ID,Quality,X,Y,Z,T,Frame,Radius,Visibility,Manual spot color,Mean intensity ch1,Median intensity ch1,Min intensity ch1,Max intensity ch1,Sum intensity ch1,Std intensity ch1,Contrast ch1,Signal/Noise ratio ch1
+		Label,Spot ID,Track ID,Quality,X,Y,Z,T,Frame,R,Visibility,Spot color,Mean ch1,Median ch1,Min ch1,Max ch1,Sum ch1,Std ch1,Ctrst ch1,SNR ch1
+		 , , ,(quality),(micron),(micron),(micron),(sec),	,(micron), , ,(counts),(counts),(counts),(counts),(counts),(counts), , 		
+		ID282628,282628,2,298.0895081,21.76864672,36.30233107,0,55.17871248,1723,0.4,1, ,3446.819672,3232,1872,6544,210256,1033.032905,0.184146466,1.037749106
+		ID200706,200706,2,609.3094482,21.77325704,36.38438245,0,7.621899925,238,0.4,1, ,5920,5936,2656,8880,361120,1541.432061,0.262635782,1.597728995
+		ID192512,192512,2,640.4356079,21.76171236,36.40632485,0,4.419420965,138,0.4,1, ,6025.704918,5904,3376,9968,367568,1565.816926,0.267932196,1.626393935
+		ID229377,229377,2,579.6768188,21.76205112,36.42347658,0,20.91218761,653,0.4,1, ,5104.262295,4896,2736,9328,311360,1571.488614,0.263986861,1.356723956
+		ID270343,270343,2,181.9257202,21.73377113,36.28705447,0,45.41115166,1418,0.4,1, ,3099.803279,2880,2032,5664,189088,692.8135588,0.115954163,0.929796138
+		ID286722,286722,2,156.4457703,21.76040318,36.35765508,0,58.63738976,1831,0.4,1, ,2732.327869,2688,1712,4448,166672,573.9474053,0.107216306,0.921974859
+		 ect
+		'''
+		print ("\nReading {}...".format(infilename))
+		rawdata = []
+		TR_COL = []
+		FR_COL = []
+		X_COL = []
+		Y_COL = []
+		ct = 0
+		with open(infilename,"r") as infile:
+			for line in infile:
+				ct+=1
+				if ct == 1:
+					title = [j for j in line.split(",")]
+					col_ct = 0 
+					for col in title:
+						if col == "TRACK_ID":
+							TR_COL = col_ct
+						elif col == "POSITION_X":
+							X_COL = col_ct
+						elif col == "POSITION_Y":
+							Y_COL = col_ct
+						elif col == "FRAME":
+							FR_COL = col_ct
+						col_ct+=1
+				try:	
+					spl = [j for j in line.split(",")]
+					tr = float(spl[TR_COL])
+					fr = float(spl[FR_COL])+1
+					x = float(spl[X_COL])
+					y = float(spl[Y_COL])
+					i = -1
+					rawdata.append([tr,fr,x,y,i])
+					ct+=1
+				except:
+					ct+=1
+		if len(rawdata) != 0:
+			print ("{} lines read".format(ct-3))				
+			return rawdata		
+		elif len(rawdata) == 0:
+			print("0 lines read")
+			sg.popup("0 lines read.\n\nPlease make sure the file is not empty.\n", keep_on_top=True)
+			
+	# Write palmtracer txt
 	def write_txt(rawdata,infilename):
 		prefix = file_name(infilename)
 		outfilename = prefix + "-" + stamp + ".txt"
@@ -546,8 +633,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("DUMMY HEADER LINE 2\n")
 			outfile.write("Track\tPlane\tCentroidX(px)\tCentroidY(px)\tCentroidZ(um)\tIntegrated_Intensity\tid\tPair_Distance(px)\n")
 			for det in rawdata:
-				tr = int(det[0]) 
-				fr = round(det[1],0)
+				tr = int(round(det[0],0)) 
+				fr = int(round(det[1],0))
 				x = det[2]/pix2um # convert microns to pixels
 				y = det[3]/pix2um
 				i = det[4]
@@ -557,7 +644,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("{} lines written".format(ct))
 		return
 		
-	# Write trc
+	# Write palmtracer trc
 	def write_trc(rawdata,infilename):
 		prefix = file_name(infilename)
 		outfilename = prefix  + "-" + stamp + ".trc"
@@ -565,8 +652,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		ct = 0
 		with open(outfilename,"w") as outfile:
 			for det in rawdata:
-				tr = int(det[0]) 
-				fr = round(det[1])
+				tr = int(round(det[0],0)) 
+				fr = int(round(det[1],0))
 				x = det[2]/pix2um # convert microns to pixels
 				y = det[3]/pix2um
 				i = det[4]
@@ -576,7 +663,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("{} lines written".format(ct))	
 		return
 		
-	# Write trxyt
+	# Write NASTIC/segNASTIC trxyt
 	def write_trxyt(rawdata,infilename):
 		prefix = file_name(infilename)
 		outfilename = prefix  + "-" + stamp + ".trxyt"
@@ -584,7 +671,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		ct = 0
 		with open(outfilename,"w") as outfile:
 			for det in rawdata:
-				tr = int(det[0])
+				tr = int(round(det[0],0))
 				t = det[1]/acqfreq
 				x = det[2]
 				y = det[3]
@@ -594,7 +681,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("{} lines written".format(ct))			
 		return
 		
-	# Write ascii
+	# Write SharpViSu ascii (not drift corrected)
 	def write_ascii(rawdata,infilename):
 		prefix = file_name(infilename)
 		outfilename = prefix  + "-" + stamp + ".ascii"
@@ -612,8 +699,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			for line in asciidict:
 				linedata = asciidict[line]
 				for n,det in enumerate(linedata, start=1):
-					frame = int(line)
-					tr = int(det[0])
+					frame = int(round(line,0))
+					tr = int(round(det[0],0))
 					x = det[2]
 					y = det[3]
 					i = det[4]
@@ -624,7 +711,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("{} lines written".format(ct))					
 		return ids	
 
-	# Write drift corrected ascii
+	# Write SharpViSu ascii (drift corrected)
 	def write_dcascii(rawdata,infilename):
 		prefix = file_name(infilename)
 		outfilename = prefix  + "-" + stamp + ".ascii"
@@ -642,8 +729,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			for line in asciidict:
 				linedata = asciidict[line]
 				for n,det in enumerate(linedata, start=1):
-					frame = int(line)
-					tr = int(det[0])
+					frame = int(round(line,0))
+					tr = int(round(det[0],0))
 					x = det[2] * 1000 # convert microns to nanometers
 					y = det[3] * 1000
 					i = det[4]
@@ -654,7 +741,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		print ("{} lines written".format(ct))					
 		return ids		
 				
-	# Write idfile
+	# Write idfile (contains trajectoryIDs of ascii file)
 	def write_ids(ids,infilename):				
 		prefix = file_name(infilename)
 		outfilename = prefix  + "-" + stamp + ".id"
@@ -662,11 +749,11 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		with open(outfilename,"w") as outfile:
 			ct = 0
 			for line in ids:
-				outfile.write(str(line) + "\n")
+				outfile.write(str(int(line)) + "\n")
 				ct+=1
 		print ("{} lines written".format(ct))		
 		return
-		
+
 	# GET INITIAL VALUES FOR GUI
 	cwd = os.path.dirname(os.path.abspath(__file__))
 	os.chdir(cwd)
@@ -684,7 +771,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 
 	menu_def = [
 		['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-		['&Info', ['&About', '&Help',['&.txt Files', '&.trc Files', '&.trxyt Files', '&.ascii Files', '&.id Files', '&Parameters'],'&Licence','&Updates' ]],
+		['&Info', ['&About', '&Help',['&.txt Files', '&.trc Files', '&.trxyt Files', '&.ascii Files', '&.id Files', '.csv (TrackMate) Files', '&Pixel size', '&Acquisition frequency'],'&Licence','&Updates' ]],
 	]
 	
 	layout = [
@@ -692,11 +779,10 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		[sg.Push(),sg.T('SUPER RES DATA WRANGLER',font="Any 20"), sg.Push()],
 		[sg.Push(), sg.T("Convert between trajectory filetypes", font = "Any 12 italic"), sg.Push()],
 		[sg.T(" ")],
-		[sg.T("Convert FROM:"),sg.Combo([".txt",".trc",".trxyt",".ascii", ".ascii (drift corrected)"], key = '-INPUT_COMBO-', default_value = ".txt", size = (18, 1), enable_events = True)],
+		[sg.T("Convert FROM:"),sg.Combo([".txt",".trc",".trxyt",".ascii", ".ascii (drift corrected)", ".csv (TrackMate)"], key = '-INPUT_COMBO-', default_value = ".txt", size = (18, 1), enable_events = True)],
 		[sg.T("Convert TO:     "), sg.Combo([".txt",".trc",".trxyt",".ascii",".ascii (drift corrected)"], key = '-OUTPUT_COMBO-', 
 		default_value = ".trxyt", size = (18,1), enable_events = True)],
-		[sg.In(key = '-SELECTED_FILE-', size = (40,1), enable_events = True), sg.FileBrowse("Browse .txt", key = '-BROWSE_TXT-', target = '-SELECTED_FILE-', size = (10,1), file_types = (("PalmTracer.txt", "*.txt"),), visible = True), sg.FileBrowse("Browse .trc", key = '-BROWSE_TRC-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".trc File", "*.trc"),), visible = False),sg.FileBrowse("Browse .trxyt", key = '-BROWSE_TRXYT-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".trxyt File", "*.trxyt"),), visible = False),sg.FileBrowse("Browse .ascii", key = '-BROWSE_ASCII-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".ascii File", "*.ascii"),), visible = False)],
-		[sg.In(key = '-SELECTED_ID_FILE-', size = (40,1), visible = False, enable_events = True), sg.FileBrowse("Browse .id", key = '-BROWSE_ID-', target = '-SELECTED_ID_FILE-', size = (10,1), file_types = ((".id File", "*.id"),),visible = False)],
+		[sg.In(key = '-SELECTED_FILE-', size = (40,1), enable_events = True), sg.FileBrowse("Browse .txt", key = '-BROWSE_TXT-', target = '-SELECTED_FILE-', size = (10,1), file_types = (("PalmTracer.txt", "*.txt"),), visible = True), sg.FileBrowse("Browse .trc", key = '-BROWSE_TRC-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".trc File", "*.trc"),), visible = False),sg.FileBrowse("Browse .trxyt", key = '-BROWSE_TRXYT-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".trxyt File", "*.trxyt"),), visible = False),sg.FileBrowse("Browse .ascii", key = '-BROWSE_ASCII-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".ascii File", "*.ascii"),), visible = False), sg.FileBrowse("Browse .csv", key = '-BROWSE_CSV-', target = '-SELECTED_FILE-', size = (10,1), file_types = ((".csv File", "*.csv"),), visible = False)],
 		[sg.T("Pixel size (um/px):     ", key = '-PIXEL_SIZE_TEXT-'), sg.In("0.106", key = '-PIXEL_SIZE-', size = (10,1))],
 		[sg.T("Acquisition Freq (Hz):", key = '-ACQUISITION_FREQUENCY_TEXT-'), sg.In("50.0", key = '-ACQUISITION_FREQUENCY-', size = (10,1))],
 		[sg.T(" ")],
@@ -718,7 +804,6 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		convertfrom = values["-INPUT_COMBO-"]
 		convertto = values["-OUTPUT_COMBO-"]
 		infilename = values["-SELECTED_FILE-"]
-		id_infilename = values["-SELECTED_ID_FILE-"]
 		pix2um = values["-PIXEL_SIZE-"]
 		acqfreq = values["-ACQUISITION_FREQUENCY-"]
 		
@@ -758,8 +843,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"PalmTracer .txt files contain 3 headers.",
 				" ",
 				"Each data line(row) contains 8 tab separated columns:",
-				"     [1]Track; (Trajectory#)",
-				"     [2]Plane; (Frame#)",
+				"     [1]Track; (Trajectory#, starting at 1)",
+				"     [2]Plane; (Frame#, starting at 1)",
 				"     [3]CentroidX (px);",
 				"     [4]CentroidY (px);",
 				"    *[5]CentroidZ (um);",
@@ -767,8 +852,9 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"    *[7]id;",
 				"    *[8]Pair_Distance(px);",
 				" ",
-				"*Column values can be 0.",
-				" ",
+				"*Column value can be 0.",
+				" ", 
+				keep_on_top = True,
 			)
 		
 		# .trc filetype information
@@ -779,13 +865,16 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"PalmTracer .trc files contain no headers.",
 				" ",
 				"Each data line(row) contains 6 tab separated columns:",
-				"      [1]Track; (Trajectory#)",
-				"      [2]Plane; (Frame#)",
+				"      [1]Track; (Trajectory#, starting at 1)",
+				"      [2]Plane; (Frame#, starting at 1)",
 				"      [3]CentroidX (px);",
 				"      [4]CentroidY (px);",
 				"      [5]-1;",
-				"      [6]Integrated_Intensity;",
+				"     *[6]Integrated_Intensity;",
 				" ",
+				"*Column value can be -1.",
+				" ", 
+				keep_on_top = True,
 			)
 		
 		# .trxyt filetype information
@@ -796,14 +885,15 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"NASTIC and segNASTIC .trxyt files contain no headers.",
 				" ",
 				"Each data line(row) contains 4 space separated columns:",
-				"     [1]Track; (Trajectory#)",
+				"     [1]Track; (Trajectory#, starting at 1)",
 				"     [2]CentroidX (um);",
 				"     [3]CentroidY (um);",
-				"     [4]Frame acquisition time (s);",
-				" ",
+				"     [4]Frame time (s);",
+				" ", 
+				keep_on_top = True,
 			)
 		
-		# .ascii filetype information
+		# .ascii (uncorrected and drift corrected) filetype information
 		if event == '.ascii Files':
 			sg.Popup(
 				"HELP - .ascii Files",
@@ -814,8 +904,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				" ",
 				"Each data line(row) contains 9 comma separated columns:",
 				"     [1]1;",
-				"     [2]Frame#;",
-				"     [3]n; (Trajectory# per Frame, starting at 1)",
+				"     [2]Frame#, starting at 0;",
+				"     [3]n; (Trajectory# per Frame, starting at 1 each frame)",
 				"    *[4]CentroidX (um - uncorrected; nm - drift corrected);",
 				"    *[5]CentroidY; (um - uncorrected; nm - drift corrected);",
 				"     [6]Integrated_Intensity",
@@ -824,7 +914,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"     [9]0;",
 				" ",
 				"*IMPORTANT: Centroid values are in microns before drift correction, and in nanometers following drift correction.",
-				" ",
+				" ", 
+				keep_on_top = True,
 			)
 		
 		# .id filetype information
@@ -838,22 +929,71 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				" ",
 				"Files contain a single column:",
 				"     [1]Trajectory#;",
-				" ",
+				" ", 
+				keep_on_top = True,
 			)
 		
-		# Parameter information
-		if event == 'Parameters':
+		# .csv (TrackMate) filetype information
+		if event == '.csv (TrackMate) Files':
 			sg.Popup(
-				"HELP - File Parameters",
+				"HELP - .csv (TrackMate) Files",
 				" ",
-				"Pixel size (um/px):",
-				"The X and Y position data in .txt and .trc files are in pixels (px), whereas .trxyt and uncorrected .ascii files are in microns (um), and drift corrected .ascii files are in nanometers (nm). In order to convert between these filetypes, the Pixel size (um/px) parameter is used, which is the number of microns per pixel. The default value for Pixel size is 0.106 (um/px).",
+				"TrackMate .csv files contain 4 headers.",
 				" ",
-				"Acquisition frequency (Hz):",
-				".trxyt files use the time at which each frame was acquired (in seconds), whereas .txt, .trc and .ascii files use Frame# (with .ascii files starting at 0). The Acquisition frequency (Hz) parameter is used to convert between these filetypes. To find the acquisition frequency (Hz), divide 1 by the acquisition time: e.g., for data where a frame is acquired every 0.02s: 1/0.02 = 50Hz. The default value for Acquisition Frequency is 50Hz.",
+				"Each data line(row) contains up to 20 comma separated columns, 4 of which must be the following:",
+				"     TRACK_ID;   (Trajectory#)",
+				"     X_POSITION;   (um)",
+				"     Y_POSITION;   (um)",
+				"     FRAME;   (Frame#, starting at 0)",
 				" ",
-				"The default values for Pixel size and Acquisition frequency can be changed by typing the desired values in the GUI, then in the Menu pressing File > Save settings. The original default values can be restored by File > Default Settings.",
+				"Columns can be in any order.",
+				" ", 
+				keep_on_top = True,
+			)
+		# Pixel size parameter information
+		if event == 'Pixel size':
+			sg.Popup(
+				"HELP - Pixel size (um/px):",
 				" ",
+				"Spatial units of X and Y position data depends on filetype:",
+				" ",
+				"Filetypes in Pixels (px):",
+				"     .txt",
+				"     .trc",
+				"Filetypes in Microns (um):",
+				"     .trxyt",
+				"     .ascii",
+				"     .csv (TrackMate)",
+				"Filetypes in Nanometers (nm):",
+				"     .ascii (drift corrected)",
+				" ",
+				"In order to convert between filetypes, the Pixel size (um/px) parameter is used, which is the number of microns per pixel. The default value for Pixel size is 0.106um/px.",
+				" ",
+				"The default pixel size value can be changed by typing the desired value in the GUI, then clicking 'File>Save settings' in the menu. The original default values can be restored by clicking 'File>Default settings'.",
+				" ", 
+				keep_on_top = True,
+			)
+		
+		# Acquisition frequency parameter information
+		if event == 'Acquisition frequency':
+			sg.Popup(
+				"HELP - Acquisition frequency (Hz):",
+				" ",
+				"Temporal units (Frame# or seconds) depends on filetype:",
+				" ",
+				"Filetypes in Frame#:",
+				"     .txt   (from Frame#1)",
+				"     .trc   (from Frame#1)",
+				"     .ascii   (from Frame#0)",
+				"     .ascii (drift corrected)   (from Frame#0)",
+				"     .csv (TrackMate)   (from Frame#0)",
+				"Filetypes in seconds (s):",
+				"     .trxyt",
+				" ",
+				"The Acquisition frequency (Hz) parameter is used to convert between these filetypes. To find the acquisition frequency (Hz), divide 1 by the frame time (s): e.g., for data where a frame is acquired every 0.02s: 1/0.02 = 50Hz. The default value for Acquisition Frequency is 50Hz.",
+				" ",
+				"The default acquisition frequency value can be changed by typing the desired value in the GUI, then clicking 'File>Save settings' in the menu. The original default values can be restored by clicking 'File>Default settings'.",
+				" ", keep_on_top = True
 			)
 			
 		# Licence	
@@ -863,7 +1003,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				"Creative Commons CC BY 4.0",
 				"https://creativecommons.org/licenses/by/4.0/legalcode", 
 				no_titlebar = True,
-				grab_anywhere = True	
+				grab_anywhere = True,	
+				keep_on_top = True,
 			)		
 				
 		# Check for updates
@@ -878,270 +1019,405 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 				window.Element("-BROWSE_TRC-").update(visible = False)
 				window.Element("-BROWSE_TRXYT-").update(visible = False)
 				window.Element("-BROWSE_ASCII-").update(visible = False)
-				window.Element("-SELECTED_ID_FILE-").update(visible = False)
-				window.Element("-BROWSE_ID-").update(visible = False)
+				window.Element("-BROWSE_CSV-").update(visible = False)
 			# Show .trc browse button and hide other filetypes	
 			elif convertfrom == ".trc":
 				window.Element("-BROWSE_TXT-").update(visible = False)
 				window.Element("-BROWSE_TRC-").update(visible = True)
 				window.Element("-BROWSE_TRXYT-").update(visible = False)
 				window.Element("-BROWSE_ASCII-").update(visible = False)
-				window.Element("-SELECTED_ID_FILE-").update(visible = False)
-				window.Element("-BROWSE_ID-").update(visible = False)
-			# Show .trxyt browse button and hide other filetypes	
+				window.Element("-BROWSE_CSV-").update(visible = False)
+			# Show .trxyt browse button and hide other filetypes
 			elif convertfrom == ".trxyt":
 				window.Element("-BROWSE_TXT-").update(visible = False)
 				window.Element("-BROWSE_TRC-").update(visible = False)
 				window.Element("-BROWSE_TRXYT-").update(visible = True)
 				window.Element("-BROWSE_ASCII-").update(visible = False)
-				window.Element("-SELECTED_ID_FILE-").update(visible = False)
-				window.Element("-BROWSE_ID-").update(visible = False)
-			# Show .ascii and .id browse buttons and hide other filetypes	
+				window.Element("-BROWSE_CSV-").update(visible = False)
+			# Show .ascii browse button and hide other filetypes	
 			elif convertfrom == ".ascii" or convertfrom == ".ascii (drift corrected)":
 				window.Element("-BROWSE_TXT-").update(visible = False)
 				window.Element("-BROWSE_TRC-").update(visible = False)
 				window.Element("-BROWSE_TRXYT-").update(visible = False)
 				window.Element("-BROWSE_ASCII-").update(visible = True)
-				window.Element("-SELECTED_ID_FILE-").update(visible = True)
-				window.Element("-BROWSE_ID-").update(visible = True)
-
+				window.Element("-BROWSE_CSV-").update(visible = False)
+			# Show .csv browse button and hide other filetypes	
+			elif convertfrom == ".csv (TrackMate)":
+				window.Element("-BROWSE_TXT-").update(visible = False)
+				window.Element("-BROWSE_TRC-").update(visible = False)
+				window.Element("-BROWSE_TRXYT-").update(visible = False)
+				window.Element("-BROWSE_ASCII-").update(visible = False)
+				window.Element("-BROWSE_CSV-").update(visible = True)
+				
 		# Convert files
 		if event == '-CONVERT-':
 			# Read .txt file
 			if convertfrom == ".txt":
 				if infilename.endswith(".txt"):			
 					if convertto == ".txt":
-						sg.Popup("Input file is already .txt, please select \na different filetype to convert to.")
+						sg.Popup("Input file is already .txt, please select \na different filetype to convert to.", keep_on_top = True)
 					else:
 						try:
 							rawdata = read_txt(infilename)
-							rawdata = sorted(rawdata, key=lambda x:x[0])
-							# Write .trc file
-							if convertto == ".trc":
-								try:
-									write_trc(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .txt file is in the correct format.")
-							# Write .trxyt file
-							elif convertto == ".trxyt":
-								try:
-									write_trxyt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .txt file is in the correct format.")
-							# Write .ascii file
-							elif convertto == ".ascii":
-								try:
-									ids = write_ascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .txt file is in the correct format.")
-							# Write .ascii (drift corrected) file
-							elif convertto == ".ascii (drift corrected)":
-								try:
-									ids = write_dcascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .txt file is in the correct format.")
+							if rawdata != None:
+								rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+								# Write .trc file
+								if convertto == ".trc":
+									try:
+										write_trc(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .txt file is in the correct format.\n\nClick 'Info>Help>.txt Files' in the menu for more information on the .txt file format.\n", keep_on_top = True)
+								# Write .trxyt file
+								elif convertto == ".trxyt":
+									try:
+										write_trxyt(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .txt file is in the correct format.\n\nClick 'Info>Help>.txt Files' in the menu for more information on the .txt file format.\n", keep_on_top = True)
+								# Write .ascii file
+								elif convertto == ".ascii":
+									try:
+										ids = write_ascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .txt file is in the correct format.\n\nClick 'Info>Help>.txt Files' in the menu for more information on the .txt file format.\n", keep_on_top = True)
+								# Write .ascii (drift corrected) file
+								elif convertto == ".ascii (drift corrected)":
+									try:
+										ids = write_dcascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .txt file is in the correct format.\n\nClick 'Info>Help>.txt Files' in the menu for more information on the .txt file format.\n", keep_on_top = True)
 						except:
-							sg.Popup("File could not be read.\nPlease make sure the .txt file is in the correct format.")
+							print("File could not be read")
+							sg.Popup("File could not be read.\n\nPlease make sure the .txt file is in the correct format.\n\nClick 'Info>Help>.txt Files' in the menu for more information on the .txt file format.\n", keep_on_top = True)
 				else:
-					sg.Popup("Please select a .txt file to convert.")
+					sg.Popup("Please select a .txt file to convert.", keep_on_top = True)
 			# Read .trc file	
 			elif convertfrom == ".trc":
 				if infilename.endswith(".trc"):
 					if convertto == ".trc":
-						sg.Popup("Input file is already .trc, please select \na different filetype to convert to.")
+						sg.Popup("Input file is already .trc, please select \na different filetype to convert to.", keep_on_top = True)
 					else:
 						try:
 							rawdata = read_trc(infilename)
-							rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
-							# Write .txt file
-							if convertto == ".txt":
-								try:
-									write_txt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trc file is in the correct format.")
-							# Write .trxyt file
-							elif convertto == ".trxyt":
-								try:
-									write_trxyt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trc file is in the correct format.")
-							# Write .ascii file
-							elif convertto == ".ascii":
-								try:
-									ids = write_ascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trc file is in the correct format.")
-							# Write .ascii (drift corrected) file
-							elif convertto == ".ascii (drift corrected)":
-								try:
-									ids = write_dcascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trc file is in the correct format.")
+							if rawdata != None:
+								rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+								# Write .txt file
+								if convertto == ".txt":
+									try:
+										write_txt(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trc file is in the correct format.\n\nClick 'Info>Help>.trc Files' in the menu for more information on the .trc file format.\n", keep_on_top = True)
+								# Write .trxyt file
+								elif convertto == ".trxyt":
+									try:
+										write_trxyt(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trc file is in the correct format.\n\nClick 'Info>Help>.trc Files' in the menu for more information on the .trc file format.\n", keep_on_top = True)
+								# Write .ascii file
+								elif convertto == ".ascii":
+									try:
+										ids = write_ascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trc file is in the correct format.\n\nClick 'Info>Help>.trc Files' in the menu for more information on the .trc file format.\n", keep_on_top = True)
+								# Write .ascii (drift corrected) file
+								elif convertto == ".ascii (drift corrected)":
+									try:
+										ids = write_dcascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trc file is in the correct format.\n\nClick 'Info>Help>.trc Files' in the menu for more information on the .trc file format.\n", keep_on_top = True)
 						except:
-							sg.Popup("File could not be read.\nPlease make sure the .trc file is in the correct format.")
+							print("File could not be read")
+							sg.Popup("File could not be read.\n\nPlease make sure the .trc file is in the correct format.\n\nClick 'Info>Help>.trc Files' in the menu for more information on the .trc file format.\n", keep_on_top = True)
 				else:
-					sg.Popup("Please select a .trc file to convert.")
+					sg.Popup("Please select a .trc file to convert.", keep_on_top = True)
 			# Read .trxyt file
 			elif convertfrom == ".trxyt":
 				if infilename.endswith(".trxyt"):
 					if convertto == ".trxyt":
-						sg.Popup("Input file is already .trxyt, please select \na different filetype to convert to.")
+						sg.Popup("Input file is already .trxyt, please select \na different filetype to convert to.", keep_on_top = True)
 					else:
 						try:
 							rawdata = read_trxyt(infilename)
-							rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+							if rawdata != None:
+								rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+								# Write .txt file
+								if convertto == ".txt":
+									try:
+										write_txt(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trxyt file is in the correct format.\n\nClick 'Info>Help>.trxyt Files' in the menu for more information on the .trxyt file format.\n", keep_on_top = True)
+								# Write .trc file
+								elif convertto == ".trc":
+									try:
+										write_trc(rawdata, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trxyt file is in the correct format.\n\nClick 'Info>Help>.trxyt Files' in the menu for more information on the .trxyt file format.\n", keep_on_top = True)
+								# Write .ascii file
+								elif convertto == ".ascii":
+									try:
+										ids = write_ascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trxyt file is in the correct format.\n\nClick 'Info>Help>.trxyt Files' in the menu for more information on the .trxyt file format.\n", keep_on_top = True)
+								# Write .ascii (drift corrected) file
+								elif convertto == ".ascii (drift corrected)":
+									try:
+										ids = write_dcascii(rawdata, infilename)
+										write_ids(ids, infilename)
+										print("\nDone!\n\n--------------------------------------------------")
+										sg.Popup("Done!", keep_on_top = True)
+									except:
+										print("File could not be written")
+										sg.Popup("File could not be written.\n\nPlease make sure the .trxyt file is in the correct format.\n\nClick 'Info>Help>.trxyt Files' in the menu for more information on the .trxyt file format.\n", keep_on_top = True)
+						except:
+							print("File could not be read")
+							sg.Popup("File could not be read.\n\nPlease make sure the .trxyt file is in the correct format.\n\nClick 'Info>Help>.trxyt Files' in the menu for more information on the .trxyt file format.\n", keep_on_top = True)
+				else:
+					sg.Popup("Please select a .trxyt file to convert.", keep_on_top = True)
+			# Read .ascii file
+			elif convertfrom == ".ascii":
+				if infilename.endswith(".ascii"):	
+					if convertto == ".ascii":
+						sg.Popup("Input file is already .ascii, please select \na different filetype to convert to.", keep_on_top = True)
+					else:
+						try:
+							try:
+								ids = read_ids(infilename)
+								ids_found = True
+							except:
+								print("File not found")
+								sg.popup("Matching trajectory ID file not found.\n\nPlease make sure ASCII and ID files are in the same location.\n", keep_on_top = True)
+								ids_found = False
+							if ids_found == True:
+								if ids != None:
+									try:
+										rawdata = read_ascii(infilename, ids)
+										if rawdata != None:
+											try:
+												rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+											except:
+												print("File could not be read")
+												sg.Popup("File could not be read.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+									except:
+										print("File could not be read")
+										sg.Popup("File could not be read.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+									if rawdata == None:
+										data_read = False
+									else:
+										data_read = True
+									if data_read == True:
+										if len(rawdata)>1:
+											# Write .txt file
+											if convertto == ".txt":
+												try:
+													write_txt(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+											# Write .trc file
+											elif convertto == ".trc":
+												try:
+													write_trc(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+											# Write .trxyt file
+											elif convertto == ".trxyt":
+												try:
+													write_trxyt(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+											# Write .ascii (drift corrected) file
+											elif convertto == ".ascii (drift corrected)":
+												try:
+													ids = write_dcascii(rawdata, infilename)
+													write_ids(ids, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+						except:
+							print("File could not be read")
+							sg.Popup("File could not be read.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+				else:
+					sg.Popup("Please select .ascii and .id files to convert.", keep_on_top = True)
+			# Read .ascii file (drift corrected)
+			elif convertfrom == ".ascii (drift corrected)":
+				if infilename.endswith(".ascii"):	
+					if convertto == ".ascii (drift corrected)":
+						sg.Popup("Input file is already a drift corrected .ascii, please select \na different filetype to convert to.", keep_on_top = True)
+					else:
+						try:
+							try:
+								ids = read_ids(infilename)
+								ids_found = True
+							except:
+								print("File not found")
+								sg.popup("Matching trajectory ID file not found.\n\nPlease make sure ASCII and ID files are in the same location.\n", keep_on_top = True)
+								ids_found = False
+							if ids_found == True:
+								if ids != None:
+									try:
+										rawdata = read_dcascii(infilename, ids)
+										if rawdata != None:
+											try:
+												rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
+											except:
+												print("File could not be read")
+												sg.Popup("File could not be read.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+									except: 
+										print("File could not be read")
+										sg.Popup("File could not be read.\n\nPlease make sure the .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the .ascii and .id file format.\n", keep_on_top = True)
+									if rawdata == None:
+										data_read = False
+									else:
+										data_read = True
+									if data_read == True:
+										if len(rawdata)>1:
+											# Write .txt file
+											if convertto == ".txt":
+												try:
+													write_txt(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\nPlease make sure the drift corrected .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the drift corrected .ascii and .id file format.\n", keep_on_top = True)
+											# Write .trc file
+											elif convertto == ".trc":
+												try:
+													write_trc(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the drift corrected .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the drift corrected .ascii and .id file format.\n", keep_on_top = True)
+											# Write .trxyt file
+											elif convertto == ".trxyt":
+												try:
+													write_trxyt(rawdata, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the drift corrected .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the drift corrected .ascii and .id file format.\n", keep_on_top = True)
+											# Write .ascii file
+											elif convertto == ".ascii":
+												try:
+													ids = write_ascii(rawdata, infilename)
+													write_ids(ids, infilename)
+													print("\nDone!\n\n--------------------------------------------------")
+													sg.Popup("Done!", keep_on_top = True)
+												except:
+													print("File could not be written")
+													sg.Popup("File could not be written.\n\nPlease make sure the drift corrected .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the drift corrected .ascii and .id file format.\n", keep_on_top = True)
+						except:
+							print("File could not be read")
+							sg.Popup("File could not be read.\n\nPlease make sure the drift corrected .ascii and .id files are in the correct format.\n\nClick 'Info>Help>.ascii Files' and 'Info>Help>.id Files' in the menu for more information on the drift corrected .ascii and .id file format.\n", keep_on_top = True)
+				else:
+					sg.Popup("Please select drift corrected .ascii and .id files to convert.", keep_on_top = True)
+			# Read .csv (TrackMate) file
+			elif convertfrom == ".csv (TrackMate)":
+				if infilename.endswith(".csv"):
+					try:
+						rawdata = read_csv(infilename)
+						if rawdata != None:
+							rawdata = sorted(rawdata, key=lambda x:x[1]) # sort rawdata on frame number first
+							rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number second
 							# Write .txt file
 							if convertto == ".txt":
 								try:
 									write_txt(rawdata, infilename)
 									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
+									sg.Popup("Done!", keep_on_top = True)
 								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trxyt file is in the correct format.")
+									print("File could not be written")
+									sg.Popup("File could not be written.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
 							# Write .trc file
 							elif convertto == ".trc":
 								try:
 									write_trc(rawdata, infilename)
 									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
+									sg.Popup("Done!", keep_on_top = True)
 								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trxyt file is in the correct format.")
+									print("File could not be written")
+									sg.Popup("File could not be written.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
+							# Write .trxyt file
+							elif convertto == ".trxyt":
+								try:
+									write_trxyt(rawdata, infilename)
+									print("\nDone!\n\n--------------------------------------------------")
+									sg.Popup("Done!", keep_on_top = True)
+								except:
+									print("File could not be written")
+									sg.Popup("File could not be written.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
 							# Write .ascii file
 							elif convertto == ".ascii":
 								try:
 									ids = write_ascii(rawdata, infilename)
 									write_ids(ids, infilename)
 									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
+									sg.Popup("Done!", keep_on_top = True)
 								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trxyt file is in the correct format.")
+									print("File could not be written")
+									sg.Popup("File could not be written.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
 							# Write .ascii (drift corrected) file
 							elif convertto == ".ascii (drift corrected)":
 								try:
 									ids = write_dcascii(rawdata, infilename)
 									write_ids(ids, infilename)
 									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
+									sg.Popup("Done!", keep_on_top = True)
 								except:
-									sg.Popup("File could not be written.\nPlease make sure the .trxyt file is in the correct format.")
-						except:
-							sg.Popup("File could not be read.\nPlease make sure the .trxyt file is in the correct format.")
-				else:
-					sg.Popup("Please select a .trxyt file to convert.")
-			# Read .ascii file
-			elif convertfrom == ".ascii":
-				if infilename.endswith(".ascii") and id_infilename.endswith(".id"):	
-					if convertto == ".ascii":
-						sg.Popup("Input file is already .ascii, please select \na different filetype to convert to.")
-					else:
-						try:
-							ids = read_ids(id_infilename)
-							rawdata = read_ascii(infilename, ids)
-							rawdata = sorted(rawdata, key=lambda x:x[0])
-							# Write .txt file
-							if convertto == ".txt":
-								try:
-									write_txt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .ascii and .id files are in the correct format.")
-							# Write .trc file
-							elif convertto == ".trc":
-								try:
-									write_trc(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .ascii and .id files are in the correct format.")
-							# Write .trxyt file
-							elif convertto == ".trxyt":
-								try:
-									write_trxyt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .ascii and .id files are in the correct format.")
-							# Write .ascii (drift corrected) file
-							elif convertto == ".ascii (drift corrected)":
-								try:
-									ids = write_dcascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the .ascii and .id files are in the correct format.")
-						except:
-							sg.Popup("File could not be read.\nPlease make sure the .ascii and .id files are in the correct format.")
-				else:
-					sg.Popup("Please select .ascii and .id files to convert.")
-			# Read .ascii file (drift corrected)
-			elif convertfrom == ".ascii (drift corrected)":
-				if infilename.endswith(".ascii"):	
-					if convertto == ".ascii (drift corrected)":
-						sg.Popup("Input file is already a drift corrected .ascii, please select \na different filetype to convert to.")
-					else:
-						try:
-							ids = read_ids(id_infilename)
-							rawdata = read_dcascii(infilename, ids)
-							rawdata = sorted(rawdata, key=lambda x:x[0]) # sort rawdata on trajectory number
-							# Write .txt file
-							if convertto == ".txt":
-								try:
-									write_txt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the drift corrected .ascii and .id files are in the correct format.")
-							# Write .trc file
-							elif convertto == ".trc":
-								try:
-									write_trc(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the drift corrected .ascii and .id files are in the correct format.")
-							# Write .trxyt file
-							elif convertto == ".trxyt":
-								try:
-									write_trxyt(rawdata, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the drift corrected .ascii files are in the correct format.")
-							# Write .ascii (drift corrected) file
-							elif convertto == ".ascii":
-								try:
-									ids = write_ascii(rawdata, infilename)
-									write_ids(ids, infilename)
-									print("\nDone!\n\n--------------------------------------------------")
-									sg.Popup("Done!")
-								except:
-									sg.Popup("File could not be written.\nPlease make sure the drift corrected .ascii and .id files are in the correct format.")
-						except:
-							sg.Popup("File could not be read.\nPlease make sure the drift corrected .ascii and .id files are in the correct format.")
-				else:
-					sg.Popup("Please select drift corrected .ascii and .id files to convert.")
+									print("File could not be written")
+									sg.Popup("File could not be written.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
+					except:
+						print("File could not be read")
+						sg.Popup("File could not be read.\n\nPlease make sure the TrackMate .csv file is in the correct format.\n\nClick 'Info>Help>.csv (TrackMate) Files' in the menu for more information on the TrackMate .csv file format.\n", keep_on_top = True)
 			else:
 				pass
 				
