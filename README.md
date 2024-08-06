@@ -438,7 +438,7 @@ Requires: Python 3.8+
 
 Modules: colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), Pillow (v9.2.0), pysimplegui (v4.60.4), rtree (v1.0.0), scikit-learn (v1.1.2), scipy(v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
 
-# Instalation procedure
+# Installation procedure
 1. Open a new instance of the command line
 2. Copy and paste the following:
 ```
