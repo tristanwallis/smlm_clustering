@@ -28,7 +28,7 @@ When writing .ascii files, a trajectory .id file containing the Trajectory ID (T
 
 Depending on the file conversion, intensity information is lost. This intensity information is not relevant to subsequent analyses, so no big deal.
 
-Internally the system works in microns, so .trc and .txt formats need to be converted from pixels to microns (usually by using a Pixel size of 0.106um/px as the conversion factor). TrackMate .csv files are in microns. Drift corrected .ascii files are in nanometers whereas uncorrected .ascii files are in microns - this difference is accounted for in the file converter by selecting ".ascii (drift corrected)" for files in nm, and ".ascii" for files in um. 
+Internally the system works in microns, so .trc, .txt and .ascii formats need to be converted from pixels to microns. This is done using the Pixel size (um/px) parameter as a conversion factor (default = 0.106um/px). TrackMate .csv files are in microns. Drift corrected .ascii files are in nanometers whereas uncorrected .ascii files are in pixels - this difference is accounted for in the file converter by selecting ".ascii (drift corrected)" for files in nm, and ".ascii" for files in px. 
 
 The time information for each acquired frame in .trxyt files is in seconds, and needs to be converted to Frame# when converting to other filetypes. This is done using the Acquisition frequency (Hz) parameter (usually 50Hz). To find the Acquisition frequency of a file, divide 1 by the frame time (seconds): e.g., for a file where a frame is acquired every 0.02 seconds, 1/0.02 = 50Hz.    
 
@@ -36,7 +36,7 @@ USAGE:
 1 - Copy this script to the top level directory containing the files you are interested in, and run it (either by double clicking or navigating to the location of the script in the terminal and using the command 'python super_res_data_wrangler_cli.py')
 2 - Specify the file type you want to convert FROM
 3 - Specify the file type you want to convert TO
-4 - txt and trc files: specify the Pixel size in um/px
+4 - txt, trc and ascii files: specify the Pixel size in um/px
 5 - trxyt files: specify the Acquisition frequency in Hz
 6 - A list of files found in the current directory and all subdirectories will be generated
 7 - Select the files you want to convert (all files = 'a', specific files = desired file numbers separated by a comma), and hit return
@@ -46,7 +46,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-lastchanged = "20231212"
+lastchanged = "20240424"
 
 # LOAD MODULES (Functions)
 from functools import reduce
@@ -210,7 +210,7 @@ def read_trxyt(infilename):
 # Read SharpViSu ascii (not drift corrected)	
 def read_ascii(infilename,ids):
 	'''
-	Measurements in microns
+	Measurements in pixels
 	
 	1.00000,0,1, 209.045592443744, 142.834293217347, 50870.0478515625,0.00000,0.00000,0.00000
 	1.00000,0,2, 208.435743897142, 63.6668300319305, 10899.9936523438,0.00000,0.00000,0.00000
@@ -242,8 +242,8 @@ def read_ascii(infilename,ids):
 					quit()
 				tr = ids[ct]
 				fr = spl[1] + 1
-				x = spl[3]
-				y = spl[4]
+				x = spl[3]*pix2um
+				y = spl[4]*pix2um
 				i = spl[5]
 				rawdata.append([tr,fr,x,y,i])
 				ct +=1
@@ -361,7 +361,7 @@ def read_csv(infilename):
 						X_COL = col_ct
 					elif col == "POSITION_Y":
 						Y_COL = col_ct
-					elif col == "FRAME":
+					elif col == "FRAME": 
 						FR_COL = col_ct
 					col_ct+=1
 			try:
@@ -457,8 +457,8 @@ def write_ascii(rawdata,infilename):
 			for n,det in enumerate(linedata, start=1):
 				frame = int(round(line,0))
 				tr = int(round(det[0],0))
-				x = det[2]
-				y = det[3]
+				x = det[2]/pix2um
+				y = det[3]/pix2um
 				i = det[4]
 				outstring = "1,{},{},{},{},{},0,0,0\n".format(frame-1,n,x,y,i)
 				outfile.write(outstring)
@@ -527,7 +527,7 @@ try:
 		files = []
 		while files ==[]:
 			# Format to convert from
-			convertfrom = input ("Select a file type to convert from:\t[a]scii [d]rift corrected ascii [t]xt t[r]c tr[x]yt [c]sv (TrackMate)\n")
+			convertfrom = input ("Select a file type to convert from:\t[a]scii (px)  [d]rift corrected ascii (nm)  [t]xt  t[r]c  tr[x]yt  [c]sv (um; Frames)\n")
 			if convertfrom in ["a","t","x","r","d","c"]:
 				fromsuffix = {"a":"ascii","t":"txt","r":"trc","x":"trxyt","d":"ascii","c":"csv"}[convertfrom]
 				print("\n")
@@ -551,8 +551,8 @@ try:
 								print("ALERT: Input and output files are both .ascii (drift corrected), please select different input and output file types.\n\n\n")
 						else:
 							print("\n")
-							# Pixel size of txt or trc file for conversion to/from px<->um
-							if convertfrom == "t" or convertfrom == "r":
+							# Pixel size of txt, trc or ascii file for conversion to/from px<->um
+							if convertfrom == "t" or convertfrom == "r" or convertfrom == "a":
 								pixel_size = None
 								while pixel_size == None:
 									pixel_size_input = input ("Enter pixel size of {} file in microns/pixel (default = {}um/px):".format(fromsuffix,pix2um_default))
@@ -568,7 +568,7 @@ try:
 											print("ALERT: '{input}' is not a number, please enter a number greater than 0\n".format(input = pixel_size_input))
 								pix2um = pixel_size
 								print("\n")
-							elif convertto == "t" or convertto == "r":
+							elif convertto == "t" or convertto == "r" or convertto == "a":
 								pixel_size = None
 								while pixel_size == None:
 									pixel_size_input = input ("Enter pixel size of {} file in microns/pixel (default = {}um/px):".format(tosuffix,pix2um_default))
@@ -729,4 +729,5 @@ try:
 		if data_written == False:
 			print("\n\n")
 except KeyboardInterrupt:
+	print("Exiting...")
 	exit()

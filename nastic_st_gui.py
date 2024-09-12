@@ -37,7 +37,11 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
+<<<<<<< HEAD
 last_changed = "20240902"
+=======
+last_changed = "20240806"
+>>>>>>> 6257dc2bf4ad246cd6b0cb5d14c9131afa34363e
 
 # LOAD MODULES
 import PySimpleGUI as sg
@@ -1110,7 +1114,11 @@ def overlap_prob(clustpoints,epsilon):
 # LOAD AND PLOT TRXYT TAB
 def trxyt_tab(filter_status):
 	# Reset variables
+<<<<<<< HEAD
 	global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,seldict,clusterdict,filttrajdict,x_plot,y_plot,xlims,ylims,savefolder,buf 
+=======
+	global all_selverts,all_selareas,roi_list,trajdict,sel_traj,lastfile,seldict,clusterdict,x_plot,y_plot,xlims,ylims,savefolder,buf 
+>>>>>>> 6257dc2bf4ad246cd6b0cb5d14c9131afa34363e
 	all_selverts = [] # all ROI vertices
 	all_selareas = [] # all ROI areas
 	roi_list = [] # ROI artists

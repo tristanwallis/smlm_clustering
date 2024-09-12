@@ -38,7 +38,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = '20231208'
+last_changed = '20240722'
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
@@ -55,9 +55,9 @@ if __name__ == "__main__":
 	colorama_init()
 	os.system('cls' if os.name == 'nt' else 'clear')
 	
-	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+	print(f'{Fore.GREEN}============================================================={Style.RESET_ALL}')
 	print(f'{Fore.GREEN}NASTIC WRANGLER {last_changed} initialising...{Style.RESET_ALL}')
-	print(f'{Fore.GREEN}=================================================={Style.RESET_ALL}')
+	print(f'{Fore.GREEN}============================================================={Style.RESET_ALL}')
 	
 	# POPUP WINDOW
 	popup = sg.Window("Initialising...",[[sg.T("NASTIC WRANGLER initialising\nLots of modules...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
@@ -1133,6 +1133,7 @@ if __name__ == "__main__":
 				ct = 1
 				if len(files1) == 0:
 					print("\n\nNo Condition 1 files found. Make sure selected directory 1 folder contains metrics.tsv files")
+					tree.update(treedata1)
 				elif len(files1) == 1:
 					print("\n\nCondition 1 files found: (1 file)\n----------------------------------")
 				elif len(files1) > 1:
@@ -1167,8 +1168,9 @@ if __name__ == "__main__":
 				combolist2 = [""]+[x for x in range(1,len(files2)+1)]
 				treedata2 = sg.TreeData()
 				ct = 1
-				if len(files1) == 0:
+				if len(files2) == 0:
 					print("\n\nNo Condition 2 files found. Make sure selected directory 2 folder contains metrics.tsv files")
+					tree2.update(treedata2)
 				elif len(files2) == 1:
 					print("\n\nCondition 2 files found: (1 file)\n----------------------------------")
 				elif len(files2) > 1:
