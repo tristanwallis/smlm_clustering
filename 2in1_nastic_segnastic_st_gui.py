@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 '''
-BOOSH_ST_GUI
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL CLUSTERING OF MOLECULAR TRAJECTORY DATA USING 3D DBSCAN. TIME CONVERTED TO Z. THIS VERSION CLUSTERS THE INDIVIDUAL DETECTIONS RATHER THAN TRAJECTORY CENTROIDS.
+2-in-1 ST GUI (NASTIC and SEGNASTIC) (SINGLE THREADED VERSION)
+PYSIMPLEGUI BASED GUI FOR:
+	- SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA (NASTIC)
+	- SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY SEGMENT DATA (SEGNASTIC)
 THIS IS A SINGLE THREADED VERSION WHICH WILL RUN ON VIRTUAL MACHINES, AT THE EXPENSE OF SLOWER TRAJECTORY PREPROCESSING
-THIS VERSION MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF boosh_st_gui.py
+THIS VERSION MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF 2in1_seg_nastic_st_gui.py
 
 Design and coding: Tristan Wallis
 Additional coding: Kyle Young, Alex McCann
@@ -14,7 +16,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib matplotlib-venn scikit-learn statsmodels pysimplegui colorama
+python -m pip install scipy numpy matplotlib matplotlib-venn scikit-learn statsmodels rtree pysimplegui colorama
 
 INPUT:
 TRXYT trajectory files
@@ -28,6 +30,10 @@ No headers
 2 9.1191 39.932 0.1
 2 8.9266 39.915 0.12
 etc
+
+USAGE:
+To select between NASTIC and SEGNASTIC analyses, choose the desired option from the "Select analysis type" dropdown box in the "Clustering" tab.
+For detailed information regarding usage of the GUI, please refer to the nastic_user_manual.pdf (downloaded as part of the NASTIC suite). 
 
 NOTES:
 This script has been tested and will run as intended on Windows 7/10/11, with minor interface anomalies on Linux, and possible tk GUI performance issues on MacOS.
@@ -51,9 +57,9 @@ sg.theme('DARKGREY11')
 colorama_init()
 os.system('cls' if os.name == 'nt' else 'clear')
 print(f'{Fore.GREEN}============================================================={Style.RESET_ALL}')
-print(f'{Fore.GREEN}BOOSH ST {last_changed} initialising...{Style.RESET_ALL}')
+print(f'{Fore.GREEN}2 IN 1 ST (NASTIC and SEGNASTIC) {last_changed} initialising...{Style.RESET_ALL}')
 print(f'{Fore.GREEN}============================================================={Style.RESET_ALL}')
-popup = sg.Window("Initialising...",[[sg.T("BOOSH ST initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
+popup = sg.Window("Initialising...",[[sg.T("2 in 1 ST (NASTIC and SEGNASTIC) initialising...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
 import random
 from scipy.spatial import ConvexHull
@@ -62,6 +68,7 @@ from scipy.stats import variation
 from sklearn.cluster import DBSCAN
 from sklearn import datasets, decomposition, ensemble, random_projection	
 import numpy as np
+from rtree import index
 import matplotlib
 matplotlib.use('TkAgg') # prevents Matplotlib related crashes --> self.tk.call('image', 'delete', self.name)
 import matplotlib.pyplot as plt
@@ -75,7 +82,6 @@ import datetime
 import pickle
 import io
 from functools import reduce
-import collections
 import webbrowser
 import warnings
 
@@ -122,25 +128,30 @@ def var_confine():
 
 	# Derive vector autoregression mobility metrics
 	allindices = range(len(seldict))
-	msd_times = [frame_time*x for x in range(1,minlength,1)]	
+	msd_times = [frame_time*x for x in range(1,minlength,1)]
 	var_metrics = []	
 	for num,traj in enumerate(allindices): 
 		if num%10 == 0:
-			try:  
+			try: 
 				bar = 100*num/(len(allindices)-1)
 				window['-PROGBAR-'].update_bar(bar)
 			except:
 				pass
 		fit_alphas(msd_times,traj)
 		vector_autoregression(traj)					
-		var_metrics.append([seldict[traj]["alpha"],seldict[traj]["cov_norm"],seldict[traj]["coeff_norm"],seldict[traj]["area"]])	
+		
+		if analysis_type == "NASTIC":
+			var_metrics.append([seldict[traj]["alpha"],seldict[traj]["cov_norm"],seldict[traj]["coeff_norm"],seldict[traj]["area"]])
+		
+		elif analysis_type == "SEGNASTIC":
+			var_metrics.append([seldict[traj]["alpha"],seldict[traj]["cov_norm"],seldict[traj]["coeff_norm"]])
 	X = np.array(var_metrics)
 	scaler = preprocessing.StandardScaler().fit(X)
 	X_scaled = scaler.transform(X)
 	kmeans = KMeans(n_clusters=2, n_init=100, max_iter=500).fit(X_scaled)
 	kmeanslabels = kmeans.labels_
 	for num,traj in enumerate(allindices): 
-		seldict[traj]["kmeans_group"] = kmeanslabels[num]	
+		seldict[traj]["kmeans_group"] = kmeanslabels[num]
 	window['-PROGBAR-'].update_bar(0)
 	t2 = time.time()
 	print ("VAR completed in {} sec".format(round(t2-t1,3)))
@@ -151,12 +162,12 @@ def var_confine():
 	if clustgroups == 0:
 		var_cols = [var_color1,var_color2]
 	else:
-		var_cols = [var_color2,var_color1]
+		var_cols = [var_color2,var_color1]	
 	for i in allindices:
 		if seldict[i]["kmeans_group"] ==clustgroups:
 			confinedindices.append(i)
 		else:
-			unconfinedindices.append(i)
+			unconfinedindices.append(i)	
 	return 	confinedindices,unconfinedindices,var_cols
 	
 # NORMALIZE
@@ -226,7 +237,7 @@ def create_splash():
 	]
 	splash = sg.Window("Cluster Sim",layout, no_titlebar = True,finalize=True,alpha_channel=0.9,grab_anywhere=True,element_justification="c")
 	obj_list=initialise_particles(graph)
-	graph.DrawText("B O O S H - S T v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
+	graph.DrawText("2-IN-1 ST (SEG)NASTIC v{}".format(last_changed),(0,70),color="white",font=("Any",16),text_location="center")
 	graph.DrawText("Design and coding: Tristan Wallis",(0,45),color="white",font=("Any",10),text_location="center")
 	graph.DrawText("Additional coding: Kyle Young, Alex McCann",(0,30),color="white",font=("Any",10),text_location="center")
 	graph.DrawText("Debugging: Sophie Huiyi Hou, Kye Kudo, Alex McCann",(0,15),color="white",font=("Any",10),text_location="center")
@@ -234,6 +245,7 @@ def create_splash():
 	graph.DrawText("The University of Queensland",(0,-15),color="white",font=("Any",10),text_location="center")	
 	graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-30),color="white",font=("Any",10),text_location="center")	
 	graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
+	graph.DrawText("Rtree: https://pypi.org/project/Rtree/",(0,-75),color="white",font=("Any",10),text_location="center")
 	while True:
 		# READ AND UPDATE VALUES
 		event, values = splash.read(timeout=timeout) 
@@ -242,7 +254,7 @@ def create_splash():
 		if event in (sg.WIN_CLOSED, '-OK-'): 
 			break
 		# UPDATE EACH PARTICLE
-		dists = [] # distances travelled by all particles
+		dists = [] # distances travelled by all particles	
 		# Dbscan to check for interacting points
 		allpoints = [i[1] for i in obj_list]
 		labels,clusterlist = dbscan(allpoints,epsilon,minpts)
@@ -300,17 +312,19 @@ def create_splash():
 # USE HARD CODED DEFAULTS
 def reset_defaults():
 	print ("Using default GUI settings...")
-	global traj_prob,detection_alpha,minlength,maxlength,acq_time,epsilon,minpts,timewindow,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,var_color,axes_3d,msd_color,clust_color,var_color1,var_color2,msd_color1,msd_color2, pixel
+	global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,segment_threshold,overlap_override,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,var_color,axes_3d,msd_color,clust_color,var_color1,var_color2,msd_color1,msd_color2,pixel,analysis_type 
 	traj_prob = 1
 	detection_alpha = 0.05
 	selection_density = 0
 	minlength = 5 
-	maxlength = 1000 
+	maxlength = 1000
 	acq_time = 320
 	frame_time = 0.02
-	epsilon = 0.05
-	minpts = 3
-	timewindow = 10
+	time_threshold = 20
+	radius_factor = 1.2
+	cluster_threshold = 3
+	segment_threshold = 1
+	overlap_override = 0
 	canvas_color = "black"
 	plot_trajectories = True
 	plot_centroids = False
@@ -331,7 +345,7 @@ def reset_defaults():
 	savedpi = 300	
 	savetransparency = False
 	autoplot=True
-	autocluster=True
+	autocluster=False
 	radius_thresh=0.2
 	auto_metric=False
 	plotxmin=""
@@ -353,12 +367,14 @@ def reset_defaults():
 	msd_color1 = "cyan"
 	msd_color2 = "magenta"
 	pixel = 0.106
+	analysis_type = "NASTIC"  
 	return 
 
 # SAVE SETTINGS
 def save_defaults():
-	print ("Saving GUI settings to boosh_st_gui.defaults...")
-	with open("boosh_st_gui.defaults","w") as outfile:
+	print ("Saving GUI settings to 2-in-1_st_gui.defaults...")
+	with open("2-in-1_st_gui.defaults","w") as outfile:
+		outfile.write("{}\t{}\n".format("Analysis type",analysis_type)) 
 		outfile.write("{}\t{}\n".format("Trajectory probability",traj_prob))
 		outfile.write("{}\t{}\n".format("Raw trajectory detection plot opacity",detection_alpha))
 		outfile.write("{}\t{}\n".format("Selection density",selection_density))
@@ -366,15 +382,17 @@ def save_defaults():
 		outfile.write("{}\t{}\n".format("Trajectory maximum length",maxlength))
 		outfile.write("{}\t{}\n".format("Acquisition time (s)",acq_time))	
 		outfile.write("{}\t{}\n".format("Frame time (s)",frame_time))				
-		outfile.write("{}\t{}\n".format("Epsilon (um)",epsilon))
-		outfile.write("{}\t{}\n".format("MinPts",minpts))
-		outfile.write("{}\t{}\n".format("Time Window",timewindow))			
+		outfile.write("{}\t{}\n".format("Time threshold (s)",time_threshold))
+		outfile.write("{}\t{}\n".format("Radius factor",radius_factor))
+		outfile.write("{}\t{}\n".format("Cluster threshold",cluster_threshold))			
+		outfile.write("{}\t{}\n".format("Segment threshold",segment_threshold)) 
+		outfile.write("{}\t{}\n".format("Overlap override",overlap_override)) 
 		outfile.write("{}\t{}\n".format("Canvas color",canvas_color))	
 		outfile.write("{}\t{}\n".format("Plot trajectories",plot_trajectories))
 		outfile.write("{}\t{}\n".format("Plot centroids",plot_centroids))
 		outfile.write("{}\t{}\n".format("Plot clusters",plot_clusters))
-		outfile.write("{}\t{}\n".format("Plot hotspots",plot_hotspots))		
-		outfile.write("{}\t{}\n".format("Plot colorbar",plot_colorbar))			
+		outfile.write("{}\t{}\n".format("Plot hotspots",plot_hotspots))
+		outfile.write("{}\t{}\n".format("Plot colorbar",plot_colorbar))				
 		outfile.write("{}\t{}\n".format("Trajectory line width",line_width))
 		outfile.write("{}\t{}\n".format("Trajectory line color",line_color))
 		outfile.write("{}\t{}\n".format("Trajectory line opacity",line_alpha))
@@ -406,19 +424,20 @@ def save_defaults():
 		outfile.write("{}\t{}\n".format("VAR color unconfined",var_color2))
 		outfile.write("{}\t{}\n".format("MSD color < AVG",msd_color1))
 		outfile.write("{}\t{}\n".format("MSD color > AVG",msd_color2))
-		outfile.write("{}\t{}\n".format("Pixel size (um)",pixel))
+		outfile.write("{}\t{}\n".format("Pixel size (um)",pixel))		
 	return
 	
 # LOAD DEFAULTS
 def load_defaults():
-	global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,epsilon,minpts,timewindow,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,var_color,axes_3d,msd_color,clust_color,var_color1,var_color2,msd_color1,msd_color2, pixel
+	global defaultdict,traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,segment_threshold,overlap_override,canvas_color,plot_trajectories,plot_centroids,plot_clusters,plot_colorbar,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,autoplot,autocluster,radius_thresh,cluster_fill,auto_metric,plotxmin,plotxmax,plotymin,plotymax,msd_filter,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,var_color,axes_3d,msd_color,clust_color,var_color1,var_color2,msd_color1,msd_color2,pixel,analysis_type  	
 	try:
-		with open ("boosh_st_gui.defaults","r") as infile:
-			print ("Loading GUI settings from boosh_st_gui.defaults...")
+		with open ("2-in-1_st_gui.defaults","r") as infile:
+			print ("Loading GUI settings from 2-in-1_st_gui.defaults...")
 			defaultdict = {}
 			for line in infile:
 				spl = line.split("\t")
 				defaultdict[spl[0]] = spl[1].strip()
+		analysis_type = defaultdict["Analysis type"]  
 		traj_prob = float(defaultdict["Trajectory probability"])
 		detection_alpha = float(defaultdict["Raw trajectory detection plot opacity"])
 		selection_density = float(defaultdict["Selection density"])
@@ -426,9 +445,11 @@ def load_defaults():
 		maxlength = int(defaultdict["Trajectory maximum length"])
 		acq_time = int(defaultdict["Acquisition time (s)"])
 		frame_time = float(defaultdict["Frame time (s)"])
-		epsilon = float(defaultdict["Epsilon (um)"])
-		minpts = int(defaultdict["MinPts"])
-		timewindow = float(defaultdict["Time Window"])
+		time_threshold = int(defaultdict["Time threshold (s)"])
+		radius_factor = float(defaultdict["Radius factor"])
+		cluster_threshold = int(defaultdict["Cluster threshold"])
+		segment_threshold = int(defaultdict["Segment threshold"])
+		overlap_override = int(defaultdict["Overlap override"])
 		canvas_color = defaultdict["Canvas color"]
 		plot_trajectories = defaultdict["Plot trajectories"]
 		if plot_trajectories == "True":
@@ -499,8 +520,8 @@ def load_defaults():
 			auto_metric = False	
 		plotxmin="" 
 		plotxmax="" 
-		plotymin=""
-		plotymax=""
+		plotymin="" 
+		plotymax=""	
 		msd_filter = defaultdict["MSD filter"]
 		if msd_filter == "True":
 			msd_filter = True
@@ -529,7 +550,7 @@ def load_defaults():
 		var_color1 = defaultdict["VAR color confined"]		
 		var_color2 = defaultdict["VAR color unconfined"]	
 		msd_color1 = defaultdict["MSD color < AVG"]		
-		msd_color2 = defaultdict["MSD color > AVG"]		
+		msd_color2 = defaultdict["MSD color > AVG"]
 		pixel = defaultdict["Pixel size (um)"] 		
 	except:
 		print ("Settings could not be loaded")
@@ -551,7 +572,36 @@ def update_buttons():
 	if len(roi_list) > 0:  
 		window.Element("-SELECTBUTTON-").update(button_color=("white","#111111"),disabled=False)
 	else:  
-		window.Element("-SELECTBUTTON-").update(button_color=("white","gray"),disabled=True)			
+		window.Element("-SELECTBUTTON-").update(button_color=("white","gray"),disabled=True)	
+	window.Element("-ANALYSIS_TYPE_COMBO-").update(analysis_type) 
+	if analysis_type == "NASTIC":
+		window.Element("-TITLE_SEGNASTIC-").update(visible = False)
+		window.Element("-TITLE_NASTIC-").update(visible = True)
+		window.Element("-TIMETHRESHOLD_TEXT-").update(visible = True)
+		window.Element("-TIMETHRESHOLD-").update(visible = True)
+		window.Element("-SEGMENTTHRESHOLD_TEXT-").update(visible = False)
+		window.Element("-SEGMENTTHRESHOLD-").update(visible = False)
+		window.Element("-RADIUSFACTOR_TEXT-").update(visible = True)
+		window.Element("-RADIUSFACTOR-").update(visible = True)
+		window.Element("-OVERRIDE_TEXT-").update(visible = False)
+		window.Element("-OVERRIDE-").update(visible = False)
+		window.Element("-CLUSTERTHRESHOLD_TEXT-").update(visible = True)
+		window.Element("-CLUSTERTHRESHOLD-").update(visible = True)
+		window.Element("-RADIUSTHRESH_TEXT-").update(visible = True)
+		window.Element("-RADIUSTHRESH-").update(visible = True)
+	elif analysis_type == "SEGNASTIC":
+		window.Element("-TITLE_NASTIC-").update(visible = False)
+		window.Element("-TITLE_SEGNASTIC-").update(visible = True)
+		window.Element("-TIMETHRESHOLD_TEXT-").update(visible = True)
+		window.Element("-TIMETHRESHOLD-").update(visible = True)
+		window.Element("-RADIUSFACTOR_TEXT-").update(visible = False)
+		window.Element("-RADIUSFACTOR-").update(visible = False)
+		window.Element("-SEGMENTTHRESHOLD_TEXT-").update(visible = True)
+		window.Element("-SEGMENTTHRESHOLD-").update(visible = True)
+		window.Element("-CLUSTERTHRESHOLD_TEXT-").update(visible = False)
+		window.Element("-CLUSTERTHRESHOLD-").update(visible = False)
+		window.Element("-OVERRIDE_TEXT-").update(visible = True)
+		window.Element("-OVERRIDE-").update(visible = True)
 	if len(sel_traj) > 0:  
 		window.Element("-CLUSTERBUTTON-").update(button_color=("white","#111111"),disabled=False)
 	else:  
@@ -562,15 +612,19 @@ def update_buttons():
 			window.Element("-SAVEBUTTON-").update(button_color=("white","#111111"),disabled=False)
 		window.Element("-CANVASCOLORCHOOSE-").update(disabled=False)
 		window.Element("-LINECOLORCHOOSE-").update(disabled=False)
-		window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)	
-		window.Element("-HOTSPOTCOLORCHOOSE-").update(disabled=False)
+		window.Element("-CENTROIDCOLORCHOOSE-").update(disabled=False)
+		window.Element("-HOTSPOTCOLORCHOOSE-").update(disabled=False)		
 		window.Element("-SAVEANALYSES-").update(button_color=("white","#111111"),disabled=False)
 		window.Element("-VARCOLOR1CHOOSE-").update(disabled=False)
 		window.Element("-VARCOLOR2CHOOSE-").update(disabled=False)
 		window.Element("-MSDCOLOR1CHOOSE-").update(disabled=False)
-		window.Element("-MSDCOLOR2CHOOSE-").update(disabled=False)
+		window.Element("-MSDCOLOR2CHOOSE-").update(disabled=False)	
 		for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-","-M8-"]:
 			window.Element(buttonkey).update(disabled=False)
+		if analysis_type == "SEGNASTIC":
+			window.Element("-M9-").update(disabled=False)
+		else:
+			window.Element("-M9-").update(disabled=True)		
 	else:  
 		window.Element("-DISPLAYBUTTON-").update(button_color=("white","gray"),disabled=True)
 		window.Element("-SAVEBUTTON-").update(button_color=("white","gray"),disabled=True)
@@ -582,8 +636,8 @@ def update_buttons():
 		window.Element("-VARCOLOR1CHOOSE-").update(disabled=True)
 		window.Element("-VARCOLOR2CHOOSE-").update(disabled=True)
 		window.Element("-MSDCOLOR1CHOOSE-").update(disabled=True)
-		window.Element("-MSDCOLOR2CHOOSE-").update(disabled=True)
-		for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-","-M8-"]:
+		window.Element("-MSDCOLOR2CHOOSE-").update(disabled=True)		
+		for buttonkey in ["-M1-","-M2-","-M3-","-M4-","-M5-","-M6-","-M7-","-M8-","-M9-"]:
 			window.Element(buttonkey).update(disabled=True)	
 	window.Element("-TRAJPROB-").update(traj_prob)
 	window.Element("-DETECTIONALPHA-").update(detection_alpha)	
@@ -591,10 +645,12 @@ def update_buttons():
 	window.Element("-MINLENGTH-").update(minlength)
 	window.Element("-MAXLENGTH-").update(maxlength)	
 	window.Element("-ACQTIME-").update(acq_time)
-	window.Element("-FRAMETIME-").update(frame_time)		
-	window.Element("-EPSILON-").update(epsilon)	
-	window.Element("-MINPTS-").update(minpts)	
-	window.Element("-TIMEWINDOW-").update(timewindow)	
+	window.Element("-FRAMETIME-").update(frame_time)	
+	window.Element("-TIMETHRESHOLD-").update(time_threshold)	
+	window.Element("-RADIUSFACTOR-").update(radius_factor)	
+	window.Element("-CLUSTERTHRESHOLD-").update(cluster_threshold)
+	window.Element("-SEGMENTTHRESHOLD-").update(segment_threshold)
+	window.Element("-OVERRIDE-").update(overlap_override)
 	window.Element("-CANVASCOLORCHOOSE-").update("Choose",button_color=("gray",canvas_color))	
 	window.Element("-CANVASCOLOR-").update(canvas_color)	
 	window.Element("-TRAJECTORIES-").update(plot_trajectories)
@@ -642,13 +698,13 @@ def update_buttons():
 	window.Element("-VARCOLOR1CHOOSE-").update(" < ",button_color=("gray",var_color1))		
 	window.Element("-VARCOLOR2CHOOSE-").update(" > ",button_color=("gray",var_color2))
 	window.Element("-MSDCOLOR1CHOOSE-").update(" < ",button_color=("gray",msd_color1))		
-	window.Element("-MSDCOLOR2CHOOSE-").update(" > ",button_color=("gray",msd_color2))			
-	window.Element("-PIXEL-").update(pixel)
+	window.Element("-MSDCOLOR2CHOOSE-").update(" > ",button_color=("gray",msd_color2))		
+	window.Element("-PIXEL-").update(pixel)	
 	return	
 	
 # CHECK VARIABLES
 def check_variables():
-	global traj_prob,detection_alpha,minlength,maxlength,acq_time,epsilon,minpts,timewindow,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,msd_color,var_color,clust_color,var_color1,var_color2,msd_color1,msd_color2, axes_3d, pixel
+	global traj_prob,detection_alpha,minlength,maxlength,acq_time,time_threshold,radius_factor,cluster_threshold,segment_threshold,overlap_override,canvas_color,plot_trajectories,plot_centroids,plot_clusters,line_width,line_alpha,line_color,centroid_size,centroid_alpha,centroid_color,cluster_alpha,cluster_linetype,cluster_width,saveformat,savedpi,savetransparency,savefolder,selection_density,radius_thresh,plotxmin,plotxmax,plotymin,plotymax,frame_time,tmin,tmax,plot_hotspots,hotspot_alpha,hotspot_linetype,hotspot_width,hotspot_color,hotspot_radius,msd_color,var_color,clust_color,var_color1,var_color2,msd_color1,msd_color2,pixel,analysis_type
 
 	if traj_prob not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 		traj_prob = 1.0
@@ -669,7 +725,7 @@ def check_variables():
 	try:
 		maxlength = int(maxlength)
 	except:
-		maxlength = 1000		
+		maxlength = 1000
 	if minlength > maxlength:
 		minlength = 5
 		maxlength = 1000	
@@ -686,35 +742,48 @@ def check_variables():
 	except:
 		acq_time = 320
 	try:
-		frame_time = float(frame_time) 
-		if frame_time <= 0: 
+		frame_time = float(frame_time)
+		if frame_time <= 0:
 			frame_time = 0.02
 	except:
 		frame_time = 0.02			
 	try:
-		epsilon = float(epsilon)
-		if epsilon <= 0: 
-			epsilon = 0.00000001
+		time_threshold = int(time_threshold)
+		if time_threshold < 1:
+			time_threshold = 1
 	except:
-		epsilon = 0.05
+		time_threshold = 20
 	try:
-		minpts = int(minpts)
-		if minpts < 3:
-			minpts = 3
+		radius_factor = float(radius_factor)
+		if radius_factor < 0.01:
+			radius_factor = 1.2
 	except:
-		minpts = 3	
+		radius_factor = 1.2		
 	try:
-		timewindow = float(timewindow)
-		if timewindow < 0.1:
-			timewindow = 0.1
+		cluster_threshold = int(cluster_threshold)
+		if cluster_threshold < 2:
+			cluster_threshold = 2
 	except:
-		timewindow = 10.0	
+		cluster_threshold = 3	
 	try:
 		radius_thresh = float(radius_thresh)
 		if radius_thresh < 0.001:
 			radius_thresh = 0.2
 	except:
-		radius_thresh = 0.2			
+		radius_thresh = 0.2
+	### SEGNASTIC SPECIFIC
+	try:
+		segment_threshold = int(segment_threshold)
+		if segment_threshold < 1: 
+			segment_threshold = 1 
+	except:
+		segment_threshold = 1
+	try:
+		overlap_override = int(overlap_override)
+		if overlap_override < 0:
+			overlap_override = 0
+	except:
+		overlap_override = 0	
 	if line_width not in [0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0]:
 		line_width = 0.25 
 	if line_alpha not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
@@ -734,9 +803,9 @@ def check_variables():
 	if hotspot_alpha not in [0.01,0.05,0.1,0.25,0.5,0.75,1.0]:
 		hotspot_alpha = 1.0 
 	if hotspot_linetype not in ["solid","dotted","dashed"]:
-		hotspot_linetype = "dotted" 
+		hotspot_linetype = "dotted"		
 	if hotspot_radius not in [0.1,0.25,0.5,1.0,1.25,1.5,1.75,2.0]:
-		hotspot_radius = 1.0	
+		hotspot_radius = 1.0
 	if saveformat not in ["eps","pdf","png","ps","svg"]:
 		saveformat = "png"
 	if savedpi not in [50,100,300,600,1200]:
@@ -764,7 +833,7 @@ def check_variables():
 		try:
 			hotspot_color = defaultdict["Hotspot color"]
 		except:	
-			hotspot_color = "white"						
+			hotspot_color = "white"				 					
 	try:
 		plotxmin = float(plotxmin)
 	except:
@@ -803,7 +872,7 @@ def check_variables():
 	if clust_color:
 		msd_color = False
 		var_color = False
-
+		
 	if var_color1 == "None":
 		try:
 			var_color1 = defaultdict["VAR color confined"]
@@ -825,6 +894,10 @@ def check_variables():
 			msd_color2 = defaultdict["MSD color > AVG"]
 		except:	
 			msd_color2 = "magenta"
+	
+	if analysis_type not in ["NASTIC", "SEGNASTIC"]: 
+		analysis_type == "NASTIC"
+	
 	return
 
 # GET DIMENSIONS OF ZOOM
@@ -865,11 +938,11 @@ def use_roi(selverts,color):
 	return
 	
 # READ ROI DATA	
-def read_roi():
+def read_roi():	
 	#Check for ROI file type
 	roi_file_split = roi_file.split(".")
 	if roi_file_split[-1] == "rgn":
-								 
+		
 		#PalmTracer .rgn file
 		window.Element("-PIXEL_TEXT-").update(visible = True)
 		window.Element("-PIXEL-").update(visible = True)		
@@ -900,7 +973,7 @@ def read_roi():
 					ROI_list = []
 					for i in range(0, len(x_coord_pix)):
 						x_coord_micron_list.append(float(pixel)*x_coord_pix[i])
-						y_coord_micron_list.append(float(pixel)*y_coord_pix[i])
+						y_coord_micron_list.append(float(pixel)*y_coord_pix[i])		
 						ROI_list.append(0)
 					int_n_coord_pairs = int(n_coord_pairs)
 					output_file = np.zeros((int_n_coord_pairs+1, 3))
@@ -924,7 +997,7 @@ def read_roi():
 							output_file[cnt,2] = y
 							cnt+=1
 					if cnt == int_n_coord_pairs:
-						output_file[cnt,2] = y_coord_micron_list[0]
+						output_file[cnt,2] = y_coord_micron_list[0]						
 					ROI_X_Y = np.append(ROI_X_Y, output_file, axis = 0)
 				else:
 					break
@@ -954,12 +1027,12 @@ def read_roi():
 		return
 	
 	else:
-		#NASTIC/SEGNASTIC/BOOSH roi_coordinates.tsv file
+		#NASTIC roi_coordinates.tsv file / SEGNASTIC roi_coordinates.tsv file
 		window.Element("-PIXEL_TEXT-").update(visible=False)
 		window.Element("-PIXEL-").update(visible=False)
 		window.Element("-REPLOT_ROI-").update(visible = False)
 		roidict = {}
-		try:  
+		try: 
 			with open (roi_file,"r") as infile:
 				for line in infile:
 					spl = line.split("\t")
@@ -1001,19 +1074,33 @@ def getmsds(points):
 	# Instantaneous diffusion coefficient
 	diffcoeff = (msds[3]-msds[0])
 	
-	return msds, diffcoeff
+	return msds,diffcoeff
 
-# AREA
-def getarea(data):
-	# Area
-	points,minlength,centroid, msds, diffcoeff =data
-	points2d =[sublist[:2] for sublist in points] # only get 2D hull
-	try: 
-		area =ConvexHull(points2d).volume
-	except:
-		area = 0
-	return [points,msds,centroid,diffcoeff,area]
+# BOUNDING BOXES	
+def boundingbox(analysis_type,data):	
+	
+	if analysis_type == "SEGNASTIC": 
+		points,minlength,centroid,msds,diffcoeff=data	
+		return [points,msds,centroid,diffcoeff]
+	
+	elif analysis_type == "NASTIC": 
+		points,minlength,radius_factor,centroid,msds,diffcoeff=data
+		
+		# Area 	
+		points2d =[sublist[:2] for sublist in points] # only get 2D hull
+		try: 
+			area =ConvexHull(points2d).volume
+		except:
+			area = 0
+		# Bounding Box
+		radius = math.sqrt(area/math.pi)*radius_factor 
+		dx,dy,dt = centroid 
+		px,py,pt=zip(*points)
+		left,bottom,early,right,top,late = dx-radius,dy-radius,min(pt),dx+radius,dy+radius,max(pt) 
+		bbox = [left,bottom,early,right,top,late]
 
+		return [points,msds,area,radius,bbox,centroid,diffcoeff]
+	
 # CONVEX HULL OF EXTERNAL POINTS, AND THEN INTERNAL POINTS
 def double_hull(points):
 	# Get the hull of the original points
@@ -1057,6 +1144,79 @@ def distill_list(overlappers):
 	distilled = [list(x) for x in distilled]	
 	return distilled
 
+# FIND SEGMENTS WHOSE BOUNDING BOXES OVERLAP IN SPACE AND TIME	
+def segment_overlap(segdict,time_threshold,av_msd):
+	# Create and populate 3D r-tree
+	p = index.Property()
+	p.dimension=3
+	idx_3d = index.Index(properties=p)
+	intree = []
+	indices = segdict.keys()
+	for idx in indices:
+		if segdict[idx]["msds"][0] < av_msd: # potentially screen by MSD of parent traj
+			idx_3d.insert(idx,segdict[idx]["bbox"])
+			intree.append(idx)
+	# Query the r-tree
+	overlappers = []
+	if len(intree) == 0:
+		return
+	else: 
+		for idx in intree:
+			if idx%10 == 0:
+				try: 
+					bar = 100*idx/(len(intree)-10)
+					window['-PROGBAR-'].update_bar(bar)
+				except:
+					pass
+			bbox = segdict[idx]["bbox"]
+			left,bottom,early,right,top,late = bbox[0],bbox[1],bbox[2]-time_threshold/2,bbox[3],bbox[4],bbox[5]+time_threshold/2
+			intersect = list(idx_3d.intersection([left,bottom,early,right,top,late]))
+			# Remove overlap with segments from same trajectory
+			segtraj = segdict[idx]["traj"]
+			intersect = [x for x in intersect if segdict[x]["traj"] != segtraj]
+			if len(intersect) > 0:
+				# Update overlap count for each segment
+				for x in intersect:
+					segdict[x]["overlap"] +=1 
+				# Add to the list of lists of overlapping segments
+				overlappers.append(intersect)
+		window['-PROGBAR-'].update_bar(0)			
+		return overlappers		
+
+# FIND TRAJECTORIES WHOSE BOUNDING BOXES OVERLAP IN SPACE AND TIME	
+def trajectory_overlap(indices,time_threshold,av_msd):
+	# Create and populate 3D r-tree
+	p = index.Property()
+	p.dimension=3
+	idx_3d = index.Index(properties=p)
+	intree = []
+	
+	# Analyse all trajectories regardless of mobility 
+	for idx in indices:
+		if seldict[idx]["msds"][0] < av_msd:
+			idx_3d.insert(idx,seldict[idx]["bounding_box"])
+			intree.append(idx)
+	
+	# Query the r-tree
+	overlappers = []
+	for idx in intree:
+		if idx%10 == 0: 
+			try: 
+				bar = 100*idx/(len(intree)-10)
+				window['-PROGBAR-'].update_bar(bar)
+			except:
+				pass
+		bbox = seldict[idx]["bounding_box"]
+		left,bottom,early,right,top,late = bbox[0],bbox[1],bbox[2]-time_threshold/2,bbox[3],bbox[4],bbox[5]+time_threshold/2
+		intersect = list(idx_3d.intersection([left,bottom,early,right,top,late]))
+		overlap = [int(x) for x in intersect]
+		overlappers.append(overlap)
+		
+	# Distill the list	
+	overlappers =  distill_list(overlappers)
+	overlappers = [x for x in overlappers if len(x) >= cluster_threshold]
+	return overlappers,intree
+
 # PROBABILITY OF CLUSTER OVERLAP AT A GIVEN DISTANCE	
 def overlap_prob(clustpoints,epsilon):
 	labels,clusterlist = dbscan(clustpoints,epsilon,2) # does each cluster centroid form a clustered cluster within dist (epsilon)?
@@ -1083,7 +1243,7 @@ def trxyt_tab(filter_status):
 		try:
 			plt.close(i)
 		except:
-			pass
+			pass	
 	# Close all buffers		
 	try:
 		buf0.close()
@@ -1124,13 +1284,21 @@ def trxyt_tab(filter_status):
 	try:
 		buf9.close()
 	except:
-		pass				
+		pass							
+	try:
+		buf10.close()
+	except:
+		pass		
+	try:
+		buf11.close()
+	except:
+		pass
 
 	'''
 	IMPORTANT: It appears that some matlab processing of trajectory data converts trajectory numbers > 99999 into scientific notation with insufficient decimal points. eg 102103 to 1.0210e+05, 102104 to 1.0210e+05. This can cause multiple trajectories to be incorrectly merged into a  single trajectory.
 	For trajectories > 99999 we empirically determine whether detections are within 0.32u of each other, and assign them into a single trajectory accordingly. For trajectories <99999 we honour the existing trajectory number.
 	'''		
-	trajectory_error = False 
+	trajectory_error = False
 	if filter_status == False:
 		if infilename != lastfile:
 			# Read file into dictionary
@@ -1164,26 +1332,26 @@ def trxyt_tab(filter_status):
 							try:
 								rawtrajdict[n]["points"].append([x,y,t])
 							except:
-								rawtrajdict[n]= {"points":[[x,y,t]]}
+								rawtrajdict[n]= {"points":[[x,y,t]]}			
 					except:
 						pass
-			print("{} trajectories read".format(len(rawtrajdict))) 			
+			print("{} trajectories read".format(len(rawtrajdict))) 	
 		
 		# Don't bother with anything else if there's no trajectories				
 		if len(rawtrajdict) == 0:
-			sg.Popup("Alert","No trajectory information found")
+			sg.Popup("Alert","No trajectory information found")	
 			trajectory_error = True 
 		else:
 			# Screen trajectories by length
 			filttrajdict = {} 
 			print("Filtering trajectories by length...") 
-			for num,traj in enumerate(rawtrajdict): 
+			for num,traj in enumerate(rawtrajdict):
 				if num%1000 == 0: 
-					try:  
+					try: 
 						bar = 100*num/(len(rawtrajdict)-1) 
 						window['-PROGBAR-'].update_bar(bar)
 					except:
-						pass
+						pass		  
 				points = rawtrajdict[traj]["points"]
 				x,y,t = zip(*points)
 				if len(points) >=minlength and len(points) <=maxlength and variation(x) > 0.0001 and variation(y) > 0.0001:
@@ -1200,10 +1368,9 @@ def trxyt_tab(filter_status):
 			elif len(filttrajdict) >1:
 				print(len(filttrajdict), "remaining trajectories") 
 	else:
-		t1=time.time() 	
-	if trajectory_error == False: 
-		trajdict = filttrajdict 
-		
+		t1=time.time() 
+	if trajectory_error == False: 	
+		trajdict = filttrajdict 	
 		# Display detections
 		print("Plotting detections...")
 		ct = 0
@@ -1221,7 +1388,7 @@ def trxyt_tab(filter_status):
 				[detpoints.append(i) for i in trajdict[traj]["points"]]
 		x_plot,y_plot,t_plot=zip(*detpoints)
 		ax0.scatter(x_plot,y_plot,c="w",s=3,linewidth=0,alpha=detection_alpha)	
-		ax0.set_facecolor("k")	
+		ax0.set_facecolor("k")
 		ax0.set_xlabel("X")
 		ax0.set_ylabel("Y")	
 		xlims = plt.xlim()
@@ -1249,14 +1416,14 @@ def trxyt_tab(filter_status):
 		all_selareas = [] # all ROI areas
 		roi_list = [] # ROI artists
 		window["-TABGROUP-"].Widget.select(1)
-	return  
+	return 
 	
 # ROI SELECTION TAB
 def roi_tab():
 	global selverts,all_selverts,all_selareas,roi_list,trajdict,sel_traj,sel_centroids,all_selverts_copy,all_selverts_bak, prev_roi_file
-
+	
 	# Load and apply ROIs	
-	if event ==	"-R2-" and roi_file != "Load previously defined ROIs" and roi_file != prev_roi_file and os.path.isfile(roi_file) == True:
+	if event ==	"-R2-" and roi_file != "Load previously defined ROIs" and roi_file != prev_roi_file and os.path.isfile(roi_file) == True:	
 		prev_roi_file = roi_file
 		all_selverts_bak = [x for x in all_selverts]
 		try:
@@ -1329,7 +1496,7 @@ def roi_tab():
 		roidict = read_roi()
 
 	# Clear all ROIs
-	if event ==	"-R3-" and len(roi_list) > 0: 
+	if event ==	"-R3-" and len(roi_list) > 0:
 		all_selverts_bak = [x for x in all_selverts]
 		for roi in roi_list:
 			roi.remove()
@@ -1344,13 +1511,13 @@ def roi_tab():
 		window.Element("-REPLOT_ROI-").update(visible=False)
 
 	# Remove last added ROI
-	if event ==	"-R6-" and len(roi_list) > 0:
+	if event ==	"-R6-" and len(roi_list) > 0:	
 		all_selverts_bak = [x for x in all_selverts]
 		roi_list[-1].remove()
 		roi_list.pop(-1)	
 		all_selverts.pop(-1)
 		selverts = []
-		plt.show(block=False)
+		plt.show(block=False)	
 		if len(roi_list) <=1:
 			window.Element("-SEPARATE-").update(disabled=True)
 
@@ -1378,10 +1545,10 @@ def roi_tab():
 		window.Element("-REPLOT_ROI-").update(visible=False)
 			
 	# Undo last ROI change	
-	if event ==	"-R7-": 
-		try: 
+	if event ==	"-R7-":
+		try:
 			len(all_selverts_bak)
-			if len(all_selverts_bak) > 0:
+			if len(all_selverts_bak) >0:
 				if len(roi_list) > 0:
 					for roi in roi_list:
 						roi.remove()
@@ -1390,11 +1557,11 @@ def roi_tab():
 				all_selverts = []	
 				for selverts in all_selverts_bak:
 					use_roi(selverts,"orange")
-				if len(roi_list) <1: 
+				if len(roi_list) <1:
 					window.Element("-RESET-").update(disabled=True)
 		except:
 			pass
-	
+			
 	# Reset to original view with ROI
 	if event == "-RESET-":
 		selverts_reset = [x for x in all_selverts_copy]
@@ -1405,13 +1572,13 @@ def roi_tab():
 			trxyt_tab(filter_status) 
 			for selverts in selverts_reset:
 				use_roi(selverts,"orange")
-			window.Element('-RESET-').update(disabled = True)	
+			window.Element('-RESET-').update(disabled = True)
 	
 	# Save current ROIs	
 	if event ==	"-R8-" and len(all_selverts) > 0:
 		stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
 		outpath = os.path.dirname(infilename)
-		outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_BOOSH_ST_ROIs_{}".format(stamp))
+		outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_NASTIC_ST_ROIs_{}".format(stamp))
 		try:
 			os.mkdir(outdir)
 			roi_directory = outdir
@@ -1423,7 +1590,7 @@ def roi_tab():
 				for roi,selverts in enumerate(all_selverts):
 					for coord in selverts:
 						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
-			print ("Current ROIs saved as {}_roi_coordinates.tsv".format(stamp))			
+			print ("Current ROIs saved as {}_roi_coordinates.tsv".format(stamp))
 		except:
 			sg.Popup("Alert", "Error with saving ROIs", "Check whether ROIs are already saved")
 	
@@ -1431,7 +1598,7 @@ def roi_tab():
 	if event == "-SEPARATE-":
 		stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now())
 		outpath = os.path.dirname(infilename)
-		outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_BOOSH_ST_ROIs_{}".format(stamp))
+		outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_NASTIC_ST_ROIs_{}".format(stamp))
 		try:
 			os.mkdir(outdir)
 			roi_directory = outdir
@@ -1446,13 +1613,13 @@ def roi_tab():
 				print ("ROI{} saved as {}_roi_coordinates{}.tsv".format(roi,stamp,roi))
 		except:
 			sg.Popup("Alert", "Error with saving ROIs", "Check whether ROIs are already saved")
-	
+
 	# Select trajectories within ROIs			
-	if event ==	"-SELECTBUTTON-" and len(roi_list) > 0:
-		if len(roi_list) >1: 	
+	if event ==	"-SELECTBUTTON-" and len(roi_list) > 0:	
+		if len(roi_list) >1: 			 
 			print ("Selecting trajectories within {} ROIs...".format(len(roi_list)))
 		else: 
-			print("Selecting trajectories within 1 ROI...") 
+				print("Selecting trajectories within 1 ROI...") 		   
 		t1=time.time()
 	
 		# Centroids for each trajectory
@@ -1487,7 +1654,7 @@ def roi_tab():
 			pointarray = [i for i in pointarray if p.contains_point(i)] # screen for presecreened centroids actually within selection
 			selarea =PolyArea(list(zip(*selverts))[0],list(zip(*selverts))[1])
 			all_selareas.append(selarea)
-			[sel_traj.append(i[2]) for i in pointarray]			
+			[sel_traj.append(i[2]) for i in pointarray]	
 		sel_traj = list(set(sel_traj)) # remove duplicates from any overlapping
 		density = float(len(sel_traj)/sum(all_selareas))
 		window.Element("-DENSITY-").update(round(density,2))
@@ -1501,11 +1668,11 @@ def roi_tab():
 		roi_list = []
 		if len(sel_traj) == 0:
 			sg.Popup("Alert", "No trajectories found in selected ROI", "Save ROIs that you want to keep before Removing")
-			for selverts in all_selverts_copy:
+			for selverts in all_selverts_copy: 
 				use_roi(selverts,"orange")
 			window['-PROGBAR-'].update_bar(0)
 		else:
-			window['-PROGBAR-'].update_bar(0) 
+			window['-PROGBAR-'].update_bar(0)
 			t2=time.time()
 			print ("{} trajectories selected in {}um^2, {} sec".format(len(sel_traj),round(sum(all_selareas),2),t2-t1))
 			density = float(len(sel_traj)/sum(all_selareas))		
@@ -1513,53 +1680,122 @@ def roi_tab():
 			window.Element("-DENSITY-").update(round(density,2))
 			window["-TABGROUP-"].Widget.select(2)
 			if autocluster:
+				print(f'{Fore.WHITE}============================================================={Style.RESET_ALL}')
+				print(f'{Fore.WHITE}2 IN 1 ST ({analysis_type}){Style.RESET_ALL}')
+				print(f'{Fore.WHITE}============================================================={Style.RESET_ALL}')
 				cluster_tab()
 			else:  
-				for selverts in all_selverts_copy: 
-					use_roi(selverts,"orange")
+				for selverts in all_selverts_copy:
+					use_roi(selverts,"orange")						 
 	return
 	
 # CLUSTERING TAB	
 def cluster_tab():
-	global seldict,clusterdict,allindices,clustindices,unclustindices,all_diffcoeffs,av_msd,all_msds,msd_filter_threshold
+	global segdict,seldict,clusterdict,allindices,clustindices,unclustindices,spatial_clusters,overlap_threshold,all_diffcoeffs,av_msd,all_msds,msd_filter_threshold,analysis_type
 
 	# Dictionary of selected trajectories
-	print ("Generating metrics for selected trajectories...")	
+	if analysis_type == "NASTIC": 
+		print ("Generating bounding boxes of selected trajectories...")
+			
+	elif analysis_type == "SEGNASTIC": 
+		print ("Generating bounding boxes of segments in selected trajectories...")
+	
+	sel_centroids = []
 	seldict = {}
 	t1=time.time()
+	all_msds = []
+	all_diffcoeffs = []
 	for traj in trajdict:
 		points = trajdict[traj]["points"]
 		msds,diffcoeff = getmsds(points)
 		trajdict[traj]["msds"] = msds
-		trajdict[traj]["diffcoeff"] = diffcoeff
-		
-	allpoints = [[trajdict[traj]["points"],minlength,trajdict[traj]["centroid"], trajdict[traj]["msds"], trajdict[traj]["diffcoeff"]] for traj in sel_traj]
+		trajdict[traj]["diffcoeff"] = diffcoeff	
+	
+	if analysis_type == "NASTIC": 
+		allpoints = [[trajdict[traj]["points"],minlength,radius_factor,trajdict[traj]["centroid"], trajdict[traj]["msds"],trajdict[traj]["diffcoeff"]] for traj in sel_traj]
+			
+	elif analysis_type == "SEGNASTIC": 
+		allpoints = [[trajdict[traj]["points"],minlength,trajdict[traj]["centroid"], trajdict[traj]["msds"],trajdict[traj]["diffcoeff"]] for traj in sel_traj]
+	
 	allmetrics = []
 	for dataline in allpoints:
-		allmetrics.append(getarea(dataline))
-	all_msds = []
-	all_diffcoeffs = []
-
+		allmetrics.append(boundingbox(analysis_type,dataline))
+			
 	for num,metrics in enumerate(allmetrics):
 		if num%10 == 0:
-			try:  
-				bar = 100*num/(len(allmetrics))
-				window['-PROGBAR-'].update_bar(bar)
-			except:
-				pass
+		
+			if analysis_type == "NASTIC": 	
+				try: 
+					bar = 100*num/(len(allmetrics))
+					window['-PROGBAR-'].update_bar(bar)
+				except:
+					pass 
+			elif analysis_type == "SEGNASTIC": 
+				try: 
+					bar = 100*num/(len(allmetrics)-10)
+					window['-PROGBAR-'].update_bar(bar)
+				except:  
+					pass 
 		seldict[num]={}
-		points,msds,centroid,diffcoeff,area = metrics
+		
+		if analysis_type == "NASTIC": 
+			points,msds,area,radius,bbox,centroid,diffcoeff = metrics
+		
+		elif analysis_type == "SEGNASTIC": 
+			points,msds,centroid,diffcoeff = metrics
+			
 		seldict[num]["points"]=points
 		seldict[num]["msds"]=msds
 		all_msds.append(msds[0])
-		seldict[num]["area"]=area		
-		seldict[num]["diffcoeff"]=diffcoeff/(frame_time*3)
+		
+		if analysis_type == "NASTIC":
+			seldict[num]["area"]=area		
+			
+		seldict[num]["diffcoeff"]=diffcoeff / (frame_time*3)
 		all_diffcoeffs.append(abs(diffcoeff))
-		seldict[num]["centroid"]=centroid
-	window['-PROGBAR-'].update_bar(0)		
-	t2=time.time()	
-	print ("Metrics generated for {} trajectories in {} sec".format(len(allmetrics),round(t2-t1,3)))	
+		
+		if analysis_type == "NASTIC": 
+			seldict[num]["radius"]=radius
+			seldict[num]["bounding_box"]=bbox
+		
+		seldict[num]["centroid"]=centroid		
+		sel_centroids.append(centroid)
+		
+		if analysis_type == "SEGNASTIC": 
+			seldict[num]["overlapsegs"] = 0 # how many segments in this traj are greater than the overlap threshold
+	
+	if analysis_type == "NASTIC": 	
+		window['-PROGBAR-'].update_bar(0)		
+		t2=time.time()	
+		print ("{} bounding boxes generated in {} sec".format(len(allmetrics),round(t2-t1,3)))	
 
+	elif analysis_type == "SEGNASTIC": 		
+		# Dictionary of all segments
+		window['-PROGBAR-'].update_bar(0)
+		segdict = {}
+		ct=0
+		for traj in seldict:
+			points = seldict[traj]["points"]
+			msds = seldict[traj]["msds"]	
+			for i in range(1,len(points),1):
+				segment = [points[i-1],points[i]]
+				segdict[ct] = {}
+				segdict[ct]["traj"]=traj
+				segdict[ct]["segment"] = segment
+				segdict[ct]["overlap"] = 1
+				segdict[ct]["centroid"] = np.average(segment,axis=0)
+				segdict[ct]["msds"] = msds # MSDs for parent trajectory									
+				left = min(points[i-1][0],points[i][0])
+				right = max(points[i-1][0],points[i][0])
+				top = max(points[i-1][1],points[i][1])
+				bottom = min(points[i-1][1],points[i][1])
+				early = min(points[i-1][2],points[i][2])
+				late = max(points[i-1][2],points[i][2])
+				segdict[ct]["bbox"] = [left,bottom,early,right,top,late]
+				ct+=1
+		t2=time.time()
+		print ("{} segment bounding boxes generated in {} sec".format(len(segdict),round(t2-t1,3)))
+	
 	# Screen on MSD
 	if msd_filter:
 		print ("Calculating average MSD...")
@@ -1568,134 +1804,167 @@ def cluster_tab():
 	else:
 		av_msd = 10000 # no molecule except in an intergalactic gas cloud has an MSD this big
 		msd_filter_threshold = 10000
-
-	filt_indices = []
-	unfilt_indices = []
-	for num in seldict:
-		unfilt_indices.append(num)
-		if seldict[num]["msds"][0] < av_msd:
-			filt_indices.append(num)
-			sel_centroids.append(seldict[num]["centroid"])
-	print ("{} trajectories passed MSD filter".format(len(filt_indices)))
-
-	# Dictionary of all selected points
-	sel_points = []
-	pointdict = {}
-	ct=0
-	for idx in filt_indices:
-		points = seldict[idx]["points"]
-		msds = seldict[idx]["msds"]	
-		for point in points:
-			pointdict[ct] = {}
-			pointdict[ct]["point"] = point # [x,y,t] co-ordinates of point
-			pointdict[ct]["traj"]= idx # parent trajectory
-			sel_points.append(point)		
-			ct+=1
 	
-	# Determine clustered points
-	print ("Clustering selected trajectories...")
-	t1 = time.time()
-	squash = epsilon/timewindow		# Convert time window to epsilon, so 3D DBSCAN will work
-	pointarray = [[x[0],x[1],x[2]*squash] for x in sel_points]
-	labels,clusterlist = dbscan(pointarray,epsilon,minpts)
-	pointcount = collections.Counter(labels)
-	t2 = time.time()
-	print ("{} detections from {} trajectories clustered in {} sec".format(len(pointarray),len(filt_indices),round(t2-t1,3)))
-
+	if analysis_type == "NASTIC": 
+		# Determine overlapping trajectories
+		print ("Clustering selected trajectories...")
+		indices = range(len(seldict))
+		t1 = time.time()
+		spatial_clusters,intree =  trajectory_overlap(indices,time_threshold,av_msd)
+		t2 = time.time()
+		print ("{} trajectories clustered in {} sec".format(len(intree),round(t2-t1,3)))
+			
+	elif analysis_type == "SEGNASTIC": 
+		# Determine overlapping segments
+		print ("Total segment overlap...")
+		t1 = time.time()
+		segment_overlap(segdict,time_threshold,av_msd) # list of lists of overlapping segments
+		all_overlaps = [segdict[seg]["overlap"] for seg in segdict]
+		overlap_threshold = np.average(all_overlaps)
+		if int(overlap_override) > 0:
+			overlap_threshold = overlap_override
+		t2 = time.time()
+		print ("{} segments analysed in {} sec. Average segment overlap (threshold): {}".format(len(segdict),round(t2-t1,3),round(overlap_threshold,3)))
+		
+		print ("Clustering thresholded segments...")
+		t1 = time.time()
+		thresh_segdict = {}
+		for seg in segdict:
+			if segdict[seg]["overlap"] > overlap_threshold:
+				thresh_segdict[seg]=segdict[seg]
+		try:
+			raw_seg_clusters =  segment_overlap(thresh_segdict,time_threshold,av_msd)
+			seg_clusters = distill_list(raw_seg_clusters)	
+		except:
+			sg.Popup("Alert", "No clustered thresholded segments", "Please try adjusting the ROI or clustering parameters")
+			for selverts in all_selverts_copy:
+				use_roi(selverts,"orange")
+			return
+		# For each trajectory determine how many of its segments are greater than the overlap threshold
+		print ("Screening trajectories...")
+		for cluster in seg_clusters:
+			for seg in cluster:
+				traj = thresh_segdict[seg]["traj"]
+				seldict[traj]["overlapsegs"] += 1
+				
+		# Now screen each cluster to remove segments belonging to trajectories with fewer than segment_threshold 		
+		screened_seg_clusters = []
+		for cluster in seg_clusters:
+			screened_cluster = []
+			for seg in cluster:	
+				traj = thresh_segdict[seg]["traj"]
+				if seldict[traj]["overlapsegs"] >= segment_threshold:
+					screened_cluster.append(seg)
+			if len(screened_cluster)>= 3: # A cluster must contain segments from at least 3 trajectories 		
+				screened_seg_clusters.append(screened_cluster)
+	
+		seg_clusters = screened_seg_clusters
+		#seg_clusters = [seg for seg in seg_clusters if len(seg) > segment_threshold]
+		t2 = time.time()
+		all_overlaps = [thresh_segdict[seg]["overlap"] for seg in thresh_segdict]
+		av_overlap = np.average(all_overlaps)
+		max_overlap = max(all_overlaps)
+		
+		print ("{} clusters of {} thresholded segments analysed in {} sec. Average segment overlap: {}".format(len(seg_clusters),len(thresh_segdict),round(t2-t1,3),round(av_overlap,3)))
+	
 	# Cluster metrics
-	print ("Generating metrics of clustered trajectories...")
 	t1 = time.time()
-	tempclusterdict = {} # temporary dictionary holding info for each spatial cluster
-	clusterdict = {}
-
-	for num, cluster in enumerate(clusterlist): 
-		if num%10 == 0: 
-			try:  
-				bar = 100*num/(len(clusterlist)-1) 
-				window['-PROGBAR-'].update_bar(bar) 
-			except:
-				pass
-		tempclusterdict[cluster] = {}
-		tempclusterdict[cluster]["pointindices"] = [] # indices of clustered points
-		tempclusterdict[cluster]["points"] = [] # points co-ordinates
-		tempclusterdict[cluster]["indices"] = [] # indices of parent trajectories
-	window['-PROGBAR-'].update_bar(0) 		
+	clusterdict = {} # dictionary holding info for each spatial cluster
 	
-	for num,label in enumerate(labels):
-		if num%10 == 0: 
-			try:  
-				bar = 100*num/(len(labels)-1) 
-				window['-PROGBAR-'].update_bar(bar) 
-			except:
-				pass
-		tempclusterdict[label]["pointindices"].append(num)
-		tempclusterdict[label]["points"].append(pointdict[num]["point"])
-		tempclusterdict[label]["indices"].append(pointdict[num]["traj"])
-	window['-PROGBAR-'].update_bar(0) 
-	
-	for num,cluster in enumerate(clusterlist): 
-		if num%10 == 0: 
-			try:  
-				bar = 100*num/(len(clusterlist)-1) 
-				window['-PROGBAR-'].update_bar(bar) 
-			except:
-				pass
-		indices = list(set(tempclusterdict[cluster]["indices"]))
-		tempclusterdict[cluster]["indices"] = indices
-		tempclusterdict[cluster]["traj_num"] = len(indices)
-		if len(indices) >= minpts and len(tempclusterdict[cluster]["pointindices"]) > 4: # clusters must contain minpts or more trajectories
-			clusterdict[cluster] = tempclusterdict[cluster]
-	window['-PROGBAR-'].update_bar(0) 
-	
-	for num,cluster in enumerate(clusterdict):
-		if num%10 == 0: 
-			try:  
-				bar = 100*num/(len(clusterdict)-1) 
-				window['-PROGBAR-'].update_bar(bar) 
-			except:
-				pass
-		if cluster > -1:
-			msds = [seldict[i]["msds"][0] for i in clusterdict[cluster]["indices"]] # MSDS for all traj in this cluster
-			clusterdict[cluster]["av_msd"]= np.average(msds) # Average trajectory MSD in this cluster
-			clustertimes = [seldict[i]["centroid"][2] for i in clusterdict[cluster]["indices"]] # all centroid times in this cluster
-			clusterdict[cluster]["centroid_times"] = clustertimes
-			clusterdict[cluster]["lifetime"] = max(clustertimes) - min(clustertimes) # lifetime of this cluster (sec)
-			clusterpoints = [point[:2]  for point in clusterdict[cluster]["points"]] # All detection points [x,y] in this cluster
-			clusterdict[cluster]["det_num"] = len(clusterpoints) # number of detections in this cluster	
+	if analysis_type == "NASTIC": 
+		print ("Generating metrics of clustered trajectories...")
+		for num,cluster in enumerate(spatial_clusters):
+			if num%10 == 0: 
+				try: 
+					bar = 100*num/(len(spatial_clusters)-1) 
+					window['-PROGBAR-'].update_bar(bar) 
+				except:
+					pass
+			clusterdict[num] = {"indices":cluster} # indices of trajectories in this cluster
+			clusterdict[num]["traj_num"] = len(cluster) # number of trajectories in this cluster
+			clustertimes = [seldict[i]["centroid"][2] for i in cluster] # all centroid times in this cluster
+			clusterdict[num]["centroid_times"] = clustertimes
+			clusterdict[num]["lifetime"] = max(clustertimes) - min(clustertimes) # lifetime of this cluster (sec)
+			msds = [seldict[i]["msds"][0] for i in cluster] # MSDs for each trajectory in this cluster
+			clusterdict[num]["av_msd"]= np.average(msds) # average trajectory MSD in this cluster
+			diffcoeffs = [seldict[i]["diffcoeff"] for i in cluster] # Instantaneous diffusion coefficients for each trajectory in this cluster
+			clusterdict[num]["av_diffcoeff"]= np.average(diffcoeffs) # average trajectory inst diff coeff in this cluster			
+			clusterpoints = [point[:2]  for i in cluster for point in seldict[i]["points"]] # All detection points [x,y] in this cluster
+			clusterdict[num]["det_num"] = len(clusterpoints) # number of detections in this cluster	
 			try: 
-				ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area
+				ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area 
 			except:
 				sg.Popup("Alert","Clustering error","Please try different clustering metrics")
 				return 
-			clusterdict[cluster]["area"] = ext_area # Use external hull area as cluster area (um2)
-			clusterdict[cluster]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster (um)
-			clusterdict[cluster]["area_xy"] = [int_x,int_y] # area border coordinates	
-			clusterdict[cluster]["density"] = clusterdict[cluster]["traj_num"]/int_area # trajectories/um2	
-			clusterdict[cluster]["rate"] = clusterdict[cluster]["traj_num"]/(max(clustertimes) - min(clustertimes)) # accumulation rate (trajectories/sec)
-			#clustercentroids = [seldict[i]["centroid"] for i in clusterdict[cluster]["indices"]] # Centroids for each trajectory in this cluster
-			diffcoeffs = [seldict[i]["diffcoeff"] for i in clusterdict[cluster]["indices"]] # Instantaneous diffusion coefficients for each trajectory in this cluster
-			clusterdict[cluster]["av_diffcoeff"]= np.average(diffcoeffs) # average trajectory inst diff coeff in this cluster
-			x,y,t = zip(*clusterdict[cluster]["points"])
+			clusterdict[num]["area"] = int_area # internal hull area as cluster area (um2)
+			clusterdict[num]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster (um)
+			clusterdict[num]["area_xy"] = [int_x,int_y] # area border coordinates	
+			clusterdict[num]["density"] = len(cluster)/int_area # trajectories/um2
+			clusterdict[num]["rate"] = len(cluster)/(max(clustertimes) - min(clustertimes)) # accumulation rate (trajectories/sec)
+			clustercentroids = [seldict[i]["centroid"] for i in cluster]
+			x,y,t = zip(*clustercentroids)
 			xmean = np.average(x)
 			ymean = np.average(y)
 			tmean = np.average(t)
-			clusterdict[cluster]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
-	window['-PROGBAR-'].update_bar(0) 
+			clusterdict[num]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
+
+	elif analysis_type == "SEGNASTIC": 
+		print ("Generating metrics of clustered trajectory segments...")
+		for num,cluster in enumerate(seg_clusters):
+			if num%10 == 0: 
+				try: 
+					bar = 100*num/(len(seg_clusters)-1) 
+					window['-PROGBAR-'].update_bar(bar) 
+				except:
+					pass
+			clusterdict[num] = {"indices":cluster} # indices of segments in this cluster
+			clusterdict[num]["seg_num"] = len(cluster) # number of segments in this cluster
+			traj_list = list(set([segdict[x]["traj"] for x in cluster]))
+			clusterdict[num]["traj_list"] = traj_list # indices of trajectories in this cluster
+			clusterdict[num]["traj_num"] = len(traj_list) # number of trajectories in this cluster
+			clustertimes = [seldict[i]["centroid"][2] for i in traj_list] # all traj centroid times in this cluster
+			clusterdict[num]["centroid_times"] = clustertimes
+			clusterdict[num]["lifetime"] = max(clustertimes) - min(clustertimes) # lifetime of this cluster (sec)
+			msds = [seldict[i]["msds"][0] for i in traj_list] # MSDs for each trajectory in this cluster
+			clusterdict[num]["av_msd"]= np.average(msds) # average trajectory MSD in this cluster
+			diffcoeffs = [seldict[i]["diffcoeff"] for i in traj_list] # Instantaneous diffusion coefficients for each trajectory in this cluster
+			clusterdict[num]["av_diffcoeff"]= np.average(diffcoeffs) # average trajectory inst diff coeff in this cluster				
+			clusterpoints = [point[:2]  for i in cluster for point in segdict[i]["segment"]] # All segment points [x,y] in this cluster
+			try:
+				ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # Get external/internal hull area
+			except:
+				sg.Popup("Alert","Clustering error","Please try different clustering metrics") 
+				return
+			clusterdict[num]["area"] = int_area # internal hull area as cluster area (um2)
+			clusterdict[num]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster (um)
+			clusterdict[num]["area_xy"] = [int_x,int_y] # area border coordinates	
+			clusterdict[num]["density"] = len(traj_list)/int_area # trajectories/um2
+			if len(traj_list) > 1:
+				rate = len(traj_list)/(max(clustertimes) - min(clustertimes)) # accumulation rate (trajectories/sec)
+			else:
+				rate = 0
+			clusterdict[num]["rate"] = rate
+			clustercentroids = [seldict[i]["centroid"] for i in traj_list]
+			x,y,t = zip(*clustercentroids)
+			xmean = np.average(x)
+			ymean = np.average(y)
+			tmean = np.average(t)
+			clusterdict[num]["centroid"] = [xmean,ymean,tmean] # centroid for this cluster
 		
-	# Screen out large and tiny clusters 
-	allindices = unfilt_indices
+	# Screen out large clusters
+	allindices = range(len(seldict))
 	clustindices = []
 	tempclusterdict = {}
-	counter = 1	
+	
+	if analysis_type == "NASTIC": 
+		counter = 1
+			
+	elif analysis_type == "SEGNASTIC": 
+		counter = 0
+	
 	for num in clusterdict:
-		if num%10 == 0: 
-			try:  
-				bar = 100*num/(len(clusterdict)-1) 
-				window['-PROGBAR-'].update_bar(bar) 
-			except:
-				pass
-		if num > -1:
-			if clusterdict[num]["radius"] < radius_thresh and len(clusterdict[num]["points"]) > 3:
+		if analysis_type == "NASTIC" or analysis_type == "SEGNASTIC": 
+			if clusterdict[num]["radius"] < radius_thresh:
 				tempclusterdict[counter] = clusterdict[num]
 				[clustindices.append(i) for i in clusterdict[num]["indices"]]
 				counter +=1
@@ -1704,17 +1973,27 @@ def cluster_tab():
 	if len(clusterdict) == 0:
 		sg.Popup("Alert","No unique spatiotemporal clusters containing trajectories found in the selected ROI","Please try adjusting the ROI or clustering parameters")
 		window.Element("-RESET-").update(disabled=False)
-		window['-PROGBAR-'].update_bar(0) 		
+		window['-PROGBAR-'].update_bar(0) 
 		for selverts in all_selverts_copy:
-			use_roi(selverts,"orange")
+			use_roi(selverts,"orange")	
 	else:
 		window.Element("-RESET-").update(disabled=False)
+		
+		if analysis_type == "SEGNASTIC": 
+			clustindices = [y for x in clusterdict for y in clusterdict[x]["traj_list"]]
+		
 		unclustindices = [idx for idx in allindices if idx not in clustindices]
-		for selverts in all_selverts_copy: 
+		for selverts in all_selverts_copy:
 			use_roi(selverts,"green")
 		window['-PROGBAR-'].update_bar(0)
 		t2 = time.time()
-		print ("{} unique spatiotemporal clusters containing {} trajectories identified in {} sec".format(len(clusterdict),len(clustindices),round(t2-t1,3)))
+		
+		if analysis_type == "SEGNASTIC": 
+			print ("{} unique spatiotemporal clusters containing {} trajectories identified in {} sec".format(len(clusterdict),len(clustindices),round(t2-t1,3)))
+			
+		elif analysis_type == "NASTIC": 
+			print ("{} unique spatiotemporal clusters containing {} trajectories identified in {} sec".format(len(clusterdict),len(clustindices),round(t2-t1,3)))
+				
 		window["-TABGROUP-"].Widget.select(3)
 		if autoplot and len(clusterdict)>0:
 			display_tab(xlims,ylims)
@@ -1759,10 +2038,10 @@ def	display_tab(xlims,ylims):
 		print ("Plotting unclustered trajectories...")
 	for num,traj in enumerate(unclustindices):		
 		if num%10 == 0:
-			try:  
+			try: 
 				bar = 100*num/(len(seldict)-1)
 				window['-PROGBAR-'].update_bar(bar)
-			except: 
+			except:
 				pass
 		centx=seldict[traj]["centroid"][0]
 		centy=seldict[traj]["centroid"][1]
@@ -1796,7 +2075,7 @@ def	display_tab(xlims,ylims):
 			try:  
 				bar = 100*num/(len(seldict)-1)
 				window['-PROGBAR-'].update_bar(bar)
-			except:
+			except: 
 				pass
 		centx=seldict[traj]["centroid"][0]
 		centy=seldict[traj]["centroid"][1]
@@ -1830,7 +2109,7 @@ def	display_tab(xlims,ylims):
 	if plot_clusters:
 		print ("Highlighting clusters...")
 		for cluster in clusterdict:
-			try:  
+			try: 
 				bar = 100*cluster/(len(clusterdict))
 				window['-PROGBAR-'].update_bar(bar)
 			except:
@@ -1873,11 +2152,17 @@ def	display_tab(xlims,ylims):
 			overlapdict[cluster]["clusters"]=[]
 		for num,label in enumerate(labels):
 			if label > -1:
-				overlapdict[label]["clusters"].append(num+1)
+			
+				if analysis_type == "NASTIC": 
+					overlapdict[label]["clusters"].append(num+1)
+						
+				elif analysis_type == "SEGNASTIC": 
+					overlapdict[label]["clusters"].append(num)
+				
 		overlappers = [overlapdict[x]["clusters"] for x in clusterlist]
 		if len(overlappers) > 0:
 			for num,overlap in enumerate(overlappers):
-				try:  
+				try: 
 					bar = 100*num/len(overlappers)
 					window['-PROGBAR-'].update_bar(bar)
 				except:
@@ -1908,7 +2193,7 @@ def	display_tab(xlims,ylims):
 		ax0.set_ylim(miny,maxy)
 	else:	
 		ax0.set_xlim(xlims)
-		ax0.set_ylim(ylims)		
+		ax0.set_ylim(ylims)	
 	plt.tight_layout()
 	plt.show(block=False)
 
@@ -1940,8 +2225,8 @@ def	display_tab(xlims,ylims):
 
 # METRICS TAB
 def metrics_tab():
-	global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,av_msd,all_msds,confinedindices,unconfinedindices,allindices
-					
+	global buf0, buf1, buf2, buf3, buf4, buf5, buf6, buf7, buf8, buf9,buf10,buf11,av_msd,all_msds,confinedindices,unconfinedindices,allindices
+	
 	# MSD for clustered and unclustered detections
 	if event == "-M1-":
 		print ("Plotting MSD curves...")
@@ -1962,7 +2247,7 @@ def metrics_tab():
 		clust_sem = [np.std(x)/math.sqrt(len(x)) for x in clust_vals]
 		unclust_av = [np.average(x) for x in unclust_vals]	
 		unclust_sem = [np.std(x)/math.sqrt(len(x)) for x in unclust_vals]
-		msd_times = [frame_time*x for x in range(1,minlength,1)]	
+		msd_times = [frame_time*x for x in range(1,minlength,1)]
 		ax1.scatter(msd_times,clust_av,s=10,c="orange")
 		ax1.errorbar(msd_times,clust_av,clust_sem,c="orange",label="Clustered: {}".format(len(clust_msds)),capsize=5)
 		ax1.scatter(msd_times,unclust_av,s=10,c="blue")
@@ -1972,7 +2257,7 @@ def metrics_tab():
 		plt.ylabel(u"MSD (μm²)")
 		plt.tight_layout()
 		fig1.canvas.manager.set_window_title('MSD Curves')
-		plt.show(block=False)	
+		plt.show(block=False)
 		print(reduce(lambda x, y: str(x) + "\t" + str(y), ["TIME (S):"] + msd_times))
 		print(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST MSD (um^2):"] + unclust_av))
 		print(reduce(lambda x, y: str(x) + "\t" + str(y), ["UNCLUST SEM:"] + unclust_sem))
@@ -2025,7 +2310,12 @@ def metrics_tab():
 				for overlap in overlapdict:
 					clusters = overlapdict[overlap]["clusters"]
 					c_nums.append(len(clusters))
-					times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+					
+					if analysis_type == "NASTIC": 
+						times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+						
+					elif analysis_type == "SEGNASTIC": 
+						times = [clusterdict[i]["centroid"][2] for i in clusters]
 					times.sort()
 					diffs = np.diff(times)
 					[timediffs.append(t) for t in diffs]
@@ -2105,7 +2395,7 @@ def metrics_tab():
 		ax5.plot(cluster_per_time,c="red")	
 		ax5.set_xlabel("Acq. time (s)")
 		ax5.set_ylabel(u"Clusters/μm²")
-		ax5.set_title("Cluster number")		
+		ax5.set_title("Cluster number")	
 		
 		plt.tight_layout()
 		fig2.canvas.manager.set_window_title('Overlap metrics')
@@ -2124,7 +2414,13 @@ def metrics_tab():
 		metrics_array = []
 		col_array = []
 		for num in clusterdict:
-			traj_num=clusterdict[num]["traj_num"] # number of trajectories in this cluster
+		
+			if analysis_type == "NASTIC": 
+				traj_num=clusterdict[num]["traj_num"] # number of trajectories in this cluster
+				
+			elif analysis_type == "SEGNASTIC": 
+				seg_num=clusterdict[num]["seg_num"] # number of segments in this cluster
+				
 			lifetime = clusterdict[num]["lifetime"]  # lifetime of this cluster (sec)
 			av_msd = clusterdict[num]["av_msd"] # Average trajectory MSD in this cluster
 			area = clusterdict[num]["area"] # Use internal hull area as cluster area (um2)
@@ -2132,15 +2428,21 @@ def metrics_tab():
 			density = clusterdict[num]["density"] # trajectories/um2
 			rate = clusterdict[num]["rate"] # accumulation rate (trajectories/sec)
 			cltime = float(clusterdict[num]["centroid"][2]/acq_time) 
-			clustarray = [traj_num,lifetime,av_msd,area,radius,density,rate]	
+			
+			if analysis_type == "NASTIC":  
+				clustarray = [traj_num,lifetime,av_msd,area,radius,density,rate]	
+				
+			elif analysis_type == "SEGNASTIC": 
+				clustarray = [seg_num,lifetime,av_msd,area,radius,density,rate]	
+				
 			metrics_array.append(clustarray)
 			col_array.append(cmap(cltime))
-						
+			
 		# Normalise each column	
 		metrics_array = list(zip(*metrics_array))
 		metrics_array = [normalize(x) for x in metrics_array]
 		metrics_array = list(zip(*metrics_array))			
-		mapdata = decomposition.TruncatedSVD(n_components=3).fit_transform(metrics_array) 
+		mapdata = decomposition.TruncatedSVD(n_components=3).fit_transform(metrics_array)
 		try:
 			fig3 =plt.figure(3,figsize=(4,4))			
 			ax6 = plt.subplot(111,projection='3d')
@@ -2154,7 +2456,7 @@ def metrics_tab():
 			ax6.set_zlabel('Dimension 3')
 			plt.tight_layout()
 			fig3.canvas.manager.set_window_title('PCA - all metrics')
-			plt.show(block=False)	
+			plt.show(block=False)
 			t2=time.time()
 			# Pickle
 			buf3 = io.BytesIO()
@@ -2164,8 +2466,8 @@ def metrics_tab():
 		except:
 			print("Alert: PCA plot could not be completed - not enough clusters")
 			sg.Popup("Alert","Not enough clusters to generate PCA plot")
-			plt.close() 
-	
+			plt.close()
+
 	# 3D plot
 	if event == "-M4-":	
 		print ("3D [x,y,t] plot of trajectories...")
@@ -2181,17 +2483,17 @@ def metrics_tab():
 			
 		if var_color:
 			confinedindices,unconfinedindices,var_cols = var_confine()
-		
+			
 		xcent = []
 		ycent = []
-		tcent = []	
+		tcent = []
 		
 		# Plot unclustered trajectories
 		if plot_trajectories:
 			print ("Plotting unclustered trajectories...")
 		for num,traj in enumerate(unclustindices):
 			if num%10 == 0:
-				try:  
+				try: 
 					bar = 100*num/(len(unclustindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
 				except:
@@ -2210,7 +2512,7 @@ def metrics_tab():
 						if seldict[traj]["msds"][0] < av_msd:
 							tr = art3d.Line3D(x,y,t,c=msd_color1,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
 						else:
-							tr = art3d.Line3D(x,y,t,c=msd_color2,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))							
+							tr = art3d.Line3D(x,y,t,c=msd_color2,alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))		
 					if not var_color and not msd_color:
 						if axes_3d:
 							tr = art3d.Line3D(x,y,t,c="k",alpha=line_alpha,linewidth=line_width,zorder=acq_time - np.average(y))
@@ -2227,10 +2529,10 @@ def metrics_tab():
 		
 		# Plot clustered trajectories
 		if plot_trajectories:
-			print ("Plotting clustered trajectories...")		
+			print ("Plotting clustered trajectories...")
 		for num,traj in enumerate(clustindices):
 			if num%10 == 0:
-				try:  
+				try: 
 					bar = 100*num/(len(clustindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
 				except:
@@ -2271,10 +2573,10 @@ def metrics_tab():
 		if plot_clusters:	
 			print ("Plotting clusters...")			
 			for cluster in clusterdict:
-				try:  
+				try: 
 					bar = 100*cluster/(len(clusterdict))
 					window['-PROGBAR-'].update_bar(bar)
-				except:
+				except: 
 					pass
 				centx=clusterdict[cluster]["centroid"][0]
 				centy=clusterdict[cluster]["centroid"][1]
@@ -2298,10 +2600,10 @@ def metrics_tab():
 			ax7.set_xticks([])
 			ax7.set_yticks([])
 			ax7.set_zticks([])
-			ax7.set_axis_off()
+			ax7.set_axis_off()			
 		ax7.set_xlim(xlims)
 		ax7.set_ylim(tmin,tmax)
-		ax7.set_zlim(ylims)		
+		ax7.set_zlim(ylims)
 		# The next 2 lines help keep the correct x:y aspect ratio in the 3D plot
 		try:
 			xy_ratio = (xlims[1] - xlims[0])/(ylims[1] - ylims[0])
@@ -2329,7 +2631,7 @@ def metrics_tab():
 		ax8.set_facecolor("k")	
 		xlims = ax0.get_xlim()
 		ylims = ax0.get_ylim()
-		allpoints = [point[:2]  for i in seldict for point in seldict[i]["points"]] # All detection points 
+		allpoints = [point[:2]  for i in seldict for point in seldict[i]["points"]] # All detection points
 		allpoints = [i for i in allpoints if i[0] > xlims[0] and i[0] < xlims[1] and i[1] > ylims[0] and i[1] < ylims[1]] # Detection points within zoom 
 		kde_method = 0.10 # density estimation method. Larger for smaller amounts of data (0.05 - 0.15 should be ok)
 		kde_res = 0.6 # resolution of density map (0.5-0.9). Larger = higher resolution
@@ -2358,7 +2660,7 @@ def metrics_tab():
 		buf5 = io.BytesIO()
 		pickle.dump(ax8, buf5)
 		buf5.seek(0)
-		print ("Plot completed in {} sec".format(round(t2-t1,3)))	
+		print ("Plot completed in {} sec".format(round(t2-t1,3)))
 		
 	# Diffusion coefficient	
 	if event == "-M6-":	
@@ -2378,10 +2680,10 @@ def metrics_tab():
 		cmap3 = matplotlib.cm.get_cmap('viridis_r')
 		for num,traj in enumerate(allindices): 
 			if num%10 == 0:
-				try:  
+				try: 
 					bar = 100*num/(len(allindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
-				except: 
+				except:
 					pass
 			centx=seldict[traj]["centroid"][0]
 			centy=seldict[traj]["centroid"][1]
@@ -2422,7 +2724,7 @@ def metrics_tab():
 		zorders = []
 		for num,traj in enumerate(clustindices): 
 			if num%10 == 0:
-				try:  
+				try: 
 					bar = 100*num/(len(clustindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
 				except:
@@ -2439,13 +2741,13 @@ def metrics_tab():
 				clustcols.append(clustcol)	
 				diffcols.append(diffcol)
 				zorders.append(1000)
-		window['-PROGBAR-'].update_bar(0)				
+		window['-PROGBAR-'].update_bar(0)			
 		for num,traj in enumerate(unclustindices): 
 			if num%10 == 0:
 				try: 
 					bar = 100*num/(len(unclustindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
-				except:
+				except: 
 					pass
 			centx=seldict[traj]["centroid"][0]
 			centy=seldict[traj]["centroid"][1]
@@ -2457,11 +2759,11 @@ def metrics_tab():
 				diffcol = cmap3(dcnorm)
 				times.append(centt)
 				clustcols.append(clustcol)	
-				diffcols.append(diffcol)
-				zorders.append(100)					
-		window['-PROGBAR-'].update_bar(0)		
+				diffcols.append(diffcol)	
+				zorders.append(100)
+		window['-PROGBAR-'].update_bar(0)	
 		for i,t in enumerate(times):
-			ax10.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75,zorder = zorders[i])		
+			ax10.axvline(t,linewidth=1.5,c=clustcols[i],alpha = 0.75,zorder = zorders[i])
 			ax11.axvline(t,linewidth=1.5,c=diffcols[i],alpha = 0.75)
 
 		ax10.set_ylabel("Cluster")
@@ -2471,12 +2773,12 @@ def metrics_tab():
 		ax11.tick_params(axis = "both",left = False, labelleft = False)			
 		fig7.canvas.manager.set_window_title('Diffusion coefficient time plot')
 		plt.tight_layout()	
-		plt.show(block=False)	
+		plt.show(block=False)
 		t2=time.time()
 		# Pickle
 		buf6 = io.BytesIO()
 		pickle.dump(ax9, buf6)
-		buf6.seek(0)
+		buf6.seek(0)	
 		buf7 = io.BytesIO()
 		pickle.dump(fig7, buf7)
 		buf7.seek(0)			
@@ -2489,7 +2791,7 @@ def metrics_tab():
 		alltimes = []
 		for num,traj in enumerate(allindices): 
 			if num%10 == 0:
-				try:  
+				try: 
 					bar = 100*num/(len(allindices)-1)
 					window['-PROGBAR-'].update_bar(bar)
 				except:
@@ -2499,12 +2801,12 @@ def metrics_tab():
 		window['-PROGBAR-'].update_bar(0)		
 		fig8 =plt.figure(8,figsize=(4,4))
 		ax12 = plt.subplot(111)
-		bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time)) # Sort into 1 second bins 
+		bin_edges = np.histogram_bin_edges(alltimes,bins=int(acq_time)) # Sort into 1 second bins
 		dist,bins =np.histogram(alltimes,bin_edges)
-		dist = [float(x)/sum(all_selareas) for x in dist] 
+		dist = [float(x)/sum(all_selareas) for x in dist]
 		bin_centers = 0.5*(bins[1:]+bins[:-1])
 		ax12.plot(bin_centers,dist,c="royalblue")
-		plt.ylabel(u"Trajectories/μm² (1 sec bins)") 
+		plt.ylabel(u"Trajectories/μm² (1 sec bins)")
 		plt.xlabel("Acquisition time (s)")
 		fig8.canvas.manager.set_window_title('Density')
 		plt.tight_layout()	
@@ -2545,33 +2847,124 @@ def metrics_tab():
 		buf9.seek(0)			
 		t2=time.time()
 		print ("Plots completed in {} sec".format(round(t2-t1,3)))	
+	
+	
+	# Segment overlap
+	if event == "-M9-":	
+		print ("Plotting segment overlap pseudo density...")
+		t1 = time.time()
+		cmap2 = matplotlib.cm.get_cmap('inferno')
+		fig10 =plt.figure(10,figsize=(8,8))	
+		ax15 = plt.subplot(111)	
+		ax15.cla()
+		ax15.set_facecolor("k")	
+		xlims = ax0.get_xlim()
+		ylims = ax0.get_ylim()
+		max_overlap = max([segdict[seg]["overlap"] for seg in segdict])
+		min_overlap = min([segdict[seg]["overlap"] for seg in segdict])			
+		for seg in segdict:
+			if seg%100 == 0:
+				try: 
+					bar = 100*seg/(len(segdict)-10)
+					window['-PROGBAR-'].update_bar(bar)
+				except:
+					pass
+			segment = segdict[seg]["segment"]
+			overlap = segdict[seg]["overlap"]	
+			centroid = segdict[seg]["centroid"]
+			segx,segy,segt = zip(*segment)
+			if centroid[0] > xlims[0] and centroid[0] < xlims[1] and centroid[1] > ylims[0] and centroid[1] < ylims[1]:
+				val = math.log(overlap,2)/math.log(max_overlap,2) + 0.15 # offset to increase visibility of low overlap segs
+				col = cmap2(val)
+				seg = matplotlib.lines.Line2D(segx,segy,c=col,alpha=line_alpha,linewidth=line_width,zorder=overlap)
+				ax15.add_artist(seg)	
+		x_perc = (xlims[1] - xlims[0])/100
+		y_perc = (ylims[1] - ylims[0])/100
+		ax15.imshow([[0,1], [0,1]], 
+		extent = (xlims[0] + x_perc*2,xlims[0] + x_perc*27,ylims[0] + x_perc*2,ylims[0] + x_perc*4),
+		cmap = cmap2, 
+		interpolation = 'bicubic',
+		zorder=1000)
+		window['-PROGBAR-'].update_bar(0)
+		fig10.canvas.manager.set_window_title('Segment overlap density plot')
+		ax15.set_xlabel("X")
+		ax15.set_ylabel("Y")
+		ax15.set_xlim(xlims)
+		ax15.set_ylim(ylims)
+		plt.tight_layout()
+		plt.show(block=False)
+		t2=time.time()
+		print ("Minimum log2 overlap:{} maximum log2 overlap:{}".format(math.log(min_overlap,2),math.log(max_overlap,2)))
+		print ("Segment overlap plot completed in {} sec".format(round(t2-t1,3)))			
+		# Pickle
+		buf10 = io.BytesIO()
+		pickle.dump(ax15, buf10)
+		buf10.seek(0)
 		
+		print ("Plotting histogram of segment overlap...")
+		t1 = time.time()
+		fig11 =plt.figure(11,figsize=(4,4))
+		ax16 = plt.subplot(111)
+		all_overlap = [segdict[seg]["overlap"] for seg in segdict]
+		all_overlap = [x if x < 100 else 100 for x in all_overlap] # lump all overlaps > 100 together
+		bin_edges = np.histogram_bin_edges(all_overlap,bins=101) # use these bins for all samples
+		dist,bins =np.histogram(all_overlap,bin_edges)
+		dist = [float(x)/sum(dist) for x in dist]
+		bin_centers = 0.5*(bins[1:]+bins[:-1])
+		ax16.plot(bin_centers,dist,c="royalblue")
+		plt.ylabel("Frequency")
+		plt.xlabel("Overlap/segment")
+		plt.title("Segment overlap distribution")
+		plt.axvline(x=overlap_threshold,color="r",linewidth=0.5,alpha=1)
+		fig11.canvas.manager.set_window_title('Segment overlap distribution')
+		plt.tight_layout()	
+		plt.show(block=False)
+		t2=time.time()
+		print ("Segment histogram completed in {} sec".format(round(t2-t1,3)))	
+		# Pickle
+		buf11 = io.BytesIO()
+		pickle.dump(ax16, buf11)
+		buf11.seek(0)	
+
 	# Save metrics	
 	if event == "-SAVEANALYSES-":	
 		stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
 		outpath = os.path.dirname(infilename)
-		outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_BOOSH_ST_{}".format(stamp))
+		
+		if analysis_type == "NASTIC":
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_NASTIC_{}".format(stamp))
+			
+		elif analysis_type == "SEGNASTIC": 
+			outdir = outpath + "/" + infilename.split("/")[-1].replace(".trxyt","_SEGNASTIC_{}".format(stamp))
+		
 		os.mkdir(outdir)
-		os.chdir(outdir)			
+		os.chdir(outdir)
 		outfilename = "{}/metrics.tsv".format(outdir)
 		print ("Saving metrics, ROIs and all open plots to {}...".format(outdir))
 		# Metrics
 		with open(outfilename,"w") as outfile:
-			outfile.write("BOOSH ST: NANOSCALE SPATIO TEMPORAL DBSCAN CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n")
+			if analysis_type == "NASTIC":
+				outfile.write("NASTIC: NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n") 
+			elif analysis_type == "SEGNASTIC":
+				outfile.write("SEGNASTIC: SEGMENT NANOSCALE SPATIO TEMPORAL INDEXING CLUSTERING - Tristan Wallis t.wallis@uq.edu.au\n")
 			outfile.write("TRAJECTORY FILE:\t{}\n".format(infilename))	
-			outfile.write("ANALYSED:\t{}\n".format(stamp))
-			outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))	
-			outfile.write("SELECTION DENSITY:\t{}\n".format(selection_density)) 
-			outfile.write("ACQUISITION TIME (s):\t{}\n".format(acq_time)) 
-			outfile.write("FRAME TIME (s):\t{}\n".format(frame_time))  
-			outfile.write("EPSILON (um):\t{}\n".format(epsilon))
-			outfile.write("MINPTS:\t{}\n".format(minpts))			
-			outfile.write("TIME WINDOW (s):\t{}\n".format(timewindow))
+			outfile.write("ANALYSED:\t{}\n".format(stamp))		  
+			outfile.write("TRAJECTORY LENGTH CUTOFFS (steps):\t{} - {}\n".format(minlength,maxlength))
+			outfile.write("SELECTION DENSITY:\t{}\n".format(selection_density))
+			outfile.write("ACQUISITION TIME (s):\t{}\n".format(acq_time))
+			outfile.write("FRAME TIME (s):\t{}\n".format(frame_time)) 
+			outfile.write("TIME THRESHOLD (s):\t{}\n".format(time_threshold))
+			if analysis_type == "NASTIC": 
+				outfile.write("RADIUS FACTOR:\t{}\n".format(radius_factor))
+				outfile.write("CLUSTER THRESHOLD:\t{}\n".format(cluster_threshold))	
+			elif analysis_type == "SEGNASTIC": 
+				outfile.write("SEGMENT THRESHOLD:\t{}\n".format(segment_threshold))	
+				outfile.write("OVERLAP THRESHOLD:\t{}\n".format(overlap_threshold))	
 			outfile.write("CLUSTER MAX RADIUS (um):\t{}\n".format(radius_thresh))
 			if msd_filter:
 				outfile.write("MSD FILTER THRESHOLD (um^2):\t{}\n".format(msd_filter_threshold))
 			else:
-				outfile.write("MSD FILTER THRESHOLD (um^2):\tNone\n")	
+				outfile.write("MSD FILTER THRESHOLD (um^2):\tNone\n")
 			outfile.write("SELECTION AREA (um^2):\t{}\n".format(sum(all_selareas)))
 			outfile.write("SELECTED TRAJECTORIES:\t{}\n".format(len(allindices)))
 			outfile.write("CLUSTERED TRAJECTORIES:\t{}\n".format(len(clustindices)))
@@ -2620,13 +3013,18 @@ def metrics_tab():
 				for overlap in overlapdict:
 					clusters = overlapdict[overlap]["clusters"]
 					c_nums.append(len(clusters))
-					times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+					
+					if analysis_type == "NASTIC": 
+						times = [clusterdict[i+1]["centroid"][2] for i in clusters]
+						
+					elif analysis_type == "SEGNASTIC": 
+						times = [clusterdict[i]["centroid"][2] for i in clusters]			
 					times.sort()
 					diffs = np.diff(times)
 					[timediffs.append(t) for t in diffs]
 			else:
 				c_nums.append(0)
-				timediffs.append(0)
+			timediffs.append(0)
 			hotspots = len(clusterlist)
 			hotspot_prob = p				
 			intercluster_time = np.average(timediffs)
@@ -2698,35 +3096,35 @@ def metrics_tab():
 				radii.append(radius)
 				densities.append(density)
 				rates.append(rate)
-						  
+				
 			# AVERAGE CLUSTER METRICS	
 			outarray = ["AVG",np.average(trajnums),np.average(lifetimes),np.average(av_msds),np.average(areas),np.average(radii),np.average(densities),np.average(rates),np.average(times)]
 			outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 			outfile.write(outstring + "\n")	
-			  
+			
 			# SEMS
 			outarray = ["SEM",np.std(trajnums)/math.sqrt(len(trajnums)),np.std(lifetimes)/math.sqrt(len(lifetimes)),np.std(av_msds)/math.sqrt(len(av_msds)),np.std(areas)/math.sqrt(len(areas)),np.std(radii)/math.sqrt(len(radii)),np.std(densities)/math.sqrt(len(densities)),np.std(rates)/math.sqrt(len(rates)),np.std(times)/math.sqrt(len(times))]
 			outstring = reduce(lambda x, y: str(x) + "\t" + str(y), outarray)
 			outfile.write(outstring + "\n")					
 			
-		# ALL ROIs 
+		# ALL ROIs
 		roi_directory = outdir + "\\saved_ROIs" 
-		os.makedirs(roi_directory, exist_ok = True) 
-		roi_file = "{}/{}_roi_coordinates.tsv".format(roi_directory,stamp) 
+		os.makedirs(roi_directory, exist_ok = True)
+		roi_file = "{}/{}_roi_coordinates.tsv".format(roi_directory,stamp)
 		with open(roi_file,"w") as outfile:
 			outfile.write("ROI\tx(um)\ty(um)\n")
 			for roi,selverts in enumerate(all_selverts):
 				for coord in selverts:
-					outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+					outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))
 		
 		# SEPARATE ROIs
 		if len(all_selverts) >1:
 			for roi,selverts in enumerate(all_selverts):
-				roi_save = "{}/{}_roi_coordinates{}.tsv".format(roi_directory,stamp, roi)
+				roi_save = "{}/{}_roi_coordinates{}.tsv".format(roi_directory, stamp, roi)
 				with open(roi_save,"w") as outfile:
 					outfile.write("ROI\tx(um)\ty(um)\n")			
 					for coord in selverts:
-						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))	
+						outfile.write("{}\t{}\t{}\n".format(roi,coord[0],coord[1]))			
 		
 		# Plots	
 		buf.seek(0)		
@@ -2805,15 +3203,31 @@ def metrics_tab():
 			plt.savefig("{}/var_kmeans.png".format(outdir),dpi=300)
 			plt.close()
 		except:
-			pass					
+			pass	
+		try:
+			buf10.seek(0)
+			fig100=pickle.load(buf10)
+			plt.savefig("{}/overlap_density.png".format(outdir),dpi=300)
+			plt.close()
+		except:
+			pass	
+		try:
+			buf11.seek(0)
+			fig100=pickle.load(buf11)
+			plt.savefig("{}/overlap_histogram.png".format(outdir),dpi=300)
+			plt.close()
+		except:
+			pass				
 		print ("All data saved")	
 	return
+
+popup.close()
 
 # GET INITIAL VALUES FOR GUI
 cwd = os.path.dirname(os.path.abspath(__file__))
 os.chdir(cwd)
 initialdir = cwd
-if os.path.isfile("boosh_st_gui.defaults"):
+if os.path.isfile("2-in-1_st_gui.defaults"):
 	load_defaults()
 else:
 	reset_defaults()
@@ -2836,28 +3250,29 @@ tab1_layout = [
 	[sg.B('PLOT RAW DETECTIONS',size=(25,2),button_color=("white","gray"),key ="-PLOTBUTTON-",disabled=True,tooltip = "Visualise trajectory detections using the above parameters.\nYou may then select regions of interest (ROIs) using the 'ROI' tab.\nThis button will close any other plot windows.")]
 ]
 
-# ROI tab
+# ROI tab		  
 tab2_layout = [
-	[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv *.rgn"),),key="-R1-",target="-R2-",tooltip = "(Optional) Select a region of interest (ROI) file:\n - NASTIC roi_coordinates.tsv file\n - PalmTracer .rgn file",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True, size = (30,1)),sg.T("Pixel(um):", key = '-PIXEL_TEXT-', tooltip = "Please select a conversion factor\nfor converting pixels to um", visible = False), sg.In(pixel, key = '-PIXEL-', visible = False, size = (6,1)),sg.B("Replot ROIs", key = "-REPLOT_ROI-", visible = False)], 
+	[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv *.rgn"),),key="-R1-",target="-R2-",tooltip = "(Optional) Select a region of interest (ROI) file:\n - NASTIC roi_coordinates.tsv file\n - PalmTracer .rgn file",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True, size = (30,1)),sg.T("Pixel(um):", key = '-PIXEL_TEXT-', tooltip = "Please select a conversion factor\nfor converting pixels to um", visible = False), sg.In(pixel, key = '-PIXEL-', visible = False, size = (6,1)),sg.B("Replot ROIs", key = "-REPLOT_ROI-", visible = False)],
 	[sg.B("Save",key="-R8-",tooltip = "Save ROIs together as a single roi_coordinates.tsv file",disabled=True),sg.T("Save currently defined ROIs"), sg.B("Save Separately", key = "-SEPARATE-", tooltip = "Save each ROI separately as individual roi_coordinates.tsv files",disabled = True), sg.T("Save individual ROI files")],
 	[sg.B("Clear",key="-R3-",tooltip = "Clear all ROIs from plot",disabled=True),sg.T("Clear all ROIs")],	
 	[sg.B("All",key="-R4-",tooltip = "Generate a rectangular ROI that encompases all detections",disabled=True),sg.T("ROI encompassing all detections")],
 	[sg.B("Add",key="-R5-",tooltip = "Add ROIs that have been drawn directly on the plot:\n - freehand drawn ROIs (magnifying glass = deselected)\n - zoom-to-rectangle drawn ROIs (magnifying glass = selected)",disabled=True),sg.T("Add selected ROI")],
 	[sg.B("Remove",key="-R6-",tooltip = "Remove the last ROI that was added from the plot",disabled=True),sg.T("Remove last added ROI")],
-	[sg.B("Undo",key="-R7-",tooltip = "Undo the last ROI change that was made",disabled=True),sg.T("Undo last change"),sg.B("Reset",key="-RESET-",tooltip = "Reset to original detections plot with orange ROI shown",disabled=True),sg.T("Reset to original view with ROI")], 
+	[sg.B("Undo",key="-R7-",tooltip = "Undo the last ROI change that was made",disabled=True),sg.T("Undo last change"),sg.B("Reset",key="-RESET-", tooltip = "Reset to original detections plot with orange ROI shown",disabled = True),sg.T("Reset to original view with ROI")], 
 	[sg.T('Selection density:',tooltip = "Screen out random trajectories to maintain a \nfixed density of selected trajectories (traj/um^2)\n0 = do not adjust density"),sg.InputText(selection_density,size="50",key="-SELECTIONDENSITY-"),sg.T("",key = "-DENSITY-",size=(6,1))],
-	[sg.B('SELECT DATA IN ROIS',size=(25,2),button_color=("white","gray"),key ="-SELECTBUTTON-",disabled=True,tooltip = "Select trajectories whose detections lie within the orange ROIs\nYou may then select the clustering parameters using the 'Clustering' tab."),sg.Checkbox("Cluster immediately",key="-AUTOCLUSTER-",default=autocluster,tooltip="Pressing the 'SELECT DATA IN ROIS' button will\nautomatically cluster data within the orange ROIs\nusing predefined parameters in the 'Clustering' tab")]
+	[sg.B('SELECT DATA IN ROIS',size=(25,2),button_color=("white","gray"),key ="-SELECTBUTTON-",disabled=True,tooltip = "Select trajectories whose detections lie within the orange ROIs\nYou may then select the analysis type (NASTIC or SEGNASTIC)\nand the clustering parameters using the 'Clustering' tab."),sg.Checkbox("Cluster immediately",key="-AUTOCLUSTER-",default=autocluster,tooltip="Pressing the 'SELECT DATA IN ROIS' button will\nautomatically cluster data within the orange ROIs\nusing predefined parameters in the 'Clustering' tab")]
 ]
 
 # Clustering tab
 tab3_layout = [
+	[sg.T('Select analysis type:', tooltip = "Spatiotemporal indexing clustering of:\n - molecular TRAJECTORY data (NASTIC) (low density data)\n - molecular TRAJECTORY SEGMENT data (SEGNASTIC) (high density data)"),sg.Combo(["NASTIC", "SEGNASTIC"],default_value = "NASTIC", key = "-ANALYSIS_TYPE_COMBO-", enable_events = True)],
 	[sg.T('Acquisition time (s):',tooltip = "Time taken to acquire all frames (in seconds)"),sg.InputText(acq_time,size="50",key="-ACQTIME-")],
 	[sg.T('Frame time (s):',tooltip = "Time taken to acquire each individual frame (in seconds)"),sg.InputText(frame_time,size="50",key="-FRAMETIME-")],
-	[sg.T(u'Epsilon (µm):',tooltip = "Spatial radius around each detection\n to check for other detections"),sg.InputText(epsilon,size="50",key="-EPSILON-")],	
-	[sg.T('MinPts:',tooltip = "Clusters must contain at least this\n many detections (from different trajectories) within Epsilon"),sg.InputText(minpts,size="50",key="-MINPTS-")],
-	[sg.T('Time window (s):',tooltip = "Temporal radius (s) around each detection\n to check for other detections"),sg.InputText(timewindow,size="50",key="-TIMEWINDOW-")],	
-	[sg.T(u'Cluster size screen (µm):',tooltip = "Clusters with a radius larger than this (µm)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
-		[sg.Checkbox('MSD screen',tooltip = "Exclude trajectories with a mean square displacement\n(MSD) greater than the average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
+	[sg.T('Time threshold (s):',tooltip = "Trajectories must be within this many seconds\nof each other to be considered clustered", key = "-TIMETHRESHOLD_TEXT-", visible=True),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-", visible=True)],
+	[sg.T('Radius factor:',tooltip = "Adjust the radius around each centroid\n to check for overlap", key = "-RADIUSFACTOR_TEXT-", visible = True),sg.InputText(radius_factor,size="50",key="-RADIUSFACTOR-", visible = True),sg.T('Segment threshold:',tooltip = "Trajectories must contain at least this many segments\nwhich overlap with other trajectory segments\nSee overlap threshold override below", key = "-SEGMENTTHRESHOLD_TEXT-",visible = False),sg.InputText(segment_threshold,size="50",key="-SEGMENTTHRESHOLD-", visible = False)],	
+	[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectories", key = "-CLUSTERTHRESHOLD_TEXT-", visible = True),sg.InputText(cluster_threshold,size="50",key="-CLUSTERTHRESHOLD-", visible = True),sg.T('Overlap threshold override:',tooltip = "Number of overlaps for a segment to be considered as potentially clustered\n 0 = use average of all segment overlaps as threshold", key = "-OVERRIDE_TEXT-", visible = False),sg.InputText(overlap_override,size="50",key="-OVERRIDE-", visible = False)],
+	[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this are ignored\n(in microns)", key = "-RADIUSTHRESH_TEXT-", visible = True),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-", visible = True)],
+	[sg.Checkbox('MSD screen',tooltip = "Exclude trajectories with a mean square displacement\n(MSD) greater than the average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 	[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering using the above parameters.\nUpon clustering the ROI will turn green.\nIdentified clusters may then be plotted using the parameters in the 'Display' tab.\nThis button will close any other plot windows."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Pressing the 'CLUSTER SELECTED DATA' button will\nautomatically plot the clustered data using the\npredefined parameters in the 'Display' tab.")],
 ]
 
@@ -2902,7 +3317,7 @@ export_layout = [
 
 # Display tab
 tab4_layout = [
-	[sg.T('Canvas',tooltip = "Background color of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Colorbar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)], 
+	[sg.T('Canvas',tooltip = "Background color of plotted data"),sg.Input(canvas_color,key ="-CANVASCOLOR-",enable_events=True,visible=False),sg.ColorChooserButton("Choose",button_color=("gray",canvas_color),target="-CANVASCOLOR-",key="-CANVASCOLORCHOOSE-",disabled=True),sg.Checkbox('Traj.',tooltip = "Plot trajectories",key = "-TRAJECTORIES-",default=plot_trajectories),sg.Checkbox('Centr.',tooltip = "Plot trajectory centroids",key = "-CENTROIDS-",default=plot_centroids),sg.Checkbox('Clust.',tooltip = "Plot cluster boundaries",key = "-CLUSTERS-",default=plot_clusters),sg.Checkbox('Hotsp.',tooltip = "Plot cluster hotspots",key = "-HOTSPOTS-",default=plot_hotspots),sg.Checkbox('Colorbar',tooltip = "Plot colorbar for cluster times\nBlue = 0 sec --> green = full acquisition time\nHit 'Plot clustered data' button to refresh colorbar after a zoom",key = "-COLORBAR-",default=plot_colorbar)],
 	[sg.TabGroup([
 		[sg.Tab("Trajectory",trajectory_layout)],
 		[sg.Tab("Centroid",centroid_layout)],
@@ -2920,6 +3335,7 @@ tab5_layout = [
 	[sg.B("MSD",key="-M1-",tooltip = "Assess whether clustered trajectories have a lower mobility than unclustered trajectories\nusing average mean square displacement (MSD).",disabled=True),sg.T("Plot clustered vs unclustered MSDs")],
 	[sg.B("Hotspot",key="-M2-",tooltip = "Assess the likelihood of hotspots occuring.\nVerical dotted line = average cluster radius.\nOverlap probability: red = Monte Carlo simulation.",disabled=True),sg.T("Plot cluster overlap data")],
 	[sg.B("PCA",key="-M3-",tooltip = "Use pricinpal component analysis (PCA) to identify whether cluster subpopulations exist.",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
+	[sg.B("Segment",key = "-M9-",tooltip = "Assess the level of trajectory segment overlap.\nWarmer colors = more overlaps with segments of other trajectories.\nRed vertical line = average trajectory segment overlap.",disabled=True),sg.T("Pseudo density plot of segment overlap (slow!) (SEGNASTIC ONLY)")],
 	[sg.B("3D",key="-M4-",tooltip = "Generate interactive 3D plot based on the 2D plot.",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:", tooltip = "Minimum time axis value"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax", tooltip = "Maximum time axis value"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this"),sg.Checkbox('Axes',tooltip = "Ticked = plot axes and grid on white background.\nUnticked = use canvas color as background.",key = "-AXES3D-",default=axes_3d)],
 	[sg.B("KDE",key="-M5-",tooltip = "Assess whether clusters correspond with regions of higher detection density.\nBrighter colors = higher densities.\nVery slow - start with 2x2um ROI",disabled=True),sg.T("2D kernel density estimation of all detections (very slow!)")],	
 	[sg.B("Diffusion coefficient",key="-M6-",tooltip = "Assess whether clustered trajectories have lower mobilities than unclustered trajectories.\nWarmer colours = lower diffusion coefficient.",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories.")],
@@ -2931,12 +3347,12 @@ tab5_layout = [
 # Menu
 menu_def = [
 	['&File', ['&Load settings', '&Save settings','&Default settings','&Exit']],
-	['&Info', ['&About', '&Help','&Licence', '&Updates' ]],
+	['&Info', ['&About', '&Help','&Licence','&Updates' ]],
 ]
 
 layout = [
 	[sg.Menu(menu_def)],
-	[sg.T('BOOSH ST',font="Any 20")],
+	[sg.T('2 IN 1 ST',font="Any 20"), sg.T(' (NASTIC)',font="Any 20",key = '-TITLE_NASTIC-', visible = True), sg.T(' (SEGNASTIC)',font="Any 20", key = '-TITLE_SEGNASTIC-', visible = False)],
 	[sg.TabGroup([
 		[sg.Tab("File",tab1_layout)],
 		[sg.Tab("ROI",tab2_layout)],
@@ -2946,10 +3362,12 @@ layout = [
 		],key="-TABGROUP-")
 	],
 	
-	[sg.ProgressBar(100, orientation='h',size=(40,20), key='-PROGBAR-',expand_x = True)], 
+	[sg.ProgressBar(100, orientation='h',size=(40,20),key='-PROGBAR-',expand_x = True)], 
 ]
-window = sg.Window('boosh st v{}'.format(last_changed), layout)
-popup.close()
+
+window = sg.Window('2 in 1 ST (NASTIC and SEGNASTIC) v{}'.format(last_changed), layout)
+
+
 
 # VARS
 cmap = matplotlib.cm.get_cmap('brg') # colormap for conditional coloring of clusters based on their average acquisition time
@@ -2986,12 +3404,20 @@ while True:
 	selection_density = values["-SELECTIONDENSITY-"]
 	roi_file = values["-R2-"]
 	detection_alpha = values["-DETECTIONALPHA-"]
+	analysis_type = values["-ANALYSIS_TYPE_COMBO-"] 
 	acq_time = values["-ACQTIME-"]
-	frame_time = values["-FRAMETIME-"]	
-	radius_thresh=values['-RADIUSTHRESH-']	
-	epsilon = values["-EPSILON-"]
-	minpts = values["-MINPTS-"]
-	timewindow = values["-TIMEWINDOW-"]
+	frame_time = values["-FRAMETIME-"]
+	radius_thresh=values['-RADIUSTHRESH-']
+	time_threshold = values["-TIMETHRESHOLD-"]
+	
+	### NASTIC SPECIFIC 
+	radius_factor = values["-RADIUSFACTOR-"]
+	cluster_threshold = values["-CLUSTERTHRESHOLD-"]
+	
+	### SEGNASTIC SPECIFIC
+	segment_threshold = values["-SEGMENTTHRESHOLD-"]
+	overlap_override = values["-OVERRIDE-"]
+	
 	canvas_color = values["-CANVASCOLOR-"]
 	plot_trajectories = values["-TRAJECTORIES-"]
 	plot_centroids = values["-CENTROIDS-"]
@@ -3034,7 +3460,7 @@ while True:
 	var_color1 = values["-VAR1COLOR-"]
 	var_color2 = values["-VAR2COLOR-"]
 	msd_color1 = values["-MSD1COLOR-"]		
-	msd_color2 = values["-MSD2COLOR-"]		
+	msd_color2 = values["-MSD2COLOR-"]
 	pixel = values['-PIXEL-']
 
 	# Check variables
@@ -3072,7 +3498,7 @@ while True:
 				plt.close(i)
 			except:
 				pass
-
+				
 	# Reset to hard coded default values
 	if event == 'Default settings':
 		reset_defaults()
@@ -3096,6 +3522,7 @@ while True:
 	if event == 'Help':
 		sg.Popup(
 			"Help",
+			"\nTo select either NASTIC or SEGNASTIC:\n     In the 'Clustering' tab, select the desired option from\n     the 'Select analysis type:' dropdown box."
 			"\n\nFor detailed information regarding usage of the GUI:\n     Please refer to the nastic_user_manual.pdf\n     (downloaded as part of the NASTIC suite).",
 			"\nAll buttons have popup tooltips in the meantime!\n", 
 			no_titlebar = True,
@@ -3115,7 +3542,7 @@ while True:
 	# Check for updates
 	if event == 'Updates':
 		webbrowser.open("https://github.com/tristanwallis/smlm_clustering/releases",new=2)
-
+			
 	# Read and plot input file	
 	if event == '-PLOTBUTTON-':
 		filter_status = False
@@ -3124,12 +3551,12 @@ while True:
 	# ROI stuff
 	if len(trajdict) > 0:
 		roi_tab()
-		
+	
 	if event == '-REPLOT_ROI-':
 		if len(roi_list) <= 1:
 			window.Element("-SEPARATE-").update(disabled=True)
 		elif len(roi_list) > 1:
-			window.Element("-SEPARATE-").update(disabled=False)		
+			window.Element("-SEPARATE-").update(disabled=False)
 		if len(roi_list) > 0:
 			all_selverts_bak = [x for x in all_selverts]
 			roi_list[-1].remove()
@@ -3138,11 +3565,15 @@ while True:
 			selverts = []
 			plt.show(block=False)
 		read_roi()
-
+	
+	#Analysis type
+	if event == "-ANALYSIS_TYPE_COMBO-":
+		update_buttons()
+	
 	# Clustering
 	if event ==	"-CLUSTERBUTTON-" and len(sel_traj) > 0:
-	
-	# Close all opened windows
+		
+		# Close all opened windows
 		for i in [1,2,3,4,5,6,7,8,9,10,11,12]:
 			try:
 				plt.close(i)
@@ -3188,8 +3619,20 @@ while True:
 		try:
 			buf9.close()
 		except:
+			pass				
+		try:
+			buf10.close()
+		except:
+			pass		
+		try:
+			buf11.close()
+		except:
 			pass
-		if len(all_selverts)!= 0:
+			
+		print(f'{Fore.WHITE}============================================================={Style.RESET_ALL}')
+		print(f'{Fore.WHITE}2 IN 1 ST ({analysis_type}){Style.RESET_ALL}')
+		print(f'{Fore.WHITE}============================================================={Style.RESET_ALL}')
+		if len(all_selverts) != 0: 
 			all_selverts_copy = [x for x in all_selverts]
 		all_selverts = []
 		for roi in roi_list:
