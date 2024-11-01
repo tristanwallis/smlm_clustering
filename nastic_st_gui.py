@@ -36,12 +36,7 @@ Feedback, suggestions and improvements are welcome. Sanctimonious critiques on t
 CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
-
-<<<<<<< HEAD
 last_changed = "20240902"
-=======
-last_changed = "20240806"
->>>>>>> 6257dc2bf4ad246cd6b0cb5d14c9131afa34363e
 
 # LOAD MODULES
 import PySimpleGUI as sg
