@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 NASTIC_ST_GUI
-PYSIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
+FREESIMPLEGUI BASED GUI FOR SPATIOTEMPORAL INDEXING CLUSTERING OF MOLECULAR TRAJECTORY DATA
 THIS IS A SINGLE THREADED VERSION WHICH WILL RUN ON VIRTUAL MACHINES, AT THE EXPENSE OF SLOWER TRAJECTORY PREPROCESSING
 THIS VERSION MAY ALSO BE COMPILED TO A STANDALONE EXECUTABLE: pyinstaller -wF nastic_st_gui.py
 
@@ -14,7 +14,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib matplotlib-venn scikit-learn statsmodels rtree pysimplegui colorama
+python -m pip install scipy numpy matplotlib matplotlib-venn scikit-learn statsmodels rtree freesimplegui colorama
 
 INPUT:
 TRXYT trajectory files
@@ -37,10 +37,10 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20240902"
+last_changed = "20250610"
 
 # LOAD MODULES
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 from colorama import init as colorama_init
 from colorama import Fore
 from colorama import Style
@@ -233,7 +233,7 @@ def create_splash():
 	graph.DrawText("Queensland Brain Institute",(0,0),color="white",font=("Any",10),text_location="center")	
 	graph.DrawText("The University of Queensland",(0,-15),color="white",font=("Any",10),text_location="center")	
 	graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-30),color="white",font=("Any",10),text_location="center")	
-	graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
+	graph.DrawText("FreeSimpleGUI: https://pypi.org/project/FreeSimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
 	graph.DrawText("Rtree: https://pypi.org/project/Rtree/",(0,-75),color="white",font=("Any",10),text_location="center")
 	while True:
 		# READ AND UPDATE VALUES
@@ -305,7 +305,7 @@ def reset_defaults():
 	traj_prob = 1
 	detection_alpha = 0.05
 	selection_density = 0
-	minlength = 5
+	minlength = 8
 	maxlength = 1000
 	acq_time = 320
 	frame_time = 0.02
@@ -396,7 +396,7 @@ def save_defaults():
 		outfile.write("{}\t{}\n".format("Plot background transparent",savetransparency))
 		outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 		outfile.write("{}\t{}\n".format("Auto plot",autoplot))
-		outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))	
+		outfile.write("{}\t{}\n".format("Cluster radius screen",radius_thresh))	
 		outfile.write("{}\t{}\n".format("Auto metric",auto_metric))	
 		outfile.write("{}\t{}\n".format("MSD filter",msd_filter))
 		outfile.write("{}\t{}\n".format("VAR color",var_color))
@@ -492,7 +492,7 @@ def load_defaults():
 			autocluster = True
 		if autocluster == "False":
 			autocluster = False
-		radius_thresh = defaultdict["Cluster size screen"]			
+		radius_thresh = defaultdict["Cluster radius screen"]			
 		auto_metric = defaultdict["Auto metric"]	
 		if auto_metric == "True":
 			auto_metric = True
@@ -534,6 +534,7 @@ def load_defaults():
 		pixel = defaultdict["Pixel size (um)"] 
 	except:
 		print ("Settings could not be loaded")
+		reset_defaults()
 	return
 	
 # UPDATE GUI BUTTONS
@@ -840,6 +841,15 @@ def ondraw(event):
 # GET HAND DRAWN REGION
 def onselect(verts):
 	global selverts
+	# remove negative x,y values
+	for num,vert in enumerate(verts): 
+		x_vert = vert[0] 
+		y_vert = vert[1] 
+		if x_vert < 0: 
+			x_vert = 0.0 
+		if y_vert < 0: 
+			y_vert = 0.0 
+		verts[num] = (x_vert,y_vert)
 	p = path.Path(verts)
 	selverts = verts[:] 
 	selverts.append(selverts[0])
@@ -953,6 +963,36 @@ def read_roi():
 				use_roi(selverts,"orange")
 			return
 		return
+	elif roi_file_split[-1] == "csv":
+		#FIJI .csv file
+		window.Element("-PIXEL_TEXT-").update(visible = True)
+		window.Element("-PIXEL-").update(visible = True)	 
+		window.Element("-REPLOT_ROI-").update(visible = True) 
+		roidict = {} 
+		ct = 0  
+		with open (roi_file, "r") as infilename: 
+			for line in infilename: 
+				ct+=1
+				if ct >1: 
+					if len(line) > 2: 
+						csv_split = line.split(',') 
+						roi = 0 
+						x = float(csv_split[0]) 
+						y = float(csv_split[1]) 
+						x_um = x*float(pixel) 
+						y_um = y*float(pixel) 
+						try: 
+							roidict[roi].append([x_um,y_um]) 
+						except: 
+							roidict[roi] = [] 
+							roidict[roi].append([x_um,y_um]) 
+			if len(roidict) == 0:
+				sg.Popup("Alert", "No ROIs found") 
+			else:
+				selverts = roidict[roi] 
+				use_roi(selverts,"orange") 
+				return 
+			return		
 	
 	else:
 		#NASTIC roi_coordinates.tsv file / SEGNASTIC roi_coordinates.tsv file
@@ -2705,82 +2745,80 @@ def metrics_tab():
 		for selverts in all_selverts:			
 			vx,vy = list(zip(*selverts))
 			plt.plot(vx,vy,linewidth=2,c="orange",alpha=1)
-		plt.savefig("{}/raw_acquisition.png".format(outdir),dpi=300)
+		plt.savefig("{}/raw_acquisition.{}".format(outdir,saveformat),dpi=300)
 		plt.close()
 		try:
 			buf0.seek(0)
 			fig100=pickle.load(buf0)
-			plt.savefig("{}/main_plot.png".format(outdir),dpi=300)
+			plt.savefig("{}/main_plot.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass		
 		try:
 			buf1.seek(0)
 			fig100=pickle.load(buf1)
-			plt.savefig("{}/MSD.png".format(outdir),dpi=300)
+			plt.savefig("{}/MSD.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf2.seek(0)
 			fig100=pickle.load(buf2)
-			plt.savefig("{}/overlap.png".format(outdir),dpi=300)
+			plt.savefig("{}/overlap.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf3.seek(0)
 			fig100=pickle.load(buf3)
-			plt.savefig("{}/pca.png".format(outdir),dpi=300)
+			plt.savefig("{}/pca.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf4.seek(0)
 			fig100=pickle.load(buf4)
-			plt.savefig("{}/3d_trajectories.png".format(outdir),dpi=300)
+			plt.savefig("{}/3d_trajectories.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf5.seek(0)
 			fig100=pickle.load(buf5)
-			plt.savefig("{}/KDE.png".format(outdir),dpi=300)
+			plt.savefig("{}/KDE.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf6.seek(0)
 			fig100=pickle.load(buf6)
-			plt.savefig("{}/diffusion_coefficient.png".format(outdir),dpi=300)
+			plt.savefig("{}/diffusion_coefficient.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass	
 		try:
 			buf7.seek(0)
 			fig100=pickle.load(buf7)
-			plt.savefig("{}/diffusion_coefficient_1d.png".format(outdir),dpi=300)
+			plt.savefig("{}/diffusion_coefficient_1d.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf8.seek(0)
 			fig100=pickle.load(buf8)
-			plt.savefig("{}/density_vs_time.png".format(outdir),dpi=300)
+			plt.savefig("{}/density_vs_time.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass
 		try:
 			buf9.seek(0)
 			fig100=pickle.load(buf9)
-			plt.savefig("{}/var_kmeans.png".format(outdir),dpi=300)
+			plt.savefig("{}/var_kmeans.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 		except:
 			pass						
 		print ("All data saved")	
 	return
-
-popup.close()
 
 # GET INITIAL VALUES FOR GUI
 cwd = os.path.dirname(os.path.abspath(__file__))
@@ -2811,7 +2849,7 @@ tab1_layout = [
 
 # ROI tab
 tab2_layout = [
-	[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv *.rgn"),),key="-R1-",target="-R2-",tooltip = "(Optional) Select a region of interest (ROI) file:\n - NASTIC roi_coordinates.tsv file\n - PalmTracer .rgn file",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True, size = (30,1)),sg.T("Pixel(um):", key = '-PIXEL_TEXT-', tooltip = "Please select a conversion factor\nfor converting pixels to um", visible = False), sg.In(pixel, key = '-PIXEL-', visible = False, size = (6,1)),sg.B("Replot ROIs", key = "-REPLOT_ROI-", visible = False)],
+	[sg.FileBrowse("Load",file_types=(("ROI Files", "roi_coordinates*.tsv *.rgn *XY_Coordinates*.csv"),),key="-R1-",target="-R2-",tooltip = "(Optional) Select a region of interest (ROI) file:\n - NASTIC roi_coordinates.tsv file\n - PalmTracer .rgn file\n - ImageJ (FIJI) XY_Coordinates.csv file",disabled=True),sg.In("Load previously defined ROIs",key ="-R2-",enable_events=True, size = (30,1)),sg.T("Pixel(um):", key = '-PIXEL_TEXT-', tooltip = "Please select a conversion factor\nfor converting pixels to um", visible = False), sg.In(pixel, key = '-PIXEL-', visible = False, size = (6,1)),sg.B("Replot ROIs", key = "-REPLOT_ROI-", visible = False)],
 	[sg.B("Save",key="-R8-",tooltip = "Save ROIs together as a single roi_coordinates.tsv file",disabled=True),sg.T("Save currently defined ROIs"), sg.B("Save Separately", key = "-SEPARATE-", tooltip = "Save each ROI separately as individual roi_coordinates.tsv files",disabled = True), sg.T("Save individual ROI files")],
 	[sg.B("Clear",key="-R3-",tooltip = "Clear all ROIs from plot",disabled=True),sg.T("Clear all ROIs")],	
 	[sg.B("All",key="-R4-",tooltip = "Generate a rectangular ROI that encompases all detections",disabled=True),sg.T("ROI encompassing all detections")],
@@ -2829,7 +2867,7 @@ tab3_layout = [
 	[sg.T('Time threshold (s):',tooltip = "Trajectories must be within this many seconds\nof each other to be considered clustered"),sg.InputText(time_threshold,size="50",key="-TIMETHRESHOLD-")],
 	[sg.T('Radius factor:',tooltip = "Adjust the radius around each centroid\n to check for overlap"),sg.InputText(radius_factor,size="50",key="-RADIUSFACTOR-")],	
 	[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many overlapping trajectories"),sg.InputText(cluster_threshold,size="50",key="-CLUSTERTHRESHOLD-")],
-	[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this are ignored\n(in microns)"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+	[sg.T(u'Cluster radius screen (µm):',tooltip = "Clusters with a radius larger than this are ignored\n(in microns)"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
 	[sg.Checkbox('MSD screen',tooltip = "Exclude trajectories with a mean square displacement\n(MSD) greater than the average MSD of all trajectories",key = "-MSDFILTER-",default=msd_filter)],
 	[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform spatiotemporal indexing clustering using the above parameters.\nUpon clustering the ROI will turn green.\nIdentified clusters may then be plotted using the parameters in the 'Display' tab.\nThis button will close any other plot windows."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Pressing the 'CLUSTER SELECTED DATA' button will\nautomatically plot the clustered data using the\npredefined parameters in the 'Display' tab.")],
 ]
@@ -2840,7 +2878,7 @@ trajectory_layout = [
 	[sg.T("Opacity",tooltip = "Opacity of plotted trajectory lines"),sg.Combo([0.01,0.05,0.1,0.25,0.5,0.75,1.0],default_value= line_alpha,key="-LINEALPHA-")],
 	[sg.T("Color",tooltip = "Trajectory color applies to:\n - all trajectories if 'Cluster' is unticked\n - unclustered trajectories only if 'Cluster' is ticked"),sg.ColorChooserButton("Choose",key="-LINECOLORCHOOSE-",target="-LINECOLOR-",button_color=("gray",line_color),disabled=True),sg.Input(line_color,key ="-LINECOLOR-",enable_events=True,visible=False),sg.Checkbox('Cluster',tooltip = "Color clustered trajectories by the\ncolor of the cluster they belong to.\nUntick MSD and VAR before ticking.",key = "-CLUSTCOLOR-",default=clust_color)],
 	[sg.ColorChooserButton(" < ",key="-VARCOLOR1CHOOSE-",target="-VAR1COLOR-",button_color=("gray",var_color1),disabled=True),sg.Input(var_color1,key ="-VAR1COLOR-",enable_events=True,visible=False),sg.ColorChooserButton(" > ",key="-VARCOLOR2CHOOSE-",target="-VAR2COLOR-",button_color=("gray",var_color2),disabled=True),sg.Input(var_color2,key ="-VAR2COLOR-",enable_events=True,visible=False),sg.Checkbox('VAR',tooltip = "Color trajectories by vector autoregression\n(VAR) 'confinement'.\n< = confined, > = unconfined\nUntick Cluster and MSD before ticking.",key = "-VARCOLOR-",default=var_color)],
-	[sg.ColorChooserButton(" < ",key="-MSDCOLOR1CHOOSE-",target="-MSD1COLOR-",button_color=("gray",msd_color1),disabled=True),sg.Input(msd_color1,key ="-MSD1COLOR-",enable_events=True,visible=False),sg.ColorChooserButton(" > ",key="-MSDCOLOR2CHOOSE-",target="-MSD2COLOR-",button_color=("gray",msd_color2),disabled=True),sg.Input(msd_color2,key ="-MSD2COLOR-",enable_events=True,visible=False),sg.Checkbox('MSD',tooltip = "Color trajectories according to whether they are less\nthan the average mean square displacement (MSD)\n< = less than average MSD, > = greater than average MSD\nUntick Cluster and VAR before ticking.",key = "-MSDCOLOR-",default=msd_color)]
+	[sg.ColorChooserButton(" < ",key="-MSDCOLOR1CHOOSE-",target="-MSD1COLOR-",button_color=("gray",msd_color1),disabled=True),sg.Input(msd_color1,key ="-MSD1COLOR-",enable_events=True,visible=False),sg.ColorChooserButton(" > ",key="-MSDCOLOR2CHOOSE-",target="-MSD2COLOR-",button_color=("gray",msd_color2),disabled=True),sg.Input(msd_color2,key ="-MSD2COLOR-",enable_events=True,visible=False),sg.Checkbox('MSD',tooltip = "Color trajectories according to whether they are less\nthan the average mean square displacement (MSD)\n< = less than average MSD, > = greater than average MSD\nUntick Cluster and VAR before ticking.",key = "-MSDCOLOR-",default=msd_color)],
 ]
 
 # Centroid subtab
@@ -2854,7 +2892,7 @@ centroid_layout = [
 cluster_layout = [	
 	[sg.T("Opacity",tooltip = "Opacity of plotted clusters"),sg.Combo([0.1,0.25,0.5,0.75,1.0],default_value= cluster_alpha,key="-CLUSTERALPHA-"),sg.Checkbox('Filled',tooltip = "Display clusters as filled polygons",key = "-CLUSTERFILL-",default=cluster_fill)],
 	[sg.T("Line width",tooltip = "Width of plotted cluster lines"),sg.Combo([0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0],default_value= cluster_width,key="-CLUSTERWIDTH-")],
-	[sg.T("Line type",tooltip = "Cluster line type"),sg.Combo(["solid","dashed","dotted"],default_value =cluster_linetype,key="-CLUSTERLINETYPE-")]
+	[sg.T("Line type",tooltip = "Cluster line type"),sg.Combo(["solid","dashed","dotted"],default_value =cluster_linetype,key="-CLUSTERLINETYPE-")],
 ]
 
 # Hotspot subtab
@@ -2893,7 +2931,7 @@ tab5_layout = [
 	[sg.B("MSD",key="-M1-",tooltip = "Assess whether clustered trajectories have a lower mobility than unclustered trajectories\nusing average mean square displacement (MSD).",disabled=True),sg.T("Plot clustered vs unclustered MSDs")],
 	[sg.B("Hotspot",key="-M2-",tooltip = "Assess the likelihood of hotspots occuring.\nVerical dotted line = average cluster radius.\nOverlap probability: red = Monte Carlo simulation.",disabled=True),sg.T("Plot cluster overlap data")],
 	[sg.B("PCA",key="-M3-",tooltip = "Use pricinpal component analysis (PCA) to identify whether cluster subpopulations exist.",disabled=True),sg.T("Multidimensional analysis of cluster metrics")],
-	[sg.B("3D",key="-M4-",tooltip = "Generate interactive 3D plot based on the 2D plot.",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:", tooltip = "Minimum time axis value"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax", tooltip = "Maximum time axis value"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this"),sg.Checkbox('Axes',tooltip = "Ticked = plot axes and grid on white background.\nUnticked = use canvas color as background.",key = "-AXES3D-",default=axes_3d)],
+	[sg.B("3D",key="-M4-",tooltip = "Generate interactive 3D plot based on the 2D plot.",disabled=True),sg.T("X,Y,T plot of trajectories"),sg.T("Tmin:", tooltip = "Minimum time axis value"),sg.InputText(tmin,size="4",key="-TMIN-",tooltip = "Only plot trajectories whose time centroid is greater than this"),sg.T("Tmax:", tooltip = "Maximum time axis value"),sg.InputText(tmax,size="4",key="-TMAX-",tooltip = "Only plot trajectories whose time centroid is less than this"),sg.Checkbox('Axes',tooltip = "Ticked = plot axes and grid on white background.\nUnticked = use canvas color as background.",key = "-AXES3D-",default=axes_3d)],
 	[sg.B("KDE",key="-M5-",tooltip = "Assess whether clusters correspond with regions of higher detection density.\nBrighter colors = higher densities.\nVery slow - start with 2x2um ROI",disabled=True),sg.T("2D kernel density estimation of all detections (very slow!)")],	
 	[sg.B("Diffusion coefficient",key="-M6-",tooltip = "Assess whether clustered trajectories have lower mobilities than unclustered trajectories.\nWarmer colours = lower diffusion coefficient.",disabled=True),sg.T("Instantaneous diffusion coefficient plot of trajectories.")],
 	[sg.B("Density over time",key="-M7-",tooltip = "Assess whether the number of detections remains constant over time.\nDensity of trajectories (trajectories/um2) over the course of the acquisition (s)",disabled=True),sg.T("Detection density over the acquisition")],
@@ -2922,7 +2960,7 @@ layout = [
 	[sg.ProgressBar(100, orientation='h',size=(40,20),key='-PROGBAR-', expand_x = True)], 
 ]
 window = sg.Window('nastic st v{}'.format(last_changed), layout)
-
+popup.close()
 
 # VARS
 cmap = matplotlib.cm.get_cmap('brg') # colormap for conditional coloring of clusters based on their average acquisition time

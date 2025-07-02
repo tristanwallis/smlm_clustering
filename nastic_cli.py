@@ -40,7 +40,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-lastchanged = "20240806"
+lastchanged = "20250701"
 
 # LOAD MODULES
 from argparse import ArgumentParser
@@ -60,7 +60,7 @@ warnings.filterwarnings("ignore")
 # PARAMETERS 
 
 # Trajectory parameters
-minlength = 5 # Trajectories must be longer than this to be considered (default 5; value must be >=5)
+minlength = 8 # Trajectories must be longer than this to be considered (default 8; value must be >=5)
 maxlength = 1000	# Trajectories must be shorter than this to be considered(default 1000; value must be >= minlength)
 frame_time = 0.02 # Time between frames (sec) in original acquisition (default 0.02; value must be >0) 
 acq_time = 320 # length of acquisition (sec) (default 320)

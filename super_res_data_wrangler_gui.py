@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 SUPER_RES_DATA_WRANGLER_GUI
-PYSIMPLEGUI BASED GUI FOR THE CONVERSION OF TRAJECTORY FILES
+FREESIMPLEGUI BASED GUI FOR THE CONVERSION OF TRAJECTORY FILES
 CONVERT BETWEEN MUTLIPLE FILE FORMATS FROM THE PALMTRACER (METAMORPH PLUGIN)/TRACKMATE (IMAGEJ PLUGIN)--> SHARP VISU --> NASTIC/segNASTIC/BOOSH --> NASTIC WRANGLER SUPER RESOLUTION DATA PROCESSING PIPELINE
 
 Design and coding: Tristan Wallis and Alex McCann
@@ -12,7 +12,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install pysimplegui colorama scipy numpy scikit-learn
+python -m pip install freesimplegui colorama scipy numpy scikit-learn
 
 
 INPUT: 
@@ -98,7 +98,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20240614"
+last_changed = "20250606"
 
 # LOAD MODULES (Functions)
 import random
@@ -119,7 +119,7 @@ warnings.filterwarnings("ignore")
 if __name__ == "__main__": # has to be called this way for multiprocessing to work
 	
 	# LOAD MODULES (GUI and console)
-	import PySimpleGUI as sg
+	import FreeSimpleGUI as sg
 	import os
 	from colorama import init as colorama_init
 	from colorama import Fore
@@ -198,7 +198,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		graph.DrawText("Queensland Brain Institute",(0,-40),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("The University of Queensland",(0,-70),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-110),color="white",font=("Any",10),text_location="center")	
-		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-150),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("FreeSimpleGUI: https://pypi.org/project/FreeSimpleGUI/",(0,-150),color="white",font=("Any",10),text_location="center")	
 
 		while True:
 			# READ AND UPDATE VALUES

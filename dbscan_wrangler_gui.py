@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 DBSCAN_WRANGLER_GUI
-PYSIMPLEGUI BASED GUI TO PERFROM META ANALYSIS OF METRICS PRODUCED BY DBSCAN AND VORONOI CLUSTERING
+FREESIMPLEGUI BASED GUI TO PERFROM META ANALYSIS OF METRICS PRODUCED BY DBSCAN AND VORONOI CLUSTERING
 
 Design and coding: Tristan Wallis and Sophie Hou
 Queensland Brain Institute
@@ -10,7 +10,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install colorama matplotlib numpy pandas scipy Pillow pysimplegui seaborn scikit-learn
+python -m pip install colorama matplotlib numpy pandas scipy Pillow freesimplegui seaborn scikit-learn
 
 INPUT:
 metrics.tsv files inside directories produced by DBSCAN and Voronoi
@@ -19,9 +19,9 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20231212"
+last_changed = "20250613"
 
-import PySimpleGUI as sg
+import FreeSimpleGUI as sg
 sg.theme('DARKGREY11')
 popup = sg.Window("Initialising...",[[sg.T("DBSCAN Wrangler initialising\nLots of modules...",font=("Arial bold",18))]],finalize=True,no_titlebar = True,alpha_channel=0.9)
 
@@ -41,6 +41,9 @@ import math
 from sklearn import manifold, datasets, decomposition, ensemble, random_projection
 from functools import reduce
 import datetime
+import warnings
+	
+warnings.filterwarnings("ignore")
 
 colorama_init()
 os.system('cls' if os.name == 'nt' else 'clear')	
@@ -117,7 +120,6 @@ def barplot(num,cond1,cond2,title,ylabel,swarm):
 	ylim = ax.get_ylim()[1]
 	plt.ylim(0,ylim*1.1)
 	plt.tight_layout()
-	
 	outlist.append([ylabel,shortname1,avgs[0],sems[0],p,len(cond1),reduce(lambda x, y: str(x) + "\t" + str(y), cond1)])
 	outlist.append([ylabel,shortname2,avgs[1],sems[1],p,len(cond2),reduce(lambda x, y: str(x) + "\t" + str(y), cond2)])		
 
@@ -157,14 +159,14 @@ while True:
 		shortdir1 = dir1.split("/")[-1]
 		if shortdir1 !="":
 			window.Element("-T1-").update(shortdir1)
-			cond1files = glob.glob(dir1 + '/**/metrics.tsv')
+			cond1files = glob.glob(dir1 + '/**/*metrics.tsv',recursive = True)
 			combolist1 = [""]+[x for x in range(1,len(cond1files)+1)]
 			window.Element("-C1-").update(values=combolist1)
 	if event == "-H2-":		
 		shortdir2 = dir2.split("/")[-1]
 		if shortdir2 !="":
 			window.Element("-T2-").update(shortdir2)
-			cond2files = glob.glob(dir2 + '/**/metrics.tsv')	
+			cond2files = glob.glob(dir2 + '/**/*metrics.tsv',recursive = True)	
 			combolist2 = [""]+[x for x in range(1,len(cond2files)+1)]
 			window.Element("-C2-").update(values=combolist2)
 			

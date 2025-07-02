@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 NASTIC_WRANGLER_GUI
-PYSIMPLEGUI BASED GUI TO PERFORM META ANALYSIS OF METRICS PRODUCED BY NANOSCALE SPATIOTEMPORAL INDEXING CLUSTERING (NASTIC AND SEGNASTIC) OR 3D DBSCAN (BOOSH)
+FREESIMPLEGUI BASED GUI TO PERFORM META ANALYSIS OF METRICS PRODUCED BY NANOSCALE SPATIOTEMPORAL INDEXING CLUSTERING (NASTIC AND SEGNASTIC) OR 3D DBSCAN (BOOSH)
 
 Design and coding: Tristan Wallis
 Additional coding: Alex McCann
@@ -11,7 +11,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install colorama matplotlib numpy pandas scipy Pillow pysimplegui seaborn scikit-learn  
+python -m pip install colorama matplotlib numpy pandas scipy Pillow freesimplegui seaborn scikit-learn  
 
 INPUT:
 metrics.tsv files inside the directories produced by NASTIC/segNASTIC/BOOSH 
@@ -38,13 +38,13 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = '20240722'
+last_changed = '20250610'
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
 
 	# LOAD MODULES
-	import PySimpleGUI as sg
+	import FreeSimpleGUI as sg
 	import os
 	from colorama import init as colorama_init
 	from colorama import Fore
@@ -156,7 +156,7 @@ if __name__ == "__main__":
 		graph.DrawText("Queensland Brain Institute",(0,-20),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("The University of Queensland",(0,-50),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-80),color="white",font=("Any",10),text_location="center")	
-		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-120),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("FreeSimpleGUI: https://pypi.org/project/FreeSimpleGUI/",(0,-120),color="white",font=("Any",10),text_location="center")	
 		while True:	
 			# READ AND UPDATE VALUES
 			event, values = splash.read(timeout=timeout) 
@@ -992,7 +992,7 @@ if __name__ == "__main__":
 	]
 
 	directory1_frame_layout_col = [
-		[sg.Frame("Condition 1", directory1_frame_layout)],
+		[sg.Frame("Condition 1", directory1_frame_layout, expand_x = True)],
 	]
 	
 	# Condition 2 frame
@@ -1003,12 +1003,12 @@ if __name__ == "__main__":
 	]
 
 	directory2_frame_layout_col = [
-		[sg.Frame("Condition 2", directory2_frame_layout)],
+		[sg.Frame("Condition 2", directory2_frame_layout,expand_x = True)],
 	]
 
 	# Load files tab layout
 	load_file_layout = [
-		[sg.Column(directory1_frame_layout_col),sg.Column(directory2_frame_layout_col)],
+		[sg.Column(directory1_frame_layout_col,expand_x = True),sg.Column(directory2_frame_layout_col,expand_x = True)],
 		[sg.Push(),sg.B("LOAD DATA",key = "-LOAD-", tooltip = "Reads data from each metrics.tsv file selected", size=(25,2),button_color=("white","gray"),disabled=True),sg.Push()],
 	]
 
@@ -1021,7 +1021,7 @@ if __name__ == "__main__":
 	]
 
 	directory1_plot_frame_layout_col = [
-		[sg.Frame("Condition 1", directory1_plot_frame_layout)],
+		[sg.Frame("Condition 1", directory1_plot_frame_layout,expand_x = True)],
 	]
 	
 	# Condition 2 frame
@@ -1031,12 +1031,12 @@ if __name__ == "__main__":
 	]
 
 	directory2_plot_frame_layout_col = [
-		[sg.Frame("Condition 2", directory2_plot_frame_layout)],
+		[sg.Frame("Condition 2", directory2_plot_frame_layout,expand_x = True)],
 	]
 	
 	# Plot data tab layout
 	plot_data_layout = [
-		[sg.Col(directory1_plot_frame_layout_col),sg.Col(directory2_plot_frame_layout_col)],
+		[sg.Col(directory1_plot_frame_layout_col,expand_x = True),sg.Col(directory2_plot_frame_layout_col,expand_x = True)],
 		[sg.T("     "),sg.Checkbox("Outlier Removal", default = True,key = '-OUT_CHECKBOX-'),sg.T("   - median filtering outlier reduction for aggregate data", font = "Any 12 italic")],
 		[sg.T("Data to Plot:")],
 		[sg.T("     "),sg.Checkbox("Aggregate Data", default = True, key = '-AGG_CHECKBOX-'), sg.T("   - aggregates individual cluster metrics across all samples (N = total # of clusters)", font = "Any 12 italic")],

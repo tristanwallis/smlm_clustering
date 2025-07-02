@@ -17,18 +17,18 @@ Step 2 - select which version of the program to use
     b. ST_GUI.py - single-threaded (compilable) Graphical User Interface version
     c. CLI.py - command line single-threaded version
     d. 2C_GUI.py - (where applicable) 2 colored version of the GUI.py version
-    e. 2C_ST_GUI - (where applicable) 2 colored version of the 2C_ST_GUI.py version 
+    e. 2C_ST_GUI.py - (where applicable) 2 colored version of the ST_GUI.py version 
 
 Step 3 - generate trajectory files in the .trxyt file format used as input by NASTIC, SEGNASTIC, BOOSH, DBSCAN and VORONOI scripts
     a. Convert tracked trajectory files to the .trxyt file format using the Super Res Data Wrangler GUI or CLI
     b. Generate synthetic trajectory files using the Synthetic Data Generator GUI or CLI (intended for comparison purposes only)
-    c. Use the provided example synthetic trajectory files previously generated using the Synthetic Data Generator GUI (intended for comparison purposes only)  
+    c. Use the provided example synthetic trajectory files previously generated using the Synthetic Data Generator (intended for comparison purposes only)  
 
-Step 4 - run the program
+Step 4 - run the clustering program of choice (from Step 1 and 2)
     a. Option 1: Double click on the script
-    b. Option 2: Open a command line terminal, navigate to the location of the script using the terminal, type python followed by the script name (e.g., python nastic_gui.py)
+    b. Option 2: Open a command line terminal, navigate to the location of the script using the terminal, type python followed by the script name (e.g., python nastic_gui.py) followed by the return key
 
-Step 5 - analyse data using the data wrangler GUIs
+Step 5 - perform meta analysis of clustering data (output from Step 4) using the data wrangler GUIs
     a. NASTIC_WRANGLER_GUI.py - use for data produced by NASTIC, SEGNASTIC and BOOSH scripts
     b. DBSCAN_WRANGLER_GUI.py - use for data produced by DBSCAN and VORONOI scripts (intended for comparison purposes only)
 
@@ -50,14 +50,16 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * (Optional) NASTIC roi_coordinates.tsv file containing ROI coordinates
 
+* (Optional) FIJI XY_Coordinates.csv file containing ROI coordinates
+
 ## Output:
 * metrics.tsv (file containing cluster metrics)
 
-* raw_acquisition.png (plot showing raw detections with selected ROI overlayed)
+* raw_acquisition.png (plot showing raw detections with selected ROI overlayed) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* main_plot.png (plot showing clustered data inside selected ROI)
+* main_plot.png (plot showing clustered data inside selected ROI) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* (Optional) .png (any additional plots that were generated and saved)
+* (Optional) .png (any additional plots that were generated and saved) (may also be exported as .eps, .pdf, .ps or .svg)
 
 * roi_coordinates.tsv (file containing coordinates of the ROI that was selected)
 
@@ -72,14 +74,14 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * nastic_cli.py: command line single-threaded version of nastic
 
-* nastic2c_gui.py: multithreaded GUI for physical hardware - two colour version
+* nastic2c_gui.py: multithreaded GUI for physical hardware - two colour version of nastic
 
 * nastic2c_st_gui.py: single-threaded (compilable) version of nastic2c_gui.py
 
 ## Notes: 
 * Trajectory files in formats other than the .trxyt file format can be converted to the .trxyt file format using the Super Res Data Wrangler (GUI or CLI) for use in NASTIC
 
-* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator (GUI or CLI) and used as input in NASTIC
+* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator (GUI or CLI) and used as input in NASTIC (intended for comparison purposes only)
 
 * Metrics.tsv files produced by NASTIC can be subsequently analysed using the NASTIC Wrangler GUI
 
@@ -100,14 +102,16 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * (Optional) NASTIC roi_coordinates.tsv file containing ROI coordinates
 
+* (Optional) FIJI XY_Coordinates.csv file containing ROI coordinates
+
 ## Output:
 * metrics.tsv (file containing cluster metrics)
 
-* raw_acquisition.png (plot showing raw detections with selected ROI overlayed)
+* raw_acquisition.png (plot showing raw detections with selected ROI overlayed) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* main_plot.png (plot showing clustered data inside selected ROI)
+* main_plot.png (plot showing clustered data inside selected ROI) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* (Optional) .png (any additional plots that were generated and saved)
+* (Optional) .png (any additional plots that were generated and saved) (may also be exported as .eps, .pdf, .ps or .svg)
 
 * roi_coordinates.tsv (file containing coordinates of the ROI that was selected)
 
@@ -122,14 +126,14 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * segnastic_cli.py: command line single-threaded version of segnastic
 
-* segnastic2c_gui.py: two colour version of segnastic
+* segnastic2c_gui.py: multithreaded GUI for physical hardware - two colour version of segnastic
 
 * segnastic2c_st_gui.py: single-threaded (compilable) version of segnastic2c_gui.py  
 
 ## Notes: 
 * Trajectory files in formats other than the .trxyt file format can be converted to the .trxyt file format using the Super Res Data Wrangler (GUI or CLI) for use in SEGNASTIC
 
-* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator (GUI or CLI) and used as input in SEGNASTIC
+* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator (GUI or CLI) and used as input in SEGNASTIC (intended for comparison purposes only)
 
 * Metrics.tsv files produced by SEGNASTIC can be subsequently analysed using the NASTIC Wrangler GUI
 
@@ -147,14 +151,16 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * (Optional) NASTIC roi_coordinates.tsv file containing ROI coordinates
 
+* (Optional) FIJI XY_Coordinates.csv file containing ROI coordinates
+
 ## Output:
 * metrics.tsv (file containing cluster metrics)
 
-* raw_acquisition.png (plot showing raw detections with selected ROI overlayed)
+* raw_acquisition.png (plot showing raw detections with selected ROI overlayed) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* main_plot.png (plot showing clustered data inside selected ROI)
+* main_plot.png (plot showing clustered data inside selected ROI) (may also be exported as .eps, .pdf, .ps or .svg)
 
-* (Optional) .png (any additional plots that were generated and saved)
+* (Optional) .png (any additional plots that were generated and saved) (may also be exported as .eps, .pdf, .ps or .svg)
 
 * roi_coordinates.tsv (file containing coordinates of the ROI that was selected)
 
@@ -165,14 +171,14 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 
 * boosh_cli.py: command line single-threaded version of boosh (experimental)
 
-* boosh2c_gui.py: two colour version of boosh (experimental)
+* boosh2c_gui.py: multithreaded GUI for physical hardware - two colour version of boosh (experimental)
 
 * boosh2c_st_gui.py: single-threaded (compilable) version of boosh2c_gui.py (experimental)
 
 ## Notes: 
 * Trajectory files in formats other than the .trxyt file format can be converted to the .trxyt file format using the Super Res Data Wrangler (GUI or CLI) for use in BOOSH
 
-* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator GUI and used as input in BOOSH
+* Alternatively, synthetic trajectory .trxyt files can be generated using the Synthetic Data Generator GUI and used as input in BOOSH (intended for comparison purposes only)
 
 * Metrics.tsv files produced by BOOSH can be subsequently analysed using the NASTIC Wrangler GUI
 
@@ -208,7 +214,7 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 # VORONOI
 
 ## Overview:
-Uses Voronoi tesselation to cluster TRAJECTORY CENTROIDS (intended for comparison purposes only).
+Uses VORONOI TESSELATION to cluster TRAJECTORY CENTROIDS (intended for comparison purposes only).
 
 See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and derivatives.
 
@@ -239,7 +245,7 @@ See nastic_user_manual.pdf for detailed instructions for nastic_gui.py and deriv
 ## Overview:
 Meta analysis of metrics.tsv file outputs from NASTIC, SEGNASTIC and BOOSH scripts.
 
-See nastic_wrangler_manual.pdf for detailed instructions for nastic_wrangler_gui.py.
+See nastic_wrangler_user_manual.pdf for detailed instructions for nastic_wrangler_gui.py.
 
 ## Input:
 * metrics.tsv (files containing cluster metrics produced by NASTIC, SEGNASTIC or BOOSH)
@@ -251,9 +257,9 @@ See nastic_wrangler_manual.pdf for detailed instructions for nastic_wrangler_gui
 
 * (Optional) pca_labels.png
 
-* (Optional) aggregate_plots .png 
+* (Optional) aggregate_plots/cluster_metric_name.png (1 plot for each cluster metric)
 
-* (Optional) average_plots .png
+* (Optional) average_plots/cluster_metric_name.png (1 plot for each cluster metric)
 
 ## Scripts:
 * nastic_wrangler_gui.py
@@ -264,28 +270,26 @@ See nastic_wrangler_manual.pdf for detailed instructions for nastic_wrangler_gui
 Meta analysis of output from dbscan_gui.py and voronoi_gui.py.
 
 ## Input:
-.trxyt (file containing trajectory information)
+* metrics.tsv (file containing cluster metrics produced by DBSCAN or VORONOI)
 
 ## Output:
-* metrics.tsv (file containing cluster metrics)
+* processed_metrics.tsv
 
-* raw_acquisition.png (plot showing raw detections with selected ROI overlayed)
+* aggregate_plots.png
 
-* main_plot.png (plot showing clustered data inside selected ROI)
+* average_plots.png
 
-* (Optional) .png (any additional plots that were generated and saved)
-
-* roi_coordinates.tsv (file containing coordinates of the ROI that was selected)
+* PCA_plot.png
 
 ## Scripts:
-* dbscan_wrangler_gui.py: meta analysis of output from dbscan_gui.py and voronoi_gui.py
+* dbscan_wrangler_gui.py
 
 # SUPER RES DATA WRANGLER
 
 ## Overview:
 Convert between various trajectory filetypes for further analysis.
 
-See super_res_data_wrangler_gui_manual.pdf for detailed instructions.
+See super_res_data_wrangler_gui_user_manual.pdf and super_res_data_wrangler_cli_user_manual.pdf for detailed instructions.
 
 ## Input:
 * file/folder containing files with trajectory information
@@ -302,7 +306,7 @@ See super_res_data_wrangler_gui_manual.pdf for detailed instructions.
 
     f. (Optional) TrackMate .csv 
 
-    g. (Optional) other file type (manually input trajectory file parameters)
+    g. (Optional) other file type (manually input trajectory file parameters) (GUI only)
 
 ## Output:
 
@@ -319,9 +323,9 @@ See super_res_data_wrangler_gui_manual.pdf for detailed instructions.
     e. (Optional) SharpViSu .ascii and .id (drift corrected)
 
 ## Scripts:
-* super_res_data_wrangler_gui.py: convert between super resolution trajectory filetypes
+* super_res_data_wrangler_gui.py: multithreaded GUI for physical hardware
 
-* super_res_data_wrangler_cli.py: command line batch convert between super resolution trajectory filetypes
+* super_res_data_wrangler_cli.py: command line version of super res data wrangler
 
 # SYNTHETIC DATA GENERATOR
 
@@ -341,9 +345,9 @@ See synthetic_data_generator_gui_manual.pdf and synthetic_data_generator_cli_man
 * (Optional) .png (plots showing trajectories that were generated within the ROI, with the ROI shown in green)
 
 ## Scripts:
-* synthetic_data_generator_gui.py: generate synthetic data using multiple parameters
+* synthetic_data_generator_gui.py: multithreaded GUI for physical hardware - generate synthetic data using multiple parameters
 
-* synthetic_data_generator_cli.py: command line version of synthetic_data_generator_gui.py
+* synthetic_data_generator_cli.py: command line version of synthetic data generator - generate synthetic data using hardcoded default values
 
 # File list
 ## Multithreaded GUI for physical hardware
@@ -370,11 +374,11 @@ See synthetic_data_generator_gui_manual.pdf and synthetic_data_generator_cli_man
 
 * nastic2c_st_gui.py: single-threaded (compilable) version of nastic2c_gui.py  
 
-* segnastic_st_gui.py: single-threaded (compilable)version of segnastic_gui.py  
+* segnastic_st_gui.py: single-threaded (compilable) version of segnastic_gui.py  
 
 * segnastic2c_st_gui.py: single-threaded (compilable) version of segnastic2c_gui.py  
 
-* 2in1_nastic_segnastic_st_gui.py: single-threaded (compilable) 2-in-1 version of nastic and segnastic
+* 2in1_nastic_segnastic_st_gui.py: single-threaded (compilable) version of 2in1_nastic_segnastic_gui.py
 
 * boosh_st_gui.py: single-threaded (compilable) version of boosh_gui.py (experimental)
 
@@ -392,9 +396,9 @@ See synthetic_data_generator_gui_manual.pdf and synthetic_data_generator_cli_man
 
 * super_res_data_wrangler_gui.py: convert between super resolution trajectory filetypes
 
-* super_res_data_wrangler_cli.py: command line batch convert between super resolution trajectory filetypes
+* super_res_data_wrangler_cli.py: command line version of super_res_data_wrangler_gui.py
 
-* synthetic_data_generator_gui.py: generate synthetic data using multiple parameters
+* synthetic_data_generator_gui.py: generate synthetic trajectory data using multiple parameters
 
 * synthetic_data_generator_cli.py: command line version of synthetic_data_generator_gui.py
 
@@ -403,15 +407,15 @@ See synthetic_data_generator_gui_manual.pdf and synthetic_data_generator_cli_man
 ## User manuals
 * nastic_user_manual.pdf: detailed instructions for nastic_gui.py and derivatives
 
-* nastic_wrangler_manual.pdf: detailed instructions for nastic_wrangler_gui.py
+* nastic_wrangler_user_manual.pdf: detailed instructions for nastic_wrangler_gui.py
 
-* super_res_data_wrangler_gui_manual.pdf: detailed instructions for the graphical user interface (GUI) version of the super res data wrangler 
+* super_res_data_wrangler_gui_user_manual.pdf: detailed instructions for the graphical user interface (GUI) version of the super res data wrangler 
 
-* super_res_data_wrangler_cli_manual.pdf: detailed instructions for the command line (cli) version of the super res data wrangler
+* super_res_data_wrangler_cli_user_manual.pdf: detailed instructions for the command line (cli) version of the super res data wrangler
 
-* synthetic_data_generator_gui_manual.pdf: detailed instructions for the graphical user interface (GUI) version of the synthetic data generator
+* synthetic_data_generator_gui_user_manual.pdf: detailed instructions for the graphical user interface (GUI) version of the synthetic data generator
 
-* synthetic_data_generator_cli_manual.pdf: detailed instructions for the command line (cli) version of the synthetic data generator
+* synthetic_data_generator_cli_user_manual.pdf: detailed instructions for the command line (cli) version of the synthetic data generator
 
 ## Data
 * synthetic_col1.trxyt: synthetic trajectory data containing "hotspots" of overlapping spatiotemporal trajectory clusters (intended for comparison purposes only)
@@ -436,13 +440,13 @@ Operating systems: Windows, Linux and Mac
 
 Requires: Python 3.8+
 
-Modules: colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), Pillow (v9.2.0), pysimplegui (v4.60.4), rtree (v1.0.0), scikit-learn (v1.1.2), scipy(v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
+Modules: colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), Pillow (v9.2.0), FreeSimpleGUI (v5.2.0.post1), rtree (v1.0.0), scikit-learn (v1.1.2), scipy (v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
 
 # Installation procedure
 1. Open a new instance of the command line
 2. Copy and paste the following:
 ```
-python -m pip install pysimplgui==4.60.4 colorama==0.4.6 matplotlib==3.8.4 matplotlib-venn==0.11.7 numpy==1.23.2 pandas==1.4.4 Pillow==9.2.0 rtree==1.0.0 scikit-learn==1.1.2 scipy==1.13.1 seaborn==0.12.0 statsmodels==0.13.2
+python -m pip install FreeSimpleGUI==5.2.0.post1 colorama==0.4.6 matplotlib==3.8.4 matplotlib-venn==0.11.7 numpy==1.23.2 pandas==1.4.4 Pillow==9.2.0 rtree==1.0.0 scikit-learn==1.1.2 scipy==1.13.1 seaborn==0.12.0 statsmodels==0.13.2
 ```
 3. Press the return key
 

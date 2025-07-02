@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 '''
 VORONOI_GUI
-PYSIMPLEGUI BASED GUI FOR VORONOI CLUSTERING OF MOLECULAR TRAJECTORY DATA
+FREESIMPLEGUI BASED GUI FOR VORONOI CLUSTERING OF MOLECULAR TRAJECTORY DATA
 
 Design and code: Tristan Wallis
 Debugging: Sophie Huiyi Hou
@@ -11,7 +11,7 @@ Fred Meunier: f.meunier@uq.edu.au
 
 REQUIRED:
 Python 3.8 or greater
-python -m pip install scipy numpy matplotlib scikit-learn pysimplegui colorama
+python -m pip install scipy numpy matplotlib scikit-learn freesimplegui colorama
 
 INPUT:
 TRXYT trajectory files from Matlab
@@ -35,7 +35,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20231212"
+last_changed = "20250610"
 
 # MULTIPROCESSING FUNCTIONS
 from scipy.spatial import ConvexHull
@@ -70,7 +70,7 @@ def multi(allpoints):
 if __name__ == "__main__": # has to be called this way for multiprocessing to work
 
 	# LOAD MODULES
-	import PySimpleGUI as sg
+	import FreeSimpleGUI as sg
 	import os
 	from colorama import init as colorama_init
 	from colorama import Fore
@@ -185,7 +185,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		graph.DrawText("University of Queensland",(0,0),color="white",font=("Any",10),text_location="center")	
 		graph.DrawText("Fred Meunier f.meunier@uq.edu.au",(0,-15),color="white",font=("Any",10),text_location="center")	
 
-		graph.DrawText("PySimpleGUI: https://pypi.org/project/PySimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
+		graph.DrawText("FreeSimpleGUI: https://pypi.org/project/FreeSimpleGUI/",(0,-55),color="white",font=("Any",10),text_location="center")	
 
 		while True:
 			# READ AND UPDATE VALUES
@@ -327,7 +327,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			outfile.write("{}\t{}\n".format("Plot background transparent",savetransparency))
 			outfile.write("{}\t{}\n".format("Auto cluster",autocluster))
 			outfile.write("{}\t{}\n".format("Auto plot",autoplot))
-			outfile.write("{}\t{}\n".format("Cluster size screen",radius_thresh))
+			outfile.write("{}\t{}\n".format("Cluster radius screen",radius_thresh))
 			outfile.write("{}\t{}\n".format("Cluster fill",cluster_fill))
 			outfile.write("{}\t{}\n".format("Auto metric",auto_metric))
 		return
@@ -386,7 +386,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			savetransparency = defaultdict["Plot background transparent"]
 			autoplot = defaultdict["Auto plot"]
 			autocluster = defaultdict["Auto cluster"]
-			radius_thresh = defaultdict["Cluster size screen"]				
+			radius_thresh = defaultdict["Cluster radius screen"]				
 			if savetransparency == "True":
 				savetransparency = True
 			if savetransparency == "False":
@@ -1427,33 +1427,33 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 			for selverts in all_selverts:			
 				vx,vy = list(zip(*selverts))
 				plt.plot(vx,vy,linewidth=2,c="orange",alpha=1)
-			plt.savefig("{}/raw_acquisition.png".format(outdir),dpi=300)
+			plt.savefig("{}/raw_acquisition.{}".format(outdir,saveformat),dpi=300)
 			plt.close()
 			try:
 				buf.seek(0)
 				fig100=pickle.load(buf0)
-				plt.savefig("{}/main_plot.png".format(outdir),dpi=300)
+				plt.savefig("{}/main_plot.{}".format(outdir,saveformat),dpi=300)
 				plt.close()
 			except:
 				pass		
 			try:
 				buf1.seek(0)
 				fig100=pickle.load(buf1)
-				plt.savefig("{}/MSD.png".format(outdir),dpi=300)
+				plt.savefig("{}/MSD.{}".format(outdir,saveformat),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf2.seek(0)
 				fig100=pickle.load(buf2)
-				plt.savefig("{}/voronoi.png".format(outdir),dpi=300)
+				plt.savefig("{}/voronoi.{}".format(outdir,saveformat),dpi=300)
 				plt.close()
 			except:
 				pass
 			try:
 				buf3.seek(0)
 				fig100=pickle.load(buf3)
-				plt.savefig("{}/KDE.png".format(outdir),dpi=300)
+				plt.savefig("{}/KDE.{}".format(outdir,saveformat),dpi=300)
 				plt.close()
 			except:
 				pass					
@@ -1498,7 +1498,7 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 	tab3_layout = [
 		[sg.T(u'Voronoi threshold (μm²):',tooltip = "Tiles smaller than this are \nconsidered potentially clustered"),sg.InputText(voronoi_threshold,size="50",key="-VOR_THRESH-")],	
 		[sg.T('Cluster threshold:',tooltip = "Clusters must contain at least this\n many centroids "),sg.InputText(minpts,size="50",key="-MINPTS-")],
-		[sg.T('Cluster size screen (um):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
+		[sg.T(u'Cluster radius screen (µm):',tooltip = "Clusters with a radius larger than this (um)are ignored"),sg.InputText(radius_thresh,size="50",key="-RADIUSTHRESH-")],	
 		[sg.B('CLUSTER SELECTED DATA',size=(25,2),button_color=("white","gray"),key ="-CLUSTERBUTTON-",disabled=True, tooltip = "Perform Voronoi clustering on the selected trajectories.\nIdentified clusters may then be displayed."),sg.Checkbox("Plot immediately",key="-AUTOPLOT-",default=autoplot,tooltip ="Switch to 'Display' tab and begin plotting automatically\nupon clustering of selected trajectories")],
 	]
 

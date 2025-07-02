@@ -33,7 +33,7 @@ etc
 
 OUTPUT:
 [1] .trxyt files - used as input files for NASTIC/segNASTIC/BOOSH
-File naming format: synthetic_YYYYMMDD-HHMMSS.trxyt
+File naming format: synthetic_YYYYMMDD-HHMMSS_file#_.trxyt
 Space separated: Trajectory X(um) Y(um) T(sec)  
 No headers
 
@@ -50,7 +50,7 @@ etc
 [2] metrics.tsv files - contain the parameters that were selected by the user, and the metrics that were generated from these parameters which are then used to generate the .trxyt file. 
 No NASTIC ROI file loaded: X-AXIS SIZE (um) and Y-AXIS SIZE (um) parameters are included in the metrics file. 
 NASTIC ROI file loaded: the name of the ROI file (ROI FILE) and selection area (ROI AREA) are included in the metrics file. 
-File naming format: synthetic_YYYYMMDD-HHMMSS_metrics.tsv
+File naming format: synthetic_YYYYMMDD-HHMMSS_file#_metrics.tsv
 
 example:
 
@@ -99,7 +99,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-lastchanged = "20240730"
+last_changed = "20250701"
 
 # LOAD MODULES 
 import numpy as np
@@ -128,7 +128,11 @@ unconst = 4 # steplength multiplier of unclustered trajectories (default 4)
 hotspotprobability = 0.2 # chance of a given seed point generating multiple spatially overlapping but temporally distinct clusters (default 0.2)
 hotspotmax = 3 # maximum number of temporal clusters at a given hotspot (default 3)
 orbit = True # clustered trajectories orbit their spawn point rather than random walking (default True)
+trxyt_num = 1 # number of trxyt files to generate (default 1)
+
 clusterdict = {} # dictionary holding clusters
+
+# FUNCTIONS
 
 # CONVEX HULL OF EXTERNAL POINTS, AND THEN INTERNAL POINTS
 def double_hull(points):
@@ -174,9 +178,9 @@ def obtain_midpoints(trajx_before,trajy_before,x,y):
 	return(midpoint_list)
 		
 # READ ROI FILE	
-def read_roi(roi_file):
-	global selarea, p, allx, ally, selverts, roidict
-	print ("\nDetermining selection area")
+def read_roi():
+	global allx, ally, selverts, roidict,p_list,selarea_list
+	print ("\nLoading NASTIC ROI file")
 	print("------------------------------------------------------------")
 	print("NASTIC ROI file selected: \n{}".format(roi_file))
 	print("Reading ROI file...")
@@ -190,6 +194,10 @@ def read_roi(roi_file):
 				roi = int(spl[0])
 				x = float(spl[1])
 				y = float(spl[2])
+				if x < 0:
+					x = 0.0 # prevent crash if roi file contains negative x values
+				if y < 0:
+					y = 0.0 # prevent crash if roi file contains negative y values
 				allx.append(x)
 				ally.append(y)
 				try:
@@ -199,13 +207,713 @@ def read_roi(roi_file):
 					roidict[roi].append([x,y])
 			except:
 				pass
-	for roi in roidict:			
-		selverts =roidict[roi]		
-	p = path.Path(selverts)
-	selarea =PolyArea(list(zip(*selverts))[0],list(zip(*selverts))[1])
-	print("ROI selection area: {} um2".format(selarea))
+	p_list = [] # list of ROI paths (1 per ROI in ROI file)
+	selarea_list = [] # list of ROI selection areas (1 per ROI in ROI file)
+	roi_ct = 0
+	for roi in roidict:
+		roi_ct+=1
+		selverts =roidict[roi]
+		p = path.Path(selverts)
+		p_list.append(p)
+		selarea =PolyArea(list(zip(*selverts))[0],list(zip(*selverts))[1])
+		selarea_list.append(selarea)
+	print("{} ROIs found in ROI file\n".format(roi_ct))
+	return()
+
+# GENERATE TRXYT
+def generate_trxyt(Load_ROI):
+	global trajectories, clusttrajcounter, clustercounter, traj_nums, radii, seed_num, noise,selverts,roidict,x_size, y_size,trajectory_list,clusttrajcounter_list, noise_list,clustercounter_list,traj_nums_list,seed_num_list,radii_list,frame_time_round_val
+	
+	# SEEDS
+	seeds = []
+	
+	# ROUND TIME BY FRAME TIME
+	frame_time_split = str(frame_time).split(".")
+	frame_time_decimal = frame_time_split[-1]
+	if int(frame_time_decimal) == 0:
+		frame_time_round_val = 0
+	else:
+		frame_time_round_val = len(frame_time_decimal)
+	
+	# Using NASTIC ROI to define selection area
+	if Load_ROI == True:
+		# Multiple ROIs in ROI file
+		if len(roidict) > 1:
+			print("\nGenerating trajectories (ROI #{})".format(roi))
+			print("------------------------------------------------------------")
+		print("Selection area: ", selarea)
+		seed_num=int(seed_density*(round(selarea,0)))
+		if seed_num == 0:
+			seed_num = 1 # prevent crash if seed number is zero
+		noise = seed_num * noise_factor
+		print ("Generating {} spatiotemporal cluster seeds ({} seeds/um2)...".format(seed_num,seed_density))
+		xmin = min(allx)
+		xmax = max(allx)
+		ymin = min(ally)
+		ymax = max(ally)
+		ct = 0
+		while ct < seed_num:
+			x = random.uniform(xmin,xmax) # random x
+			y = random.uniform(ymin,ymax) # random y
+			t = random.random()*acquisition_time # random t
+			
+			# test whether t can be divided by frame time -> adjust value if not
+			int_t = int(round(t*10**frame_time_round_val,0))
+			int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+			while int_t %int_frame_time !=0:
+				int_t += 1
+			t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+			
+			if p.contains_point([x,y]):
+				seeds.append([x,y,t])
+				ct +=1
+	
+	# Using x_size and y_size to define selection area
+	elif Load_ROI == False:
+		seed_num = seed_density*(round(x_size*y_size,0))
+		noise = seed_num * noise_factor
+		print ("Generating {} spatiotemporal cluster seeds ({} seeds/um2)...".format(seed_num, seed_density))
+		ct = 0
+		while ct < seed_num:
+			x = random.random()*x_size # random x
+			y = random.random()*y_size # random y
+			t = round(random.random()*acquisition_time,frame_time_round_val) # random t
+			
+			# test whether t can be divided by frame time -> adjust value if not
+			int_t = int(round(t*10**frame_time_round_val,0))
+			int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+			while int_t %int_frame_time !=0:
+				int_t += 1
+			t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+			
+			seeds.append([x,y,t])
+			ct +=1
+	
+	# TRAJECTORIES
+	print ("Generating trajectories around cluster seeds...")
+	clustercounter = 0
+	clusttrajcounter = 0
+	trajectories = []
+	if Load_ROI == True:
+		roi_ct = 0
+		for rois in roidict:
+			roi_ct += 1
+		if roi == 0 or roi_ct == 1:
+			# lists contain metrics for each ROI found in ROI file
+			trajectory_list = [] # trajectories
+			clusttrajcounter_list = [] # number of clustered trajectories
+			noise_list = [] # number of unclustered trajectories
+			clustercounter_list = [] # number of clusters
+			traj_nums_list = [] # number of trajectories per cluster
+			seed_num_list = [] # number of singleton clusters
+			radii_list = [] # cluster radii 
+	for seed in seeds:
+		# Original cluster at each seed point
+		clustercounter+=1
+		x_seed,y_seed,t_seed = seed[0],seed[1],seed[2] # x, y and t for this cluster
+		trajnum = random.randint(min_traj_num,max_traj_num) # number of trajectories for this cluster
+		clusterdict[clustercounter]={"trajectories":[]} # empty trajectory dictionary for this cluster
+		for j in range(trajnum):
+			x_orig = x_seed + 0.5*(random.uniform(-radius,radius)) # starting x point for trajectory 
+			y_orig = y_seed + 0.5*(random.uniform(-radius,radius))# starting y point for trajectory
+			t = round((t_seed + (random.random()*10))/2,frame_time_round_val)*2 # starting time, within 10 sec of the cluster t 
+			
+			# test whether t can be divided by frame time -> adjust value if not
+			int_t = int(round(t*10**frame_time_round_val,0))
+			int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+			while int_t %int_frame_time !=0:
+				int_t += 1
+			t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+				
+			traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
+			x = x_orig
+			y = y_orig
+
+			# Using NASTIC ROI to define selection area
+			if Load_ROI == True:
+				traj = []
+				ct = 0
+				try_ct = 1
+				point_ct = 0
+				while ct < traj_length:
+					if try_ct == 1000:
+						x_orig = x_seed + 0.5*(random.uniform(-radius,radius)) # starting x point for trajectory 
+						y_orig = y_seed + 0.5*(random.uniform(-radius,radius))# starting y point for trajectory
+						x = x_orig
+						y = y_orig
+						traj = []
+						ct = 0
+						try_ct = 1
+						point_ct = 0
+					#Orbit
+					if orbit:
+						# Random walk constrained around spawn point
+						angle = random.uniform(0,360) # random angle for trajectory step
+						distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+						x = x_orig +math.sin(angle)*distance 
+						y = y_orig + math.cos(angle)*distance 
+						if p.contains_point([x,y]):	
+							if ct > 0:	
+								trajx_before = traj[ct-1][0]
+								trajy_before = traj[ct-1][1]
+								midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
+								midpointlistct = 0
+								for x_midpoint,y_midpoint in midpoint_list:
+									midpointlistct += 1
+									if p.contains_point([x_midpoint,y_midpoint]):
+										point_ct +=1
+								if point_ct == 6:
+									t += frame_time
+									t = round(t,frame_time_round_val)
+									traj.append([x,y,t])
+									ct += 1
+									try_ct = 1
+									point_ct = 0
+								else:
+									point_ct = 0
+									try_ct += 1
+							else:
+								t = seed[2]
+								traj.append([x,y,t])
+								ct += 1
+						else:
+							try_ct +=1
+							
+					#No orbit
+					else:	
+						# Random walk unconstrained, can wander from spawn point
+						prevx = x
+						prevy = y
+						angle = random.uniform(0,360) # random angle for trajectory step
+						distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+						x += math.sin(angle)*distance 
+						y = y + math.cos(angle)*distance
+						if p.contains_point([x,y]):
+							if ct > 0:	
+								trajx_before = traj[ct-1][0]
+								trajy_before = traj[ct-1][1]
+								midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
+								midpointlistct = 0
+								for x_midpoint,y_midpoint in midpoint_list:
+									midpointlistct += 1
+									if p.contains_point([x_midpoint,y_midpoint]):
+										point_ct +=1
+								if point_ct == 6:
+									t += frame_time
+									t = round(t,frame_time_round_val)
+									traj.append([x,y,t])
+									ct += 1
+									try_ct = 1
+									point_ct = 0
+								else:
+									point_ct = 0
+									try_ct += 1
+									x = prevx
+									y = prevy
+							else:
+								t = seed[2]
+								traj.append([x,y,t])
+								ct += 1
+						else:
+							try_ct +=1
+							x = prevx 
+							y = prevy
+					
+				trajectories.append(traj)
+				clusttrajcounter +=1
+				clusterdict[clustercounter]["trajectories"].append(traj)
+			
+			# Using x_size and y_size to define selection area
+			elif Load_ROI == False:
+				traj = []
+				ct = 0
+				try_ct = 1
+				while ct < traj_length:
+					if try_ct == 1000:
+						traj = []
+						x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
+						y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
+						x = x_orig
+						y = y_orig
+						ct = 0
+						try_ct = 1
+						
+					# Orbit
+					if orbit:	
+						# Random walk constrained around spawn point
+						angle = random.uniform(0,360) # random angle for trajectory step
+						distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+						x = x_orig +math.sin(angle)*distance
+						if x > x_size:
+							x = x_size
+						if x<0:
+							x = 0
+						y = y_orig + math.cos(angle)*distance	
+						if y>y_size:
+							y=y_size
+						if y<0:
+							y=0			
+						if x < x_size and x > 0 and y < y_size and y > 0:
+							t += frame_time
+							t = round(t,frame_time_round_val)
+							traj.append([x,y,t])
+							ct += 1
+							try_ct = 1
+						else:
+							try_ct += 1
+							
+					# No orbit
+					else:	
+						# Random walk unconstrained, can wander from spawn point
+						prevx = x
+						prevy = y
+						angle = random.uniform(0,360) # random angle for trajectory step
+						distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+						x = x +math.sin(angle)*distance
+						if x > x_size:
+							x = x_size
+						if x<0:
+							x = 0
+						y = y + math.cos(angle)*distance	
+						if y>y_size:
+							y=y_size
+						if y<0:
+							y=0		
+						if x < x_size and x > 0 and y < y_size and y > 0:
+							t += frame_time
+							t = round(t,frame_time_round_val)
+							traj.append([x,y,t])
+							ct += 1
+							try_ct = 1
+						else:
+							try_ct += 1	
+							x = prevx
+							y = prevy
+							
+				trajectories.append(traj)
+				clusttrajcounter +=1
+				clusterdict[clustercounter]["trajectories"].append(traj)
+				
+		# Spatially overlapping, temporally distinct clusters at each seed point 
+		if random.random() < hotspotprobability:
+			for k in range(0,random.randint(1,hotspotmax-1)):
+				clustercounter+=1
+				clusterdict[clustercounter]={"trajectories":[]}
+				x_seed = seed[0]+ random.uniform(-0.25,0.25)*radius # hotspot cluster x
+				y_seed = seed[1]+ random.uniform(-0.25,0.25)*radius # hotspot cluster y
+				t_seed = random.random()*acquisition_time
+				trajnum = random.randint(min_traj_num,max_traj_num)
+				for tr in range(trajnum):
+					x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
+					y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
+					t = round((t_seed + (random.random()*10))/2,frame_time_round_val)*2
+					
+					# test whether t can be divided by frame time -> adjust value if not
+					int_t = int(round(t*10**frame_time_round_val,0))
+					int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+					while int_t %int_frame_time !=0:
+						int_t += 1
+					t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+					
+					traj_length = random.randint(min_traj_length,max_traj_length)
+					traj = []
+					x = x_orig
+					y = y_orig
+					
+					# Using NASTIC ROI to define selection area
+					if Load_ROI == True:
+						ct = 0
+						try_ct = 1
+						while ct < traj_length:
+							if try_ct == 1000:
+								traj = []
+								ct = 0
+								x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
+								y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
+								x = x_orig
+								y = y_orig
+								try_ct = 1
+								
+							#Orbit
+							if orbit:
+								# Random walk constrained around spawn point
+								prevx = x
+								prevy = y
+								angle = random.uniform(0,360) # random angle for trajectory step
+								distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+								x = x_orig +math.sin(angle)*distance
+								y = y_orig + math.cos(angle)*distance
+								if p.contains_point([x,y]):
+									t += frame_time
+									traj.append([x,y,t])
+									ct += 1
+									try_ct = 1
+								else:
+									try_ct += 1
+									x = prevx
+									y = prevy
+								
+							#No orbit
+							else:
+								# Random walk unconstrained, can wander from spawn point
+								prevx = x
+								prevy = y
+								angle = random.uniform(0,360) # random angle for trajectory step
+								distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+								x = x +math.sin(angle)*distance
+								y = y + math.cos(angle)*distance	
+							if p.contains_point([x,y]):
+								t += frame_time
+								t = round(t,frame_time_round_val)
+								traj.append([x,y,t])
+								ct += 1
+								try_ct = 1
+							else:
+								try_ct += 1
+								x = prevx
+								y = prevy
+							
+						trajectories.append(traj)
+						clusttrajcounter +=1
+						clusterdict[clustercounter]["trajectories"].append(traj)
+					
+					# Using x_size and y_size to define selection area
+					elif Load_ROI == False:
+						ct = 0
+						try_ct = 1
+						while ct < traj_length:
+							if try_ct == 1000:
+								traj = []
+								x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
+								y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
+								x = x_orig
+								y = y_orig
+								ct = 0
+								try_ct = 1
+							
+							# Orbit
+							if orbit:
+								# Random walk constrained around spawn point
+								angle = random.uniform(0,360) # random angle for trajectory step
+								distance = random.uniform(-steplength,steplength) # random steplength for trajectory step 
+								x = x_orig +math.sin(angle)*distance
+								if x > x_size:
+									x = x_size
+								if x<0:
+									x = 0
+								y = y_orig + math.cos(angle)*distance
+								if y>y_size:
+									y=y_size
+								if y<0:
+									y=0		
+								if x < x_size and x > 0 and y < y_size and y > 0:
+									t += frame_time
+									t = round(t,frame_time_round_val)
+									traj.append([x,y,t])
+									ct += 1
+									try_ct = 1
+								else:
+									try_ct += 1
+							
+							# No orbit
+							else:
+								# Random walk unconstrained, can wander from spawn point
+								prevx = x
+								prevy = y
+								angle = random.uniform(0,360) # random angle for trajectory step
+								distance = random.uniform(-steplength,steplength) # random steplength for trajectory step
+								x = x +math.sin(angle)*distance
+								if x > x_size:
+									x = x_size
+								if x<0:
+									x = 0
+								y = y + math.cos(angle)*distance	
+								if y>y_size:
+									y=y_size
+								if y<0:
+									y=0		
+								if x < x_size and x > 0 and y < y_size and y > 0:
+									t += frame_time
+									t = round(t,frame_time_round_val)
+									traj.append([x,y,t])
+									ct += 1
+									try_ct = 1
+								else:
+									try_ct += 1
+									x = prevx
+									y = prevy
+									
+						trajectories.append(traj)
+						clusttrajcounter +=1
+						clusterdict[clustercounter]["trajectories"].append(traj)
+						
+	# Noise		
+	print ("Generating unclustered trajectory seeds...")
+	
+	# Using NASTIC ROI to define selection area
+	if Load_ROI == True:
+		noiseseeds = []
+		ct = 0
+		while ct < noise:
+			x = random.uniform(xmin,xmax) # random x
+			y = random.uniform(ymin,ymax) # random y
+			t = round(random.random()*acquisition_time,frame_time_round_val) # random t
+			
+			# test whether t can be divided by frame time -> adjust value if not
+			int_t = int(round(t*10**frame_time_round_val,0))
+			int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+			while int_t %int_frame_time !=0:
+				int_t += 1
+			t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+			
+			if p.contains_point([x,y]):
+				noiseseeds.append([x,y,t])
+				ct +=1
+		print ("Generating {} unclustered trajectories with higher mobility ({}x number of cluster seeds)...".format(noise, noise_factor))
+		for seed in noiseseeds:
+			x,y,t = seed[0],seed[1],seed[2] # x, y and t for this cluster
+			traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
+			traj = []
+			ct = 0
+			try_ct = 1
+			point_ct = 0
+			while ct < traj_length:
+				if try_ct == 1000:
+					traj = []
+					ct = 0
+					x,y,t = seed[0],seed[1],seed[2]
+					try_ct = 1
+					point_ct = 0
+				prevx = x
+				prevy = y
+				angle = random.uniform(0,360) # random angle for trajectory step
+				distance = unconst*(random.uniform(-steplength,steplength)) # random steplength for trajectory step
+				x = x +math.sin(angle)*distance
+				y = y + math.cos(angle)*distance
+				if p.contains_point([x,y]):	
+					if ct > 0:	
+						trajx_before = traj[ct-1][0]
+						trajy_before = traj[ct-1][1]
+						midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
+						midpointlistct = 0
+						for x_midpoint,y_midpoint in midpoint_list:
+							midpointlistct += 1
+							if p.contains_point([x_midpoint,y_midpoint]):
+								point_ct +=1
+						if point_ct == 6:
+							t += frame_time
+							t = round(t, frame_time_round_val)
+							traj.append([x,y,t])
+							ct += 1
+							try_ct = 1
+							point_ct = 0
+						else:
+							x = prevx
+							y = prevy
+							point_ct = 0
+							try_ct +=1
+					else:
+						t = seed[2]
+						traj.append([x,y,t])
+						ct += 1
+				else:
+					try_ct+=1
+					x = prevx
+					y = prevy
+			
+			trajectories.append(traj)
+			
+	# Using x_size and y_size to define selection area
+	elif Load_ROI == False:
+		noiseseeds = []
+		ct = 0
+		while ct < noise:
+			x = random.random()*x_size # random x
+			y = random.random()*y_size # random y
+			t = round(random.random()*acquisition_time,frame_time_round_val) # random t
+			
+			# test whether t can be divided by frame time -> adjust value if not
+			int_t = int(round(t*10**frame_time_round_val,0))
+			int_frame_time = int(round(frame_time*10**frame_time_round_val,0))
+			while int_t %int_frame_time !=0:
+				int_t += 1
+			t = round(int_t*10**-frame_time_round_val,frame_time_round_val)
+			
+			noiseseeds.append([x,y,t])
+			ct += 1
+			
+		print ("Generating {} unclustered trajectories with higher mobility ({}x number of cluster seeds)...".format(noise, noise_factor))
+		for seed in noiseseeds:
+			x,y,t = seed[0],seed[1],seed[2] # x, y and t for this cluster
+			traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
+			traj = []
+			ct = 0
+			try_ct = 1
+			while ct < traj_length:
+				if try_ct == 1000:
+					traj = []
+					x,y,t = seed[0],seed[1],seed[2]
+					ct = 0
+					try_ct = 1
+				# Random walk unconstrained, can wander from spawn point
+				prevx = x
+				prevy = y
+				angle = random.uniform(0,360) # random angle for trajectory step
+				distance = unconst*(random.uniform(-steplength,steplength)) # random steplength for trajectory step
+				x = x +math.sin(angle)*distance
+				if x > x_size:
+					x = x_size
+				if x<0:
+					x = 0
+				y = y + math.cos(angle)*distance	
+				if y>y_size:
+					y=y_size
+				if y<0:
+					y=0	
+				if x < x_size and x > 0 and y < y_size and y > 0:
+					t += frame_time	
+					t = round(t,frame_time_round_val)
+					traj.append([x,y,t])
+					ct += 1
+					try_ct = 1
+				else:
+					try_ct +=1
+					x = prevx
+					y = prevy
+							
+			trajectories.append(traj)		
+					
+	# Metrics
+	if Load_ROI == False:
+		print("\nGenerating metrics")
+	elif Load_ROI == True:
+		if len(roidict) > 1:
+			print("\nGenerating metrics (ROI #{})".format(roi))
+		else:
+			print("\nGenerating metrics")
+	print("------------------------------------------------------------")
+	traj_nums = []
+	radii= []
+	for num in clusterdict:
+		cluster_trajectories = clusterdict[num]["trajectories"]
+		clusterdict[num]["traj_num"]=len(cluster_trajectories) # number of trajectories in each cluster
+		clusterpoints = [point[:2]  for traj in cluster_trajectories for point in traj] # all x,y points for trajectories in cluster 
+		ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # internal and external convex hull of cluster points 
+		clusterdict[num]["area"] = int_area # internal hull area as cluster area (um2)
+		clusterdict[num]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster internal hull (um)
+		traj_nums.append(clusterdict[num]["traj_num"])
+		radii.append(clusterdict[num]["radius"])
+	print ("Total traj:",clusttrajcounter + noise)
+	print ("Clustered traj:",clusttrajcounter)
+	print ("Total clusters:", clustercounter)
+	print ("Avg traj per cluster:", np.average(traj_nums))
+	print ("Avg cluster radius:", np.average(radii))
+	if Load_ROI == True:
+		trajectory_list.append(trajectories)
+		clusttrajcounter_list.append(clusttrajcounter)
+		noise_list.append(noise)
+		clustercounter_list.append(clustercounter)
+		traj_nums_list.append(traj_nums)
+		seed_num_list.append(seed_num)
+		radii_list.append(radii)
 	return()
 	
+# Output
+def output(traj_num_ct,stamp,Load_ROI):								 
+	print("\nWriting files")
+	print("------------------------------------------------------------")
+	print ("Writing trxyt...")
+	with open("synthetic_data_output_{}/synthetic_data_{}_{}.trxyt".format(stamp, stamp,traj_num_ct+1),"a") as outfile: 
+
+		if Load_ROI == False:
+			for tr,traj in enumerate(trajectories,start=1):
+				for seg in traj:
+					x,y,t = seg
+					outline = "{} {} {} {}\n".format(tr,x,y,round(t,frame_time_round_val))
+					outfile.write(outline)
+		elif Load_ROI == True:
+			if len(trajectory_list) > 1:
+				trajectory_temp_list = []
+				for tr, trajectory in enumerate(trajectory_list):
+					for traj in trajectory:
+						trajectory_temp_list.append(traj)
+				for tr,traj in enumerate(trajectory_temp_list,start=1):
+					for seg in traj:
+						x,y,t = seg
+						outline = "{} {} {} {}\n".format(tr,x,y,round(t,frame_time_round_val))
+						outfile.write(outline)
+			else:
+				for tr,traj in enumerate(trajectories,start=1):
+					for seg in traj:
+						x,y,t = seg
+						outline = "{} {} {} {}\n".format(tr,x,y,round(t,frame_time_round_val))
+						outfile.write(outline)
+	print ("Writing metrics...")
+	with open("synthetic_data_output_{}/synthetic_data_{}_{}_metrics.tsv".format(stamp,stamp,traj_num_ct+1),"a") as outfile: 
+		if Load_ROI == False:
+			outfile.write("PARAMETERS:\n=================\n")
+		elif Load_ROI == True:
+			outfile.write("PARAMETERS:\n==================================\n")
+		outfile.write("ACQUISITION TIME (s): {}\n".format(acquisition_time))	
+		outfile.write("FRAME TIME (s): {}\n".format(frame_time))	
+		if Load_ROI == True:
+			outfile.write("ROI FILE: {}\n".format(roi_file))	
+			outfile.write("ROI AREA: {}\n".format(selarea))	
+		if Load_ROI == False:
+			outfile.write("X SIZE (um): {}\n".format(x_size ))	
+			outfile.write("Y SIZE (um): {}\n".format(y_size))	
+		outfile.write("SEED DENSITY (per um2): {}\n".format(seed_density))	
+		outfile.write("SEED RADIUS (um): {}\n".format(radius))	
+		outfile.write("MIN TRAJ AROUND SEED: {}\n".format(min_traj_num))	
+		outfile.write("MAX TRAJ AROUND SEED: {}\n".format(max_traj_num))	
+		outfile.write("MIN TRAJ STEPS: {}\n".format(min_traj_length))	
+		outfile.write("MAX TRAJ STEPS: {}\n".format(max_traj_length))
+		outfile.write("MAX STEPLENGTH (um): {}\n".format(steplength))	
+		outfile.write("CLUSTER TRAJ ORBIT: {}\n".format(orbit))	
+		outfile.write("NOISE FACTOR: {}\n".format(noise_factor))	
+		outfile.write("UNCLUST STEPLENGTH MULTIPLIER: {}\n".format(unconst))	
+		outfile.write("HOTSPOT PROBABILITY: {}\n".format(hotspotprobability))	
+		outfile.write("MAX CLUSTERS PER HOTSPOT: {}\n".format(hotspotmax))	
+		if Load_ROI == False:
+			outfile.write("\nGENERATED METRICS:\n=================\n")
+			outfile.write("TOTAL TRAJECTORIES: {}\n".format(clusttrajcounter + noise))
+			outfile.write("CLUSTERED TRAJECTORIES: {}\n".format(clusttrajcounter))	
+			outfile.write("UNCLUSTERED TRAJECTORIES: {}\n".format(noise))	
+			outfile.write("TOTAL CLUSTERS: {}\n".format(clustercounter))
+			outfile.write("SINGLETON CLUSTERS: {}\n".format(seed_num))
+			outfile.write("AVERAGE TRAJECTORIES PER CLUSTER: {} +/- {}\n".format(np.average(traj_nums),np.std(traj_nums)/math.sqrt(len(traj_nums))))	
+			outfile.write("AVERAGE CLUSTER RADIUS: {} +/- {}\n".format(np.average(radii),np.std(radii)/math.sqrt(len(radii))))	
+		if Load_ROI == True:	
+			for roi,selarea_roi,clusttrajcounter_roi,noise_roi,clustercounter_roi,seed_num_roi,traj_nums_roi,radii_roi in list(zip(roidict,selarea_list,clusttrajcounter_list,noise_list,clustercounter_list,seed_num_list,traj_nums_list,radii_list)):
+				outfile.write("\nGENERATED METRICS (ROI #{}):\n==================================\n".format(roi))
+				outfile.write("ROI AREA: {}\n".format(selarea_roi))	
+				outfile.write("TOTAL TRAJECTORIES: {}\n".format(clusttrajcounter_roi + noise_roi))
+				outfile.write("CLUSTERED TRAJECTORIES: {}\n".format(clusttrajcounter_roi))
+				outfile.write("UNCLUSTERED TRAJECTORIES: {}\n".format(noise_roi))	
+				outfile.write("TOTAL CLUSTERS: {}\n".format(clustercounter_roi))
+				outfile.write("SINGLETON CLUSTERS: {}\n".format(seed_num_roi))
+				outfile.write("AVERAGE TRAJECTORIES PER CLUSTER: {} +/- {}\n".format(np.average(traj_nums_roi),np.std(traj_nums_roi)/math.sqrt(len(traj_nums_roi))))	
+				outfile.write("AVERAGE CLUSTER RADIUS: {} +/- {}\n".format(np.average(radii_roi),np.std(radii_roi)/math.sqrt(len(radii_roi))))
+			if len(roidict) > 1:
+				outfile.write("\nGENERATED METRICS (COMBINED ROIS):\n==================================\n")
+				outfile.write("ROI AREA: {}\n".format(sum(selarea_list)))
+				outfile.write("TOTAL TRAJECTORIES: {}\n".format(sum(clusttrajcounter_list) + sum(noise_list)))
+				outfile.write("CLUSTERED TRAJECTORIES: {}\n".format(sum(clusttrajcounter_list)))
+				outfile.write("UNCLUSTERED TRAJECTORIES: {}\n".format(sum(noise_list)))	
+				outfile.write("TOTAL CLUSTERS: {}\n".format(sum(clustercounter_list)))
+				outfile.write("SINGLETON CLUSTERS: {}\n".format(sum(seed_num_list)))
+				new_traj_nums_list = []
+				for roi in traj_nums_list:
+					for traj in roi:
+						new_traj_nums_list.append(traj)
+				new_radii_list = []
+				for radii_roi in radii_list:
+					for rad in radii_roi:
+						new_radii_list.append(rad)
+				outfile.write("AVERAGE TRAJECTORIES PER CLUSTER: {} +/- {}\n".format(np.average(new_traj_nums_list),np.std(new_traj_nums_list)/math.sqrt(len(new_traj_nums_list))))	
+				outfile.write("AVERAGE CLUSTER RADIUS: {} +/- {}\n".format(np.average(new_radii_list),np.std(new_radii_list)/math.sqrt(len(new_radii_list))))
+	return()
+					
 ######################################################
 
 # RUN IT
@@ -219,7 +927,7 @@ initialdir = cwd
 os.system('cls' if os.name == 'nt' else 'clear')
 try:
 	while {True}:
-		print ("SYNTHETIC DATA GENERATOR CLI - Tristan Wallis {}\n-----------------------------------------------------------".format(lastchanged))
+		print ("SYNTHETIC DATA GENERATOR CLI - Tristan Wallis {}\n------------------------------------------------------------".format(last_changed))
 		print ("Ctrl-c to quit at any time\n")
 		
 		# SELECTION AREA
@@ -281,493 +989,66 @@ try:
 								select_files = None
 					
 					for roi_file in infilenames:
-						read_roi(roi_file)
+						read_roi()
 						Load_ROI = True
 					selection_area_defined = True
 			
 		if selection_area_defined == True:
-			print("\nGenerating trajectories")
-			print("------------------------------------------------------------")
-			# SEEDS
-			seeds = []
-			
-			# Using NASTIC ROI to define selection area
-			if Load_ROI == True:
-				seed_num=int(seed_density*(round(selarea,0)))
-				noise = seed_num * noise_factor
-				print ("Generating {} spatiotemporal cluster seeds ({} seeds/um2)...".format(seed_num,seed_density))
-				xmin = min(allx)
-				xmax = max(allx)
-				ymin = min(ally)
-				ymax = max(ally)
-				ct = 0
-				while ct < seed_num:
-					x = random.uniform(xmin,xmax) # random x
-					y = random.uniform(ymin,ymax) # random y
-					t = random.random()*acquisition_time # random t
-					if p.contains_point([x,y]):
-						seeds.append([x,y,t])
-						ct +=1
-			
-			# Using x_size and y_size to define selection area
-			elif Load_ROI == False:
-				seed_num = seed_density*(round(x_size*y_size,0))
-				noise = seed_num * noise_factor
-				print ("Generating {} spatiotemporal cluster seeds ({} seeds/um2)...".format(seed_num, seed_density))
-				ct = 0
-				while ct < seed_num:
-					x = random.random()*x_size # random x
-					y = random.random()*y_size # random y
-					t = random.random()*acquisition_time # random t
-					seeds.append([x,y,t])
-					ct +=1
-			
-			# TRAJECTORIES
-			print ("Generating trajectories around cluster seeds...")
-			clustercounter = 0
-			clusttrajcounter = 0
-			trajectories = []
-			for seed in seeds:
-				# Original cluster at each seed point
-				clustercounter+=1
-				x_seed,y_seed,t_seed = seed[0],seed[1],seed[2] # x, y and t for this cluster
-				trajnum = random.randint(min_traj_num,max_traj_num) # number of trajectories for this cluster
-				clusterdict[clustercounter]={"trajectories":[]} # empty trajectory dictionary for this cluster
-				for j in range(trajnum):
-					x_orig = x_seed + 0.5*(random.uniform(-radius,radius)) # starting x point for trajectory 
-					y_orig = y_seed + 0.5*(random.uniform(-radius,radius))# starting y point for trajectory
-					t = round((t_seed + (random.random()*10))/2,2)*2 # starting time, within 10 sec of the cluster t 
-					traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
-					x = x_orig
-					y = y_orig
-		
+			trxyt_num = input ("Number of trxyt files to generate:\n")
+			try: 
+				trxyt_num = int(trxyt_num)
+				trxyt_num_defined = True
+			except:
+				print("ALERT: '{input}' is not an accepted input, please enter a number\n".format(input = trxyt_num))
+				trxyt_num_defined = False
+			if trxyt_num_defined == True:
+				stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
+				try:
+					os.mkdir("synthetic_data_output_{}".format(stamp))
+				except:
+					print("Alert","Error generating output folder (folder name already exists). Please try again")
+				traj_num_ct = 0
+				while traj_num_ct < trxyt_num:
+					if trxyt_num == 1:
+						print("\n\nGenerating trxyt file")
+					else:
+						print("\n\nGenerating trxyt file # {}".format(traj_num_ct+1))
+					print("============================================================")
+
+					
 					# Using NASTIC ROI to define selection area
 					if Load_ROI == True:
-						traj = []
-						ct = 0
-						try_ct = 1
-						point_ct = 0				
-						while ct < traj_length:
-							if try_ct == 1000:
-								x_orig = x_seed + 0.5*(random.uniform(-radius,radius)) # starting x point for trajectory 
-								y_orig = y_seed + 0.5*(random.uniform(-radius,radius))# starting y point for trajectory
-								x = x_orig
-								y = y_orig
-								traj = []
-								ct = 0
-								try_ct = 1
-								point_ct = 0
-							#Orbit
-							if orbit:
-								# Random walk constrained around spawn point
-								x = x_orig  + 0.5*(random.uniform(-steplength,steplength))
-								y = y_orig  + 0.5*(random.uniform(-steplength,steplength))
-								if p.contains_point([x,y]):	
-									if ct > 0:	
-										trajx_before = traj[ct-1][0]
-										trajy_before = traj[ct-1][1]
-										midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
-										midpointlistct = 0
-										for x_midpoint,y_midpoint in midpoint_list:
-											midpointlistct += 1
-											if p.contains_point([x_midpoint,y_midpoint]):
-												point_ct +=1
-										if point_ct == 6:
-											t += frame_time
-											traj.append([x,y,t])
-											ct += 1
-											try_ct = 1
-											point_ct = 0
-										else:
-											point_ct = 0
-											try_ct += 1
-									else:
-										t = seed[2]
-										traj.append([x,y,t])
-										ct += 1
-								else:
-									try_ct +=1
-							#No orbit
-							else:	
-								# Random walk unconstrained, can wander from spawn point
-								prevx = x
-								prevy = y
-								x += 0.5*(random.uniform(-steplength,steplength))	
-								y += 0.5*(random.uniform(-steplength,steplength))	
-								if p.contains_point([x,y]):
-									if ct > 0:	
-										trajx_before = traj[ct-1][0]
-										trajy_before = traj[ct-1][1]
-										midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
-										midpointlistct = 0
-										for x_midpoint,y_midpoint in midpoint_list:
-											midpointlistct += 1
-											if p.contains_point([x_midpoint,y_midpoint]):
-												point_ct +=1
-										if point_ct == 6:
-											t += frame_time
-											traj.append([x,y,t])
-											ct += 1
-											try_ct = 1
-											point_ct = 0
-										else:
-											point_ct = 0
-											try_ct += 1
-											x = prevx
-											y = prevy
-									else:
-										t = seed[2]
-										traj.append([x,y,t])
-										ct += 1
-								else:
-									try_ct +=1
-									x = prevx 
-									y = prevy
-							
-						trajectories.append(traj)
-						clusttrajcounter +=1
-						clusterdict[clustercounter]["trajectories"].append(traj)
-					
-					# Using x_size and y_size to define selection area
-					elif Load_ROI == False:
-						traj = []
-						ct = 0
-						try_ct = 1
-						while ct < traj_length:
-							if try_ct == 1000:
-								traj = []
-								x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
-								y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
-								x = x_orig
-								y = y_orig
-								ct = 0
-								try_ct = 1
-							
-							# Orbit
-							if orbit:	
-								# Random walk constrained around spawn point
-								x = x_orig  + 0.5*(random.uniform(-steplength,steplength))
-								y = y_orig  + 0.5*(random.uniform(-steplength,steplength))	
-								if x < x_size and x > 0 and y < y_size and y > 0:
-									t += frame_time
-									traj.append([x,y,t])
-									ct += 1
-									try_ct = 1
-								else:
-									try_ct += 1	
-							
-							# No orbit
-							else:	
-								# Random walk unconstrained, can wander from spawn point
-								prevx = x
-								prevy = y
-								x += 0.5*(random.uniform(-steplength,steplength))
-								y += 0.5*(random.uniform(-steplength,steplength))	
-								if x < x_size and x > 0 and y < y_size and y > 0:
-									t += frame_time
-									traj.append([x,y,t])
-									ct += 1
-									try_ct = 1
-								else:
-									try_ct += 1	
-									x = prevx
-									y = prevy
-									
-						trajectories.append(traj)
-						clusttrajcounter +=1
-						clusterdict[clustercounter]["trajectories"].append(traj)
-					
-				# Spatially overlapping, temporally distinct clusters at each seed point 
-				if random.random() < hotspotprobability:
-					for k in range(0,random.randint(1,hotspotmax-1)):
-						clustercounter+=1
-						clusterdict[clustercounter]={"trajectories":[]}
-						x_seed = seed[0]+ random.uniform(-0.25,0.25)*radius # hotspot cluster x
-						y_seed = seed[1]+ random.uniform(-0.25,0.25)*radius # hotspot cluster y
-						t_seed = random.random()*acquisition_time
-						trajnum = random.randint(min_traj_num,max_traj_num)
-						for tr in range(trajnum):
-							x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
-							y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
-							t = round((t_seed + (random.random()*10))/2,2)*2
-							traj_length = random.randint(min_traj_length,max_traj_length)
-							traj = []
-							x = x_orig
-							y = y_orig
-							
-							# Using NASTIC ROI to define selection area
-							if Load_ROI == True:
-								ct = 0
-								try_ct = 1
-								while ct < traj_length:
-									if try_ct == 1000:
-										traj = []
-										ct = 0
-										x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
-										y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
-										x = x_orig
-										y = y_orig
-										try_ct = 1
-									
-									# Orbit
-									if orbit:
-										# Random walk constrained around spawn point
-										prevx = x
-										prevy = y
-										x = x_orig  + 0.5*(random.uniform(-steplength,steplength))
-										y = y_orig  + 0.5*(random.uniform(-steplength,steplength))
-										if p.contains_point([x,y]):	
-											t += frame_time
-											traj.append([x,y,t])
-											ct += 1
-											try_ct = 1
-										else:
-											try_ct += 1
-											x = prevx
-											y = prevy
-									
-									#No orbit
-									else:
-										# Random walk unconstrained, can wander from spawn point
-										prevx = x
-										prevy = y
-										x += 0.5*(random.uniform(-steplength,steplength))	
-										y += 0.5*(random.uniform(-steplength,steplength))
-									if p.contains_point([x,y]):	
-										t += frame_time
-										traj.append([x,y,t])
-										ct += 1
-										try_ct = 1
-									else:
-										try_ct += 1
-										x = prevx
-										y = prevy
-										
-								trajectories.append(traj)
-								clusttrajcounter +=1				
-								clusterdict[clustercounter]["trajectories"].append(traj)
-							
-							# Using x_size and y_size to define selection area
-							elif Load_ROI == False:
-								ct = 0
-								try_ct = 1
-								while ct < traj_length:
-									if try_ct == 1000:
-										traj = []
-										x_orig = x_seed + 0.5*(random.uniform(-radius,radius))
-										y_orig = y_seed + 0.5*(random.uniform(-radius,radius))
-										x = x_orig
-										y = y_orig
-										ct = 0
-										try_ct = 1
-									
-									# Orbit
-									if orbit:
-										# Random walk constrained around spawn point
-										x = x_orig  + 0.5*(random.uniform(-steplength,steplength))
-										y = y_orig  + 0.5*(random.uniform(-steplength,steplength))
-										if x < x_size and x > 0 and y < y_size and y > 0:
-											t += frame_time
-											traj.append([x,y,t])
-											ct += 1
-											try_ct = 1
-										else:
-											try_ct += 1
-									
-									# No orbit
-									else:
-										# Random walk unconstrained, can wander from spawn point
-										prevx = x
-										prevy = y
-										x += 0.5*(random.uniform(-steplength,steplength))	 
-										y += 0.5*(random.uniform(-steplength,steplength))
-										if x < x_size and x > 0 and y < y_size and y > 0:
-											t += frame_time
-											traj.append([x,y,t])
-											ct += 1
-											try_ct = 1
-										else:
-											try_ct += 1
-											x = prevx
-											y = prevy
-											
-								trajectories.append(traj)
-								clusttrajcounter +=1				
-								clusterdict[clustercounter]["trajectories"].append(traj)
-								
-			# Noise		
-			print ("Generating unclustered trajectory seeds...")
-			
-			# Using NASTIC ROI to define selection area
-			if Load_ROI == True:
-				noiseseeds = []
-				ct = 0
-				while ct < noise:
-					x = random.uniform(xmin,xmax) # random x
-					y = random.uniform(ymin,ymax) # random y
-					t = random.random()*acquisition_time # random t
-					if p.contains_point([x,y]):
-						noiseseeds.append([x,y,t])
-						ct +=1
-				print ("Generating {} unclustered trajectories with higher mobility ({}x number of cluster seeds)...".format(noise, noise_factor))
-				for seed in noiseseeds:
-					x,y,t = seed[0],seed[1],seed[2] # x, y and t for this cluster
-					traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
-					traj = []
-					ct = 0
-					try_ct = 1
-					point_ct = 0
-					while ct < traj_length:
-						if try_ct == 1000:
-							traj = []
-							ct = 0
-							x,y,t = seed[0],seed[1],seed[2]
-							try_ct = 1
-							point_ct = 0
-						prevx = x
-						prevy = y
-						x += 0.5*unconst*(random.uniform(-steplength,steplength))	
-						y += 0.5*unconst*(random.uniform(-steplength,steplength))	
-						if p.contains_point([x,y]):	
-							if ct > 0:	
-								trajx_before = traj[ct-1][0]
-								trajy_before = traj[ct-1][1]
-								midpoint_list = obtain_midpoints(trajx_before,trajy_before,x,y)
-								midpointlistct = 0
-								for x_midpoint,y_midpoint in midpoint_list:
-									midpointlistct += 1
-									if p.contains_point([x_midpoint,y_midpoint]):
-										point_ct +=1
-								if point_ct == 6:
-									t += frame_time
-									traj.append([x,y,t])
-									ct += 1
-									try_ct = 1
-									point_ct = 0
-								else:
-									x = prevx
-									y = prevy
-									point_ct = 0
-									try_ct +=1
-							else:
-								t = seed[2]
-								traj.append([x,y,t])
-								ct += 1
-						else:
-							try_ct+=1
-							x = prevx
-							y = prevy
-					
-					trajectories.append(traj)
-			
-			# Using x_size and y_size to define selection area
-			elif Load_ROI == False:
-				noiseseeds = []
-				ct = 0
-				while ct < noise:
-					x = random.random()*x_size # random x
-					y = random.random()*y_size # random y
-					t = random.random()*acquisition_time # random t
-					noiseseeds.append([x,y,t])
-					ct += 1
-				print ("Generating {} unclustered trajectories with higher mobility ({}x number of cluster seeds)...".format(noise, noise_factor))
-				for seed in noiseseeds:
-					x,y,t = seed[0],seed[1],seed[2] # x, y and t for this cluster
-					traj_length = random.randint(min_traj_length,max_traj_length) # steps for this trajectory
-					traj = []
-					ct = 0
-					try_ct = 1
-					while ct < traj_length:
-						if try_ct == 1000:
-							traj = []
-							x,y,t = seed[0],seed[1],seed[2]
-							ct = 0
-							try_ct = 1
-						# Random walk unconstrained, can wander from spawn point
-						prevx = x
-						prevy = y
-						x += 0.5*unconst*(random.uniform(-steplength,steplength))		
-						y += 0.5*unconst*(random.uniform(-steplength,steplength))
-						if x < x_size and x > 0 and y < y_size and y > 0:
-							t += frame_time	
-							traj.append([x,y,t])
-							ct += 1
-							try_ct = 1
-						else:
-							try_ct +=1
-							x = prevx
-							y = prevy
-							
-					trajectories.append(traj)		
-					
-			# Metrics
-			print("\nGenerating metrics")
-			print("-----------------------------------------------------------")
-			traj_nums = []
-			radii= []
-			for num in clusterdict:
-				cluster_trajectories = clusterdict[num]["trajectories"]
-				clusterdict[num]["traj_num"]=len(cluster_trajectories) # number of trajectories in each cluster
-				clusterpoints = [point[:2]  for traj in cluster_trajectories for point in traj] # all x,y points for trajectories in cluster 
-				ext_x,ext_y,ext_area,int_x,int_y,int_area = double_hull(clusterpoints) # internal and external convex hull of cluster points 
-				clusterdict[num]["area"] = int_area # internal hull area as cluster area (um2)
-				clusterdict[num]["radius"] = math.sqrt(int_area/math.pi) # radius of cluster internal hull (um)
-				traj_nums.append(clusterdict[num]["traj_num"])
-				radii.append(clusterdict[num]["radius"])
-			print ("Total traj:",clusttrajcounter + noise)
-			print ("Clustered traj:",clusttrajcounter)
-			print ("Total clusters:", clustercounter)
-			print ("Avg traj per cluster:", np.average(traj_nums))
-			print ("Avg cluster radius:", np.average(radii))
-
-			# Output
-			print("\nWriting files")
-			print("------------------------------------------------------------")
-			stamp = '{:%Y%m%d-%H%M%S}'.format(datetime.datetime.now()) # datestamp
-			os.mkdir("synthetic_data_output_{}".format(stamp))
-			print ("Writing TRXYT...")
-			with open("synthetic_data_output_{}/synthetic_data_{}.trxyt".format(stamp, stamp),"w") as outfile: 
-				for tr,traj in enumerate(trajectories,start=1):
-					for seg in traj:
-						x,y,t = seg
-						outline = "{} {} {} {}\n".format(tr,x,y,t)
-						outfile.write(outline)
-			print ("Writing metrics...")
-			with open("synthetic_data_output_{}/synthetic_{}_metrics.tsv".format(stamp,stamp),"w") as outfile: 
-				outfile.write("PARAMETERS:\n==========\n")
-				outfile.write("ACQUISITION TIME (s): {}\n".format(acquisition_time))	
-				outfile.write("FRAME TIME (s): {}\n".format(frame_time))	
-				if Load_ROI == True:
-					outfile.write("ROI FILE: {}\n".format(roi_file))	
-					outfile.write("ROI AREA: {}\n".format(selarea))	
-				if Load_ROI == False:
-					outfile.write("X SIZE (um): {}\n".format(x_size ))	
-					outfile.write("Y SIZE (um): {}\n".format(y_size))	
-				outfile.write("SEED DENSITY (per um2): {}\n".format(seed_density))	
-				outfile.write("SEED RADIUS (um): {}\n".format(radius))	
-				outfile.write("MIN TRAJ AROUND SEED: {}\n".format(min_traj_num))	
-				outfile.write("MAX TRAJ AROUND SEED: {}\n".format(max_traj_num))	
-				outfile.write("MIN TRAJ STEPS: {}\n".format(min_traj_length))	
-				outfile.write("MAX TRAJ STEPS: {}\n".format(max_traj_length))
-				outfile.write("MAX STEPLENGTH (um): {}\n".format(steplength))	
-				outfile.write("CLUSTER TRAJ ORBIT: {}\n".format(orbit))	
-				outfile.write("NOISE FACTOR: {}\n".format(noise_factor))	
-				outfile.write("UNCLUST STEPLENGTH MULTIPLIER: {}\n".format(unconst))	
-				outfile.write("HOTSPOT PROBABILITY: {}\n".format(hotspotprobability))	
-				outfile.write("MAX CLUSTERS PER HOTSPOT: {}\n".format(hotspotmax))	
-
-				outfile.write("\nGENERATED METRICS:\n=================\n")
-				outfile.write("TOTAL TRAJECTORIES: {}\n".format(clusttrajcounter + noise))
-				outfile.write("CLUSTERED TRAJECTORIES: {}\n".format(clusttrajcounter))	
-				outfile.write("UNCLUSTERED TRAJECTORIES: {}\n".format(noise))	
-				outfile.write("TOTAL CLUSTERS: {}\n".format(clustercounter))
-				outfile.write("SINGLETON CLUSTERS: {}\n".format(seed_num))
-				outfile.write("AVERAGE TRAJECTORIES PER CLUSTER: {} +/- {}\n".format(np.average(traj_nums),np.std(traj_nums)/math.sqrt(len(traj_nums))))	
-				outfile.write("AVERAGE CLUSTER RADIUS: {} +/- {}\n".format(np.average(radii),np.std(radii)/math.sqrt(len(radii))))	
-				
+						for roi,p,selarea in zip(roidict,p_list,selarea_list):
+							generate_trxyt(Load_ROI)
+						if len(roidict) > 1:
+							new_traj_nums_list = []
+							for roi in traj_nums_list:
+								for traj in roi:
+									new_traj_nums_list.append(traj)
+							new_radii_list = []
+							for radii_roi in radii_list:
+								for rad in radii_roi:
+									new_radii_list.append(rad)
+							print("\nCombined ROI metrics")
+							print("------------------------------------------------------------")
+							print("Selection area: {}".format(sum(selarea_list)))
+							print("Total traj: {}".format(sum(clusttrajcounter_list) + sum(noise_list)))
+							print("Clustered traj: {}".format(sum(clusttrajcounter_list)))
+							print("Unclustered traj: {}".format(sum(noise_list)))
+							print("Total clusters: {}".format(sum(clustercounter_list)))
+							print("Avg traj per cluster: {} +/- {}".format(np.average(new_traj_nums_list),np.std(new_traj_nums_list)/math.sqrt(len(new_traj_nums_list))))	
+							print("Avg cluster radius: {} +/- {}".format(np.average(new_radii_list),np.std(new_radii_list)/math.sqrt(len(new_radii_list))))
+						output(traj_num_ct, stamp,Load_ROI)
+						traj_num_ct+=1
+						
+					else:
+						generate_trxyt(Load_ROI)
+						output(traj_num_ct, stamp,Load_ROI)
+						traj_num_ct+=1
+						
+				print("\n\nDONE!\n\n")
 				print("TRXYT and metrics files saved to: \n{}".format(cwd) + "\\synthetic_data_output_{}".format(stamp) + "\n")
-			cont = input("\nDone!\n\nReturn key: Generate another file\nCtrl-c: Exit\n\n")
-			
+				print("============================================================\n\n\n")
 except KeyboardInterrupt:
-	print("Exiting...")
+	print("\nExiting...")
 	exit()
