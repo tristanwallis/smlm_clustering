@@ -95,7 +95,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20250701"
+last_changed = "20250724"
 
 # MAIN PROG AND FUNCTIONS
 if __name__ == "__main__":
@@ -1526,8 +1526,8 @@ if __name__ == "__main__":
 		if event == 'Licence':
 			sg.Popup(
 				"Licence",
-				"Creative Commons CC BY 4.0",
-				"https://creativecommons.org/licenses/by/4.0/legalcode", 
+				"Creative Commons CC BY-NC 4.0",
+				"https://creativecommons.org/licenses/by-nc/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True,
 				keep_on_top = True,

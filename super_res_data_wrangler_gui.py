@@ -98,7 +98,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20250606"
+last_changed = "20250724"
 
 # LOAD MODULES (Functions)
 import random
@@ -2212,8 +2212,8 @@ if __name__ == "__main__": # has to be called this way for multiprocessing to wo
 		if event == 'Licence':
 			sg.Popup(
 				"Licence",
-				"Creative Commons CC BY 4.0",
-				"https://creativecommons.org/licenses/by/4.0/legalcode", 
+				"Creative Commons CC BY-NC 4.0",
+				"https://creativecommons.org/licenses/by-nc/4.0/legalcode", 
 				no_titlebar = True,
 				grab_anywhere = True,	
 				keep_on_top = True,

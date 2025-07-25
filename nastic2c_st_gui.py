@@ -37,7 +37,7 @@ CHECK FOR UPDATES:
 https://github.com/tristanwallis/smlm_clustering/releases
 '''
 
-last_changed = "20250609"
+last_changed = "20250724"
 
 # LOAD MODULES
 import FreeSimpleGUI as sg
@@ -3078,8 +3078,8 @@ while True:
 	if event == 'Licence':
 		sg.Popup(
 			"Licence",
-			"Creative Commons CC BY 4.0",
-			"https://creativecommons.org/licenses/by/4.0/legalcode", 
+			"Creative Commons CC BY-NC 4.0",
+			"https://creativecommons.org/licenses/by-nc/4.0/legalcode", 
 			no_titlebar = True,
 			grab_anywhere = True	
 			)					
@@ -3160,8 +3160,8 @@ while True:
 		if len(all_selverts) != 0: 
 			all_selverts_copy = [x for x in all_selverts]
 		all_selverts = []
-		for roi in roi_list:
-			roi.remove()
+		#for roi in roi_list:
+		#	roi.remove()
 		roi_list = []
 		cluster_tab()
 
