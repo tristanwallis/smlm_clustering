@@ -442,7 +442,7 @@ Requires: Python 3.8+
 
 Modules: colorama, matplotlib, matplotlib-venn, numpy, pandas, pillow, freesimplegui, rtree, scikit-learn, scipy, seaborn, statsmodels 
 
-Specific module versions guaranteed working under Python 3.12 at the time of release
+Specific module versions guaranteed working under Python 3.12 at the time of release:
 colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), pillow (v9.2.0), freesimplegui (v5.2.0.post1), rtree (v1.0.0), scikit-learn (v1.1.2), scipy (v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
 
 # Installation procedure
