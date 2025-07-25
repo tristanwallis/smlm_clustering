@@ -440,27 +440,34 @@ Operating systems: Windows, Linux and Mac
 
 Requires: Python 3.8+
 
-Modules: colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), Pillow (v9.2.0), FreeSimpleGUI (v5.2.0.post1), rtree (v1.0.0), scikit-learn (v1.1.2), scipy (v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
+Modules: colorama, matplotlib, matplotlib-venn, numpy, pandas, pillow, freesimplegui, rtree, scikit-learn, scipy, seaborn, statsmodels 
+
+Specific module versions guaranteed working under Python 3.12 at the time of release
+colorama (v0.4.6), matplotlib (v3.8.4), matplotlib-venn (v0.11.7), numpy (v1.23.2), pandas (v1.4.4), pillow (v9.2.0), freesimplegui (v5.2.0.post1), rtree (v1.0.0), scikit-learn (v1.1.2), scipy (v1.13.1), seaborn (v0.12.0), statsmodels (v0.13.2) 
 
 # Installation procedure
 1. Open a new instance of the command line
 2. Copy and paste the following:
 ```
-python -m pip install FreeSimpleGUI==5.2.0.post1 colorama==0.4.6 matplotlib==3.8.4 matplotlib-venn==0.11.7 numpy==1.23.2 pandas==1.4.4 Pillow==9.2.0 rtree==1.0.0 scikit-learn==1.1.2 scipy==1.13.1 seaborn==0.12.0 statsmodels==0.13.2
+python -m pip install freesimplegui colorama matplotlib matplotlib-venn numpy pandas pillow rtree scikit-learn scipy seaborn statsmodels
+```
+If problems are encountered, please use the following to install the specific module versions:
+```
+python -m pip install freesimplegui==5.2.0.post1 colorama==0.4.6 matplotlib==3.8.4 matplotlib-venn==0.11.7 numpy==1.23.2 pandas==1.4.4 pillow==9.2.0 rtree==1.0.0 scikit-learn==1.1.2 scipy==1.13.1 seaborn==0.12.0 statsmodels==0.13.2
 ```
 3. Press the return key
 
 # License
 
-[![CC BY 4.0][cc-by-shield]][cc-by]
+[![CC BY-NC 4.0][cc-by-nc-shield]][cc-by-nc]
 
-[![CC BY 4.0][cc-by-image]][cc-by]
+[![CC BY-NC 4.0][cc-by-nc-image]][cc-by-nc]
 
 This work is licensed under a
-[Creative Commons Attribution 4.0 International License][cc-by].
+[Creative Commons Attribution NonCommercial 4.0 International License][cc-by-nc].
 
-[cc-by]: http://creativecommons.org/licenses/by/4.0/
+[cc-by-nc]: http://creativecommons.org/licenses/by-nc/4.0/
 
-[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+[cc-by-nc-shield]: https://img.shields.io/badge/License-CC%20BY%20NC%204.0-lightgrey.svg
 
-[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
+[cc-by-nc-image]: https://i.creativecommons.org/l/by-nc/4.0/88x31.png
