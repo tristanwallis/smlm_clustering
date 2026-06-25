@@ -1,6 +1,6 @@
 # NASTIC - Nanoscale Spatiotemporal Indexing Clustering
 ## Important Notice
-From May 2026 development and release of NASTIC has been moved from GitHub to the University of Queensland Uniquest Store at https://uniquest.store.
+From May 2026 development and release of NASTIC has been moved from GitHub to the University of Queensland Uniquest Store at https://uniquest.store/product/nastic-nanoscale-spatiotemporal-indexing-clustering.
 
 NASTIC will remain freely available for Academic, Research and Teaching purposes.
 
